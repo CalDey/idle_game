@@ -280,10 +280,11 @@
           <div class="upgrade-desc">${item.desc}</div>
           <div class="upgrade-effect">每层效果：+${formatNumber(perLvEffect)} 灵气/秒</div>
         </div>
-        <button class="btn ${canAfford ? 'btn-primary' : ''}" data-gongfa-id="${item.id}" ${
+        <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-gongfa-id="${item.id}" ${
         canAfford ? '' : 'disabled'
       }>
-          ${unlocked ? `参悟 (${formatNumber(cost)}灵石)` : '境界不足'}
+          <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
+          <span class="btn-price">${unlocked ? `${formatNumber(cost)} 灵石` : '境界不足'}</span>
         </button>
       `;
       els.gongfaList.appendChild(row);
@@ -313,10 +314,11 @@
           <div class="upgrade-desc">${item.desc}</div>
           <div class="upgrade-effect">每级产出：+${formatNumber(perLvEffect)} 灵石/秒</div>
         </div>
-        <button class="btn ${canAfford ? 'btn-primary' : ''}" data-dongfu-id="${item.id}" ${
+        <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-dongfu-id="${item.id}" ${
         canAfford ? '' : 'disabled'
       }>
-          ${unlocked ? `扩建 (${formatNumber(cost)}灵石)` : '境界不足'}
+          <span class="btn-action">${unlocked ? '扩建' : '锁定'}</span>
+          <span class="btn-price">${unlocked ? `${formatNumber(cost)} 灵石` : '境界不足'}</span>
         </button>
       `;
       els.dongfuList.appendChild(row);
@@ -432,10 +434,11 @@
           </div>
           <div class="upgrade-desc">${talent.desc}</div>
         </div>
-        <button class="btn ${canBuy ? 'btn-primary' : ''}" data-talent-id="${talent.id}" ${
+        <button class="btn btn-cost ${canBuy ? 'btn-primary' : ''}" data-talent-id="${talent.id}" ${
         canBuy ? '' : 'disabled'
       }>
-          ${isMax ? '已圆满' : `凝练 (${cost}道果)`}
+          <span class="btn-action">${isMax ? '圆满' : '凝练'}</span>
+          <span class="btn-price">${isMax ? '—' : `${formatNumber(cost)} 道果`}</span>
         </button>
       `;
       els.talentList.appendChild(row);

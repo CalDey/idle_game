@@ -324,6 +324,7 @@
     if (num === null || num === undefined || Number.isNaN(num)) return '0';
     const abs = Math.abs(num);
     if (abs < 10000) {
+      if (abs >= 100) return String(Math.floor(abs) * Math.sign(num || 1));
       return Number.isInteger(num) ? String(num) : num.toFixed(decimals).replace(/\.0+$/, '');
     }
     const units = [
@@ -334,7 +335,9 @@
     ];
     for (let i = 0; i < units.length; i++) {
       if (abs >= units[i].value) {
-        return (num / units[i].value).toFixed(2).replace(/\.?0+$/, '') + units[i].symbol;
+        const scaled = num / units[i].value;
+        const digits = Math.abs(scaled) >= 100 ? 0 : 1;
+        return scaled.toFixed(digits).replace(/\.0$/, '') + units[i].symbol;
       }
     }
     return Math.floor(num).toString();
