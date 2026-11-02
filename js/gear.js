@@ -12,15 +12,25 @@
     return window.GameState.state.realmIndex >= window.GameConfig.PEACH.UNLOCK_REALM;
   }
 
+  function slotGlowCls(slotId) {
+    return slotId === 'robe' || slotId === 'boots' ? ' gi-glow' : '';
+  }
+
   function cardHtml(item, title) {
     if (!item) {
       return `<div class="item-card empty"><div class="item-name">${title}</div><div class="item-sub">空</div></div>`;
     }
     const q = window.GameConfig.QUALITIES[item.q];
+    const glow = slotGlowCls(item.s);
     const subs = (item.sub || []).map((pair) => `<div>${window.Equip.formatSub(pair)}</div>`).join('');
     return `<div class="item-card" style="border-color:${q.color};color:${q.color}">
-      <div class="item-name">${window.Equip.itemName(item)}</div>
-      <div class="item-lv">Lv.${item.lv}</div>
+      <div class="item-card-head">
+        <img class="gi item-card-icon${glow}" src="assets/icons/slot_${item.s}.webp?v=14" alt="" aria-hidden="true" loading="lazy">
+        <div class="item-card-meta">
+          <div class="item-name">${window.Equip.itemName(item)}</div>
+          <div class="item-lv">Lv.${item.lv}</div>
+        </div>
+      </div>
       <div class="item-main">${window.Equip.formatMain(item)}</div>
       <div class="item-subs">${subs}</div>
     </div>`;
@@ -34,12 +44,13 @@
     window.GameConfig.EQUIP_SLOTS.forEach((slot) => {
       const item = equip[slot.id];
       const q = item ? window.GameConfig.QUALITIES[item.q] : null;
+      const glow = !item || slot.id === 'robe' || slot.id === 'boots' ? ' gi-glow' : '';
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'equip-slot' + (item ? ' filled' : '');
       btn.dataset.slot = slot.id;
       btn.style.borderColor = q ? q.color : 'rgba(230,201,138,0.35)';
-      btn.innerHTML = `<span class="slot-lv">${item ? 'Lv' + item.lv : ''}</span><span class="slot-name">${slot.name}</span><span class="slot-item">${item ? window.GameConfig.QUALITIES[item.q].name : '空'}</span>`;
+      btn.innerHTML = `<span class="slot-lv">${item ? 'Lv' + item.lv : ''}</span><img class="gi slot-icon${glow}" src="assets/icons/slot_${slot.id}.webp?v=14" alt="" aria-hidden="true" loading="lazy"><div class="slot-info"><span class="slot-name">${slot.name}</span><span class="slot-item">${item ? window.GameConfig.QUALITIES[item.q].name : '空'}</span></div>`;
       grid.appendChild(btn);
     });
   }
@@ -83,7 +94,9 @@
     $('lingyu-val').textContent = fmt(s.lingyu || 0);
     $('pity-label').textContent = `地品保底 ${s.pity.di}/50 · 天品 ${s.pity.tian}/200`;
     $('btn-pick-peach').disabled = (tree.peaches || 0) < 1 || !!s.pending;
-    $('btn-pick-peach').textContent = s.pending ? '先处理掉落' : '摘桃';
+    const pickText = $('btn-pick-peach-text');
+    if (pickText) pickText.textContent = s.pending ? '先处理掉落' : '摘桃';
+    else $('btn-pick-peach').textContent = s.pending ? '先处理掉落' : '摘桃';
     const autoOn = $('auto-decomp-on');
     const autoQ = $('auto-decomp-q');
     if (document.activeElement !== autoOn) autoOn.checked = !!(s.autoDecomp && s.autoDecomp.on);
@@ -225,10 +238,14 @@
   function openItem(slotId) {
     const item = window.GameState.state.equip[slotId];
     const slot = window.Equip.slotDef(slotId);
+    const glow = slotGlowCls(slotId);
+    const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="assets/icons/slot_${slotId}.webp?v=14" alt="" aria-hidden="true" loading="lazy"></div>`;
     $('item-modal-title').textContent = item ? window.Equip.itemName(item) : slot.name;
-    $('item-modal-body').innerHTML = item
-      ? `${window.Equip.formatMain(item)}<br>${(item.sub || []).map((p) => window.Equip.formatSub(p)).join('<br>')}<br>分解可得 ${window.Equip.decomposeValue(item)} 灵玉`
-      : '此部位尚无装备。';
+    $('item-modal-body').innerHTML =
+      iconHtml +
+      (item
+        ? `${window.Equip.formatMain(item)}<br>${(item.sub || []).map((p) => window.Equip.formatSub(p)).join('<br>')}<br>分解可得 ${window.Equip.decomposeValue(item)} 灵玉`
+        : '此部位尚无装备。');
     $('item-modal').classList.add('active');
   }
 

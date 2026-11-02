@@ -9,8 +9,11 @@
   <meta property="og:title" content="暗黑修仙" />
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#010920" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23140c14'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-size='18' fill='%23e6c98a' font-family='serif'%3E%E4%BF%AE%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="css/style.css?v=13" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png?v=14" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=14" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=14" />
+  <meta property="og:image" content="assets/icons/app_icon_512.webp" />
+  <link rel="stylesheet" href="css/style.css?v=14" />
 </head>
 <body>
   <div class="app-container">
@@ -22,28 +25,28 @@
         </div>
         <div class="header-actions">
           <div id="header-realm-pill" class="realm-pill">练气一层</div>
-          <button id="btn-open-settings" class="icon-btn" type="button" aria-label="设置">⚙</button>
+          <button id="btn-open-settings" class="icon-btn" type="button" aria-label="设置"><img class="gi" src="assets/icons/ui_settings@64.webp?v=14" alt="" aria-hidden="true"></button>
         </div>
       </div>
 
       <div class="resource-grid">
         <div class="res-item">
           <div class="res-label">
-            <span>灵气</span>
+            <span class="res-name"><img class="gi" src="assets/icons/res_qi@64.webp?v=14" alt="" aria-hidden="true">灵气</span>
             <span id="res-qi-rate" class="res-rate">+3/秒</span>
           </div>
           <div id="res-qi-val" class="res-value">0</div>
         </div>
         <div class="res-item">
           <div class="res-label">
-            <span>灵石</span>
+            <span class="res-name"><img class="gi" src="assets/icons/res_stone@64.webp?v=14" alt="" aria-hidden="true">灵石</span>
             <span id="res-stone-rate" class="res-rate">+1.5/秒</span>
           </div>
           <div id="res-stone-val" class="res-value gold">25</div>
         </div>
         <div class="res-item">
           <div class="res-label">
-            <span>道果</span>
+            <span class="res-name"><img class="gi" src="assets/icons/res_daoguo@64.webp?v=14" alt="" aria-hidden="true">道果</span>
             <span id="res-daoguo-mult" class="res-rate">灵气×1.00</span>
           </div>
           <div id="res-daoguo-val" class="res-value purple">0 (累0)</div>
@@ -105,7 +108,7 @@
         <!-- 境界突破卡片 -->
         <div class="gufeng-card">
           <div class="card-header">
-            <span class="card-title">境界突破</span>
+            <span class="card-title"><img class="gi" src="assets/icons/nav_cultivate@64.webp?v=14" alt="" aria-hidden="true">境界突破</span>
             <span id="realm-desc" class="card-subtitle">引天地灵气入体，初窥仙门径。</span>
           </div>
 
@@ -131,7 +134,7 @@
         <!-- 修仙日志 -->
         <div class="gufeng-card">
           <div class="card-header">
-            <span class="card-title">修仙日志</span>
+            <span class="card-title"><img class="gi" src="assets/icons/ui_log@64.webp?v=14" alt="" aria-hidden="true">修仙日志</span>
             <span class="card-subtitle">仙途纪事</span>
           </div>
           <div id="cultivation-log" class="log-box"></div>
@@ -146,19 +149,19 @@
         </div>
         <div id="gear-body" class="gear-body">
           <div class="cp-bar">
-            <div class="cp-main">战力 <strong id="cp-value">0</strong></div>
+            <div class="cp-main"><img class="gi cp-icon" src="assets/icons/res_cp@64.webp?v=14" alt="" aria-hidden="true">战力 <strong id="cp-value">0</strong></div>
             <div id="cp-stats" class="cp-stats">攻0 · 血0 · 防0 · 速0</div>
           </div>
           <div id="equip-grid" class="equip-grid"></div>
           <div class="gufeng-card peach-card">
             <div class="peach-head">
-              <span class="card-title">仙桃树</span>
-              <span id="peach-count" class="peach-count">0/52</span>
+              <span class="card-title"><img class="gi" src="assets/icons/res_peach@64.webp?v=14" alt="" aria-hidden="true">仙桃树</span>
+              <span class="peach-count-wrap"><img class="gi gi-16" src="assets/icons/res_peach@64.webp?v=14" alt="" aria-hidden="true"><span id="peach-count" class="peach-count">0/52</span></span>
             </div>
-            <div id="peach-tree-art" class="peach-tree-art" aria-hidden="true">桃</div>
+            <div id="peach-tree-art" class="peach-tree-art" aria-hidden="true"><img src="assets/icons/art_peach_tree.webp?v=14" srcset="assets/icons/art_peach_tree@128.webp?v=14 128w, assets/icons/art_peach_tree.webp?v=14 256w" sizes="(max-height: 740px) 72px, 96px" alt="" class="peach-tree-img" loading="lazy"></div>
             <div id="peach-next" class="peach-next">下一枚 3:00</div>
             <div id="peach-reveal" class="peach-reveal"></div>
-            <button id="btn-pick-peach" class="btn btn-primary peach-btn" type="button">摘桃</button>
+            <button id="btn-pick-peach" class="btn btn-primary peach-btn" type="button"><img class="gi gi-18" src="assets/icons/res_peach@64.webp?v=14" alt="" aria-hidden="true"><span id="btn-pick-peach-text">摘桃</span></button>
           </div>
           <div class="gufeng-card tree-card">
             <div class="tree-row">
@@ -170,7 +173,7 @@
             </div>
             <div class="tree-row">
               <div>
-                <div class="setting-label">灵玉 <strong id="lingyu-val">0</strong></div>
+                <div class="setting-label"><img class="gi gi-16" src="assets/icons/res_lingyu@64.webp?v=14" alt="" aria-hidden="true">灵玉 <strong id="lingyu-val">0</strong></div>
                 <div id="pity-label" class="setting-sub">地品保底 0/50 · 天品 0/200</div>
               </div>
             </div>
@@ -248,16 +251,16 @@
                 <div id="battle-result-title" class="battle-result-title">败 · 还差约 8% 战力</div>
                 <div id="battle-result-sub" class="battle-result-sub">提升装备或功法后可再来挑战</div>
                 <div id="battle-fail-actions" class="battle-fail-actions" hidden>
-                  <button id="btn-goto-peach" class="btn btn-primary" type="button">去摘桃</button>
-                  <button id="btn-goto-gongfa" class="btn" type="button">去功法</button>
+                  <button id="btn-goto-peach" class="btn btn-primary" type="button"><img class="gi gi-16" src="assets/icons/res_peach@64.webp?v=14" alt="" aria-hidden="true">去摘桃</button>
+                  <button id="btn-goto-gongfa" class="btn" type="button"><img class="gi gi-16" src="assets/icons/nav_upgrades@64.webp?v=14" alt="" aria-hidden="true">去功法</button>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="stage-compare-row">
-            <div class="compare-cell">我方 <strong id="stage-cp-player">0</strong></div>
-            <div class="compare-cell">推荐 <strong id="stage-cp-enemy">600</strong></div>
+            <div class="compare-cell"><img class="gi gi-14" src="assets/icons/res_cp@64.webp?v=14" alt="" aria-hidden="true">我方 <strong id="stage-cp-player">0</strong></div>
+            <div class="compare-cell"><img class="gi gi-14" src="assets/icons/res_cp@64.webp?v=14" alt="" aria-hidden="true">推荐 <strong id="stage-cp-enemy">600</strong></div>
             <div class="compare-cell">胜率 <strong id="stage-winrate">五五开</strong></div>
           </div>
 
@@ -268,9 +271,10 @@
           </div>
 
           <div class="stage-idle-card">
+            <img class="gi stage-idle-icon" src="assets/icons/ui_idle_chest.webp?v=14" alt="" aria-hidden="true" loading="lazy">
             <div class="stage-idle-info">
               <div id="stage-idle-time" class="stage-idle-time">挂机 0分</div>
-              <div id="stage-idle-reward" class="stage-idle-reward">灵玉 +0 · 仙桃 +0</div>
+              <div id="stage-idle-reward" class="stage-idle-reward"><img class="gi gi-14" src="assets/icons/res_lingyu@64.webp?v=14" alt="" aria-hidden="true"> +0 · <img class="gi gi-14" src="assets/icons/res_peach@64.webp?v=14" alt="" aria-hidden="true"> +0</div>
             </div>
             <button id="btn-stage-claim" class="btn stage-btn-claim" type="button" disabled>领取</button>
           </div>
@@ -281,7 +285,7 @@
       <section id="tab-upgrades" class="tab-pane">
         <div class="gufeng-card">
           <div class="card-header">
-            <span class="card-title">功法研修</span>
+            <span class="card-title"><img class="gi" src="assets/icons/nav_upgrades@64.webp?v=14" alt="" aria-hidden="true">功法研修</span>
             <span class="card-subtitle">消耗灵石参悟功法，提升每秒灵气</span>
           </div>
           <div id="gongfa-list" class="upgrade-list"></div>
@@ -289,7 +293,7 @@
 
         <div class="gufeng-card">
           <div class="card-header">
-            <span class="card-title">洞府建设</span>
+            <span class="card-title"><img class="gi" src="assets/icons/df_dongtian_fudi@64.webp?v=14" alt="" aria-hidden="true">洞府建设</span>
             <span class="card-subtitle">消耗灵石扩建洞天，提升每秒灵石</span>
           </div>
           <div id="dongfu-list" class="upgrade-list"></div>
@@ -300,7 +304,7 @@
       <section id="tab-reincarnate" class="tab-pane">
         <div class="gufeng-card">
           <div class="card-header">
-            <span class="card-title">轮回转世</span>
+            <span class="card-title"><img class="gi" src="assets/icons/nav_reincarnate@64.webp?v=14" alt="" aria-hidden="true">轮回转世</span>
             <span class="card-subtitle">元婴期及以上可兵解重修，凝结永久道果</span>
           </div>
 
@@ -317,16 +321,16 @@
 
           <div class="breakthrough-row">
             <div class="breakthrough-info">
-              <div>本次转世可凝结：<strong id="pending-daoguo">+0 道果</strong></div>
+              <div>本次转世可凝结：<img class="gi gi-16" src="assets/icons/res_daoguo@64.webp?v=14" alt="" aria-hidden="true"><strong id="pending-daoguo">+0 道果</strong></div>
               <div id="reincarnate-req-hint">需突破至【元婴一层】方可开启轮回转世。</div>
             </div>
-            <button id="btn-reincarnate" class="btn btn-primary" disabled>轮回转世</button>
+            <button id="btn-reincarnate" class="btn btn-primary" disabled><img class="gi gi-18" src="assets/icons/nav_reincarnate@64.webp?v=14" alt="" aria-hidden="true">轮回转世</button>
           </div>
         </div>
 
         <div class="gufeng-card">
           <div class="card-header">
-            <span class="card-title">道果秘术</span>
+            <span class="card-title"><img class="gi" src="assets/icons/res_daoguo@64.webp?v=14" alt="" aria-hidden="true">道果秘术</span>
             <span class="card-subtitle">消耗道果强化先天本源，转世不灭</span>
           </div>
           <div id="talent-list" class="upgrade-list"></div>
@@ -387,27 +391,27 @@
     <nav class="bottom-nav">
       <button class="nav-btn active" data-tab="tab-cultivate">
         <span id="badge-breakthrough" class="nav-badge"></span>
-        <span class="nav-icon">☯</span>
+        <span class="nav-icon"><img class="gi" src="assets/icons/nav_cultivate@64.webp?v=14" alt="" aria-hidden="true"></span>
         <span class="nav-text">修行</span>
       </button>
       <button class="nav-btn" data-tab="tab-gear">
         <span id="badge-gear" class="nav-badge"></span>
-        <span class="nav-icon">桃</span>
+        <span class="nav-icon"><img class="gi" src="assets/icons/nav_gear@64.webp?v=14" alt="" aria-hidden="true"></span>
         <span class="nav-text">法宝</span>
       </button>
       <button id="nav-btn-stage" class="nav-btn" data-tab="tab-stage" title="需练气三层解锁">
         <span id="badge-stage" class="nav-badge"></span>
-        <span class="nav-icon">⚔</span>
+        <span class="nav-icon"><img class="gi" src="assets/icons/nav_stage@64.webp?v=14" alt="" aria-hidden="true"></span>
         <span id="nav-stage-text" class="nav-text">闯关</span>
       </button>
       <button class="nav-btn" data-tab="tab-upgrades">
         <span id="badge-upgrade" class="nav-badge"></span>
-        <span class="nav-icon">⛰</span>
+        <span class="nav-icon"><img class="gi" src="assets/icons/nav_upgrades@64.webp?v=14" alt="" aria-hidden="true"></span>
         <span class="nav-text">功法</span>
       </button>
       <button class="nav-btn" data-tab="tab-reincarnate">
         <span id="badge-reincarnate" class="nav-badge"></span>
-        <span class="nav-icon">☸</span>
+        <span class="nav-icon"><img class="gi" src="assets/icons/nav_reincarnate@64.webp?v=14" alt="" aria-hidden="true"></span>
         <span class="nav-text">轮回</span>
       </button>
     </nav>
@@ -424,19 +428,19 @@
         </div>
         <div class="offline-reward-box">
           <div class="offline-reward-row">
-            <span>吐纳所得灵气：</span>
+            <span><img class="gi gi-18" src="assets/icons/res_qi@64.webp?v=14" alt="" aria-hidden="true">吐纳所得灵气：</span>
             <strong id="offline-qi" style="color: var(--accent-jade);">+0</strong>
           </div>
           <div class="offline-reward-row">
-            <span>洞府孕育灵石：</span>
+            <span><img class="gi gi-18" src="assets/icons/res_stone@64.webp?v=14" alt="" aria-hidden="true">洞府孕育灵石：</span>
             <strong id="offline-stone" style="color: var(--accent-gold);">+0</strong>
           </div>
           <div class="offline-reward-row">
-            <span>仙桃回复：</span>
+            <span><img class="gi gi-18" src="assets/icons/res_peach@64.webp?v=14" alt="" aria-hidden="true">仙桃回复：</span>
             <strong id="offline-peach" style="color: #f3a6c8;">+0</strong>
           </div>
           <div class="offline-reward-row">
-            <span>挂机灵玉：</span>
+            <span><img class="gi gi-18" src="assets/icons/res_lingyu@64.webp?v=14" alt="" aria-hidden="true">挂机灵玉：</span>
             <strong id="offline-lingyu" style="color: #c084fc;">+0</strong>
           </div>
         </div>
@@ -487,7 +491,7 @@
   <div id="title-toast" class="title-toast"></div>
   <div id="title-modal" class="modal-backdrop">
     <div class="modal-dialog title-dialog">
-      <h2 class="modal-title">称号</h2>
+      <h2 class="modal-title"><img class="gi gi-20" src="assets/icons/ui_title@64.webp?v=14" alt="" aria-hidden="true">称号</h2>
       <div id="title-summary" class="title-summary">已收集 0</div>
       <div id="title-list" class="title-list"></div>
       <div class="modal-actions">
@@ -496,14 +500,14 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=13"></script>
-  <script src="js/equip.js?v=13"></script>
-  <script src="js/state.js?v=13"></script>
-  <script src="js/titles.js?v=13"></script>
-  <script src="js/battle.js?v=13"></script>
-  <script src="js/gear.js?v=13"></script>
-  <script src="js/stage-ui.js?v=13"></script>
-  <script src="js/game.js?v=13"></script>
+  <script src="js/config.js?v=14"></script>
+  <script src="js/equip.js?v=14"></script>
+  <script src="js/state.js?v=14"></script>
+  <script src="js/titles.js?v=14"></script>
+  <script src="js/battle.js?v=14"></script>
+  <script src="js/gear.js?v=14"></script>
+  <script src="js/stage-ui.js?v=14"></script>
+  <script src="js/game.js?v=14"></script>
 </body>
 </html>
 

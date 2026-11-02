@@ -275,8 +275,9 @@
       const perLvEffect = item.baseQiPerSec * stage.multiplier * GameState.getDaoGuoQiMultiplier();
 
       const row = document.createElement('div');
-      row.className = 'upgrade-item';
+      row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
       row.innerHTML = `
+        <img class="gi upgrade-icon" src="assets/icons/gf_${item.id}.webp?v=14" alt="" aria-hidden="true" loading="lazy">
         <div class="upgrade-meta">
           <div class="upgrade-name-row">
             <span class="upgrade-name">${item.name}</span>
@@ -289,7 +290,7 @@
         canAfford ? '' : 'disabled'
       }>
           <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
-          <span class="btn-price">${unlocked ? `${formatNumber(cost)} 灵石` : '境界不足'}</span>
+          <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=14" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
         </button>
       `;
       els.gongfaList.appendChild(row);
@@ -307,10 +308,12 @@
         item.baseStonePerSec *
         Math.pow(stage.multiplier, 0.65) *
         GameState.getDaoGuoStoneMultiplier();
+      const glow = item.id === 'lingmai' ? ' gi-glow' : '';
 
       const row = document.createElement('div');
-      row.className = 'upgrade-item';
+      row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
       row.innerHTML = `
+        <img class="gi upgrade-icon${glow}" src="assets/icons/df_${item.id}.webp?v=14" alt="" aria-hidden="true" loading="lazy">
         <div class="upgrade-meta">
           <div class="upgrade-name-row">
             <span class="upgrade-name">${item.name}</span>
@@ -323,7 +326,7 @@
         canAfford ? '' : 'disabled'
       }>
           <span class="btn-action">${unlocked ? '扩建' : '锁定'}</span>
-          <span class="btn-price">${unlocked ? `${formatNumber(cost)} 灵石` : '境界不足'}</span>
+          <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=14" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
         </button>
       `;
       els.dongfuList.appendChild(row);
@@ -434,6 +437,7 @@
       const row = document.createElement('div');
       row.className = 'upgrade-item';
       row.innerHTML = `
+        <img class="gi upgrade-icon" src="assets/icons/tl_${talent.id}.webp?v=14" alt="" aria-hidden="true" loading="lazy">
         <div class="upgrade-meta">
           <div class="upgrade-name-row">
             <span class="upgrade-name">${talent.name}</span>
@@ -445,7 +449,7 @@
         canBuy ? '' : 'disabled'
       }>
           <span class="btn-action">${isMax ? '圆满' : '凝练'}</span>
-          <span class="btn-price">${isMax ? '—' : `${formatNumber(cost)} 道果`}</span>
+          <span class="btn-price">${isMax ? '—' : `<img class="gi gi-12" src="assets/icons/res_daoguo@64.webp?v=14" alt="" aria-hidden="true">${formatNumber(cost)} 道果`}</span>
         </button>
       `;
       els.talentList.appendChild(row);
