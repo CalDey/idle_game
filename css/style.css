@@ -57,6 +57,9 @@ body {
   color: var(--text-main);
   font-family: var(--font-display);
   overflow: hidden;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
