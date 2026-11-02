@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>太虚修仙录 - 国风修仙挂机</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- 顶部状态栏 -->
+    <header class="top-header">
+      <div class="header-title-row">
+        <div class="game-title">
+          <span class="seal-badge">仙</span>
+          <h1>太虚修仙录</h1>
+        </div>
+        <div id="header-realm-pill" class="realm-pill">练气一层</div>
+      </div>
+
+      <div class="resource-grid">
+        <div class="res-item">
+          <div class="res-label">
+            <span>灵气</span>
+            <span id="res-qi-rate" class="res-rate">+3/秒</span>
+          </div>
+          <div id="res-qi-val" class="res-value">0</div>
+        </div>
+        <div class="res-item">
+          <div class="res-label">
+            <span>灵石</span>
+            <span id="res-stone-rate" class="res-rate">+1.5/秒</span>
+          </div>
+          <div id="res-stone-val" class="res-value gold">25</div>
+        </div>
+        <div class="res-item">
+          <div class="res-label">
+            <span>道果</span>
+            <span id="res-daoguo-mult" class="res-rate">灵气×1.00</span>
+          </div>
+          <div id="res-daoguo-val" class="res-value purple">0 (累0)</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 页签1：打坐与突破 -->
+      <section id="tab-cultivate" class="tab-pane active">
+        <!-- 打坐吐纳卡片 -->
+        <div id="meditation-zone" class="gufeng-card meditation-zone" title="点击吐纳灵气">
+          <div class="bagua-ring">
+            <div class="cultivator-core">
+              <div class="cultivator-symbol">道</div>
+              <div id="cultivator-realm-text" class="cultivator-status">练气一层</div>
+            </div>
+          </div>
+          <div class="meditation-hint">盘膝打坐 · 周天搬运</div>
+          <div id="tap-gain-hint" class="meditation-subhint">点击画面凝神吐纳（每次 +4 灵气）</div>
+        </div>
+
+        <!-- 境界突破卡片 -->
+        <div class="gufeng-card">
+          <div class="card-header">
+            <span class="card-title">境界突破</span>
+            <span id="realm-desc" class="card-subtitle">引天地灵气入体，初窥仙门径。</span>
+          </div>
+
+          <div class="qi-progress-wrap">
+            <div class="qi-progress-labels">
+              <span id="qi-progress-text">0 / 50</span>
+              <span id="qi-progress-percent">0.0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="qi-progress-bar" class="progress-bar-fill"></div>
+            </div>
+          </div>
+
+          <div class="breakthrough-row">
+            <div class="breakthrough-info">
+              <div>破境成功率：<strong id="breakthrough-rate">92.0%</strong></div>
+              <div id="breakthrough-penalty">失败损耗 25% 当前灵气</div>
+            </div>
+            <button id="btn-breakthrough" class="btn btn-primary" disabled>突破境界</button>
+          </div>
+        </div>
+
+        <!-- 修仙日志 -->
+        <div class="gufeng-card">
+          <div class="card-header">
+            <span class="card-title">修仙日志</span>
+            <span class="card-subtitle">仙途纪事</span>
+          </div>
+          <div id="cultivation-log" class="log-box"></div>
+        </div>
+      </section>
+
+      <!-- 页签2：功法与洞府升级 -->
+      <section id="tab-upgrades" class="tab-pane">
+        <div class="gufeng-card">
+          <div class="card-header">
+            <span class="card-title">功法研修</span>
+            <span class="card-subtitle">消耗灵石参悟功法，提升每秒灵气</span>
+          </div>
+          <div id="gongfa-list" class="upgrade-list"></div>
+        </div>
+
+        <div class="gufeng-card">
+          <div class="card-header">
+            <span class="card-title">洞府建设</span>
+            <span class="card-subtitle">消耗灵石扩建洞天，提升每秒灵石</span>
+          </div>
+          <div id="dongfu-list" class="upgrade-list"></div>
+        </div>
+      </section>
+
+      <!-- 页签3：轮回转世 -->
+      <section id="tab-reincarnate" class="tab-pane">
+        <div class="gufeng-card">
+          <div class="card-header">
+            <span class="card-title">轮回转世</span>
+            <span class="card-subtitle">元婴期及以上可兵解重修，凝结永久道果</span>
+          </div>
+
+          <div class="reincarnate-stats">
+            <div class="stat-box">
+              <div class="stat-box-label">已历轮回</div>
+              <div id="reincarnate-count" class="stat-box-val">0 世</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-label">当前道果总倍率</div>
+              <div id="reincarnate-mult" class="stat-box-val">×1.00</div>
+            </div>
+          </div>
+
+          <div class="breakthrough-row">
+            <div class="breakthrough-info">
+              <div>本次转世可凝结：<strong id="pending-daoguo">+0 道果</strong></div>
+              <div id="reincarnate-req-hint">需突破至【元婴一层】方可开启轮回转世。</div>
+            </div>
+            <button id="btn-reincarnate" class="btn btn-primary" disabled>轮回转世</button>
+          </div>
+        </div>
+
+        <div class="gufeng-card">
+          <div class="card-header">
+            <span class="card-title">道果秘术</span>
+            <span class="card-subtitle">消耗道果强化先天本源，转世不灭</span>
+          </div>
+          <div id="talent-list" class="upgrade-list"></div>
+        </div>
+      </section>
+
+      <!-- 页签4：设置与存档 -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="gufeng-card">
+          <div class="card-header">
+            <span class="card-title">仙途设置</span>
+            <span id="last-save-status" class="card-subtitle">自动存档已开启</span>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">手动铭刻玉简</div>
+              <div class="setting-sub">系统每 4 秒自动保存至本地，亦可手动立即存档</div>
+            </div>
+            <button id="btn-manual-save" class="btn">立即保存</button>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">离线闭关说明</div>
+              <div class="setting-sub">离开页面后自动累计灵气与灵石，单次最长结算 12 小时</div>
+            </div>
+            <span class="upgrade-lv">上限12小时</span>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">境界体系</div>
+              <div class="setting-sub">练气 → 筑基 → 金丹 → 元婴 → 化神（各分一至九层）</div>
+            </div>
+            <span class="upgrade-lv">共45重</span>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">散功重修</div>
+              <div class="setting-sub">清空本地存档所有数据，从头开始修仙</div>
+            </div>
+            <button id="btn-reset-save" class="btn btn-danger">重置存档</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部导航栏 -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-tab="tab-cultivate">
+        <span id="badge-breakthrough" class="nav-badge"></span>
+        <span class="nav-icon">☯</span>
+        <span class="nav-text">打坐修行</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-upgrades">
+        <span id="badge-upgrade" class="nav-badge"></span>
+        <span class="nav-icon">⛰</span>
+        <span class="nav-text">功法洞府</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-reincarnate">
+        <span id="badge-reincarnate" class="nav-badge"></span>
+        <span class="nav-icon">☸</span>
+        <span class="nav-text">轮回转世</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-settings">
+        <span class="nav-icon">⚙</span>
+        <span class="nav-text">仙途设置</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- 离线收益弹窗 -->
+  <div id="offline-modal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <h2 class="modal-title">闭关收益结算</h2>
+      <div class="modal-body">
+        <div>道友神游归来，本次离线闭关时长：<strong id="offline-duration">0秒</strong></div>
+        <div id="offline-cap-note" style="display:none; color: var(--accent-gold); font-size: 12px; margin-top: 2px;">
+          （已达单次离线闭关 12 小时上限）
+        </div>
+        <div class="offline-reward-box">
+          <div class="offline-reward-row">
+            <span>吐纳所得灵气：</span>
+            <strong id="offline-qi" style="color: var(--accent-jade);">+0</strong>
+          </div>
+          <div class="offline-reward-row">
+            <span>洞府孕育灵石：</span>
+            <strong id="offline-stone" style="color: var(--accent-gold);">+0</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-close-offline" class="btn btn-primary">收入囊中</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 确认弹窗（用于重置存档与轮回转世） -->
+  <div id="confirm-modal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <h2 id="confirm-title" class="modal-title">道心确认</h2>
+      <div id="confirm-message" class="modal-body"></div>
+      <div class="modal-actions">
+        <button id="btn-confirm-no" class="btn">暂且作罢</button>
+        <button id="btn-confirm-yes" class="btn btn-danger">道心已决</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
+
