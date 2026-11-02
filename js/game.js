@@ -568,8 +568,8 @@
     });
   }
 
-  // 立绘开关：false 用练气静图，true 播放 assets 里的 heroine 视频。
-  const HERO_USE_VIDEO = false;
+  // 立绘开关：true 播放练气视频，false 退回静图（静图才有呼吸/漂浮）。
+  const HERO_USE_VIDEO = true;
 
   function resumeHeroVideo() {
     const video = els.heroVideo;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>太虚修仙录 - 国风修仙挂机</title>
-  <meta name="theme-color" content="#000624" />
+  <meta name="theme-color" content="#000522" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23b4332c'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-size='18' fill='%23fff6ea' font-family='serif'%3E%E4%BB%99%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -53,22 +53,23 @@
       <!-- 页签1：打坐与突破 -->
       <section id="tab-cultivate" class="tab-pane active">
         <!-- 主角立绘舞台：点击吐纳灵气 -->
-        <div id="meditation-zone" class="hero-stage is-still" data-realm="lianqi" title="点击吐纳灵气">
+        <div id="meditation-zone" class="hero-stage" data-realm="lianqi" title="点击吐纳灵气">
           <div class="hero-frame">
             <div class="hero-portrait" id="hero-portrait">
               <div class="hero-breathe">
                 <video
                   id="hero-video"
                   class="hero-video"
+                  autoplay
                   muted
                   loop
                   playsinline
                   webkit-playsinline
-                  preload="none"
-                  poster="assets/hero_poster.jpg?v=4"
-                  data-src="assets/hero_idle.mp4?v=4"
+                  preload="auto"
+                  poster="assets/hero_lianqi.jpg?v=4"
+                  data-src="assets/hero_lianqi_idle.mp4?v=5"
                 >
-                  <source src="assets/hero_idle.mp4?v=4" type="video/mp4" />
+                  <source src="assets/hero_lianqi_idle.mp4?v=5" type="video/mp4" />
                 </video>
                 <img
                   id="hero-still"
@@ -79,7 +80,7 @@
                 <img
                   id="hero-fallback"
                   class="hero-fallback"
-                  src="assets/hero_poster.jpg?v=4"
+                  src="assets/hero_lianqi.jpg?v=4"
                   alt=""
                 />
               </div>
