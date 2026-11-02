@@ -21,7 +21,7 @@
 
     const now = Date.now();
     return {
-      version: 2,
+      version: 3,
       realmIndex: 0, // 0 = 练气一层
       qi: 0,
       stones: 25,
@@ -214,22 +214,56 @@
     fields.tree.gifted = true;
     fields.tree.regenAt = parsed.lastSaveTime || now;
     fields.stage.best = passed;
+    fields.stage.cur = passed > 0 ? Math.min(300, passed + 1) : 1;
     fields.stage.idleAt = parsed.lastSaveTime || now;
     fields.lifeBestStage = passed;
     return { ...parsed, ...fields, version: 2 };
   }
 
-  function mergeV2(def, saved) {
+  function migrateV2toV3(parsed) {
+    const now = Date.now();
+    const realmIndex = parsed.realmIndex || 0;
+    const major = Math.floor(realmIndex / 9);
+    const passed = [0, 30, 90, 150, 210][Math.min(Math.max(0, major), 4)];
+    const prevStage = parsed.stage || {};
+    const best = Math.max(prevStage.best || 0, passed);
+    const prevCur = prevStage.cur || 1;
+    const cur = best > 0 ? Math.min(300, Math.max(prevCur, best + 1)) : prevCur;
+    const defStage = window.Equip.defaultStage(parsed.lastSaveTime || now);
+    return {
+      ...parsed,
+      version: 3,
+      stage: {
+        ...defStage,
+        ...prevStage,
+        cur,
+        best,
+        idleAt: prevStage.idleAt || parsed.lastSaveTime || now,
+        sweep: { ...defStage.sweep, ...(prevStage.sweep || {}) }
+      },
+      lifeBestStage: Math.max(parsed.lifeBestStage || 0, best)
+    };
+  }
+
+  function mergeSave(def, saved) {
     const equip = { ...def.equip };
     if (saved.equip) {
       Object.keys(equip).forEach((key) => {
         if (key in saved.equip) equip[key] = saved.equip[key];
       });
     }
+    const mergedStage = {
+      ...def.stage,
+      ...(saved.stage || {}),
+      sweep: { ...def.stage.sweep, ...((saved.stage && saved.stage.sweep) || {}) }
+    };
+    if (mergedStage.best > 0 && mergedStage.cur <= mergedStage.best && mergedStage.best < 300) {
+      mergedStage.cur = mergedStage.best + 1;
+    }
     return {
       ...def,
       ...saved,
-      version: 2,
+      version: 3,
       gongfa: { ...def.gongfa, ...(saved.gongfa || {}) },
       dongfu: { ...def.dongfu, ...(saved.dongfu || {}) },
       talents: { ...def.talents, ...(saved.talents || {}) },
@@ -237,7 +271,7 @@
       equip,
       pity: { ...def.pity, ...(saved.pity || {}) },
       autoDecomp: { ...def.autoDecomp, ...(saved.autoDecomp || {}) },
-      stage: { ...def.stage, ...(saved.stage || {}) },
+      stage: mergedStage,
       pending: saved.pending || null,
       titles: {
         owned: (saved.titles && saved.titles.owned) || def.titles.owned,
@@ -275,16 +309,19 @@
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
-      if ((parsed.version || 1) < 2) {
+      if ((parsed.version || 1) < 3) {
         try {
           localStorage.setItem(SAVE_BACKUP_KEY, raw);
         } catch (err) {
           console.warn('旧档备份失败:', err);
         }
-        parsed = migrateV1toV2(parsed);
+        if ((parsed.version || 1) < 2) {
+          parsed = migrateV1toV2(parsed);
+        }
+        parsed = migrateV2toV3(parsed);
       }
       const def = createDefaultState();
-      state = mergeV2(def, parsed);
+      state = mergeSave(def, parsed);
 
       const now = Date.now();
       const savedTime = Number(parsed.lastSaveTime) || now;
@@ -387,7 +424,20 @@
     fresh.autoDecomp = keepAuto;
     fresh.lifeBestStage = keepLife;
     fresh.seq = keepSeq;
-    fresh.stage = { cur: 1, best: 0, auto: true, idleAt: Date.now() };
+    const prevStage = state.stage || {};
+    fresh.stage = {
+      cur: 1,
+      best: 0,
+      auto: prevStage.auto !== undefined ? Boolean(prevStage.auto) : true,
+      idleAt: Date.now(),
+      speed: prevStage.speed === 1 ? 1 : 2,
+      fails: 0,
+      wins: prevStage.wins || 0,
+      losses: prevStage.losses || 0,
+      streak: 0,
+      maxStreak: prevStage.maxStreak || 0,
+      sweep: { ...((prevStage && prevStage.sweep) || { date: '', used: 0 }) }
+    };
     fresh.equip = window.Equip.emptyEquip();
     fresh.pending = null;
     fresh.createdAt = state.createdAt;
@@ -437,6 +487,7 @@
     resetGame,
     performReincarnation,
     tickTimers,
-    grantPeachGift
+    grantPeachGift,
+    applyIdleStageRewards
   };
 })();

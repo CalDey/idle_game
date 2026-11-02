@@ -207,6 +207,7 @@
     const gate = window.Equip && Equip.tribulationLock(GameState.state);
     if (gate) {
       addLog(`大境界渡劫前需先击败【${gate.boss}】（第 ${gate.chapter} 章）。`, 'warn');
+      switchToTab('tab-stage');
       return;
     }
     if (s.qi < stage.reqQi) {
@@ -229,8 +230,12 @@
       } else {
         addLog(`气海翻腾，水到渠成！成功突破至【${nextStage.fullName}】！`, 'success');
       }
+      if (s.realmIndex === (window.GameConfig.BATTLE && window.GameConfig.BATTLE.UNLOCK_REALM)) {
+        addLog('闯关已开，黑风寨主在第 3 章等你。', 'gold');
+      }
       renderUpgradeLists();
       renderReincarnationUI();
+      if (window.StageUI) StageUI.render();
       GameState.saveGame();
       triggerRealmFx('success');
       if (window.Titles) Titles.sync(s);
@@ -374,6 +379,7 @@
         addLog(`潜心参悟${item.name}至第 ${GameState.state.gongfa[id]} 层，吐纳大进！`, 'success');
         renderUpgradeLists();
         updateHeaderAndMeditationUI();
+        if (window.StageUI) StageUI.render();
       }
       return;
     }
@@ -390,6 +396,7 @@
         addLog(`消耗灵石扩建【${item.name}】至 Lv.${GameState.state.dongfu[id]}！`, 'success');
         renderUpgradeLists();
         updateHeaderAndMeditationUI();
+        if (window.StageUI) StageUI.render();
       }
     }
   }
@@ -482,6 +489,8 @@
           renderUpgradeLists();
           renderReincarnationUI();
           updateHeaderAndMeditationUI();
+          if (window.GearUI) GearUI.render();
+          if (window.StageUI) StageUI.render();
         }
       }
     );
@@ -520,11 +529,16 @@
     els.breakthroughRate.textContent = `${successRatePct}%`;
     els.breakthroughPenalty.textContent = `失败损耗 ${lossPct}% 当前灵气`;
 
-    const canBreak = !stage.isMaxStage && s.qi >= stage.reqQi;
-    els.btnBreakthrough.disabled = !canBreak;
+    const gate = window.Equip && window.Equip.tribulationLock(s);
+    const hasQi = !stage.isMaxStage && s.qi >= stage.reqQi;
+    const gateLocked = Boolean(gate && hasQi);
+    const canBreak = hasQi && !gate;
+    els.btnBreakthrough.disabled = !hasQi;
     els.btnBreakthrough.classList.toggle('ready-pulse', canBreak);
     els.btnBreakthrough.textContent = stage.isMaxStage
       ? '境界圆满'
+      : gateLocked
+      ? `先败 ${gate.boss}`
       : stage.isMajorTribulation
       ? '渡劫晋升'
       : '突破境界';
@@ -573,16 +587,24 @@
     confirmCallback = null;
   }
 
-  function initTabs() {
+  function switchToTab(targetId) {
     const navBtns = document.querySelectorAll('.nav-btn');
     const panes = document.querySelectorAll('.tab-pane');
+    navBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === targetId));
+    panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
+    if (targetId === 'tab-cultivate') resumeHeroVideo();
+    if (window.StageUI) {
+      if (targetId === 'tab-stage') window.StageUI.onShow();
+      else window.StageUI.onHide();
+    }
+  }
 
+  function initTabs() {
+    const navBtns = document.querySelectorAll('.nav-btn');
     navBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-tab');
-        navBtns.forEach((b) => b.classList.toggle('active', b === btn));
-        panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
-        if (targetId === 'tab-cultivate') resumeHeroVideo();
+        switchToTab(targetId);
       });
     });
   }
@@ -852,6 +874,7 @@
       GameState.state.playTimeMs = (GameState.state.playTimeMs || 0) + dt * 1000;
       GameState.state.stones += GameState.getStonePerSec() * dt;
       if (window.GearUI) GearUI.tick();
+      if (window.StageUI) StageUI.tick();
       if (window.Titles && Math.floor(GameState.state.playTimeMs / 5000) !== Math.floor((GameState.state.playTimeMs - dt * 1000) / 5000)) {
         Titles.sync(GameState.state);
         if (window.TitlesUI) TitlesUI.flushToasts();
@@ -922,6 +945,8 @@
           renderReincarnationUI();
           updateHeaderAndMeditationUI();
           updateSaveTimestampUI();
+          if (window.GearUI) GearUI.render();
+          if (window.StageUI) StageUI.render();
         }
       );
     });
@@ -953,6 +978,20 @@
         onChange() {
           renderUpgradeLists();
           updateHeaderAndMeditationUI();
+          if (window.StageUI) StageUI.render();
+        }
+      });
+    }
+
+    if (window.StageUI) {
+      StageUI.init({
+        log: addLog,
+        switchTab: switchToTab,
+        onChange() {
+          renderUpgradeLists();
+          renderReincarnationUI();
+          updateHeaderAndMeditationUI();
+          if (window.GearUI) GearUI.render();
         }
       });
     }

@@ -10,7 +10,7 @@
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#010920" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23140c14'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-size='18' fill='%23e6c98a' font-family='serif'%3E%E4%BF%AE%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="css/style.css?v=12" />
+  <link rel="stylesheet" href="css/style.css?v=13" />
 </head>
 <body>
   <div class="app-container">
@@ -187,12 +187,93 @@
         </div>
       </section>
 
-      <!-- 页签：闯关（P2 占位） -->
+      <!-- 页签：闯关 -->
       <section id="tab-stage" class="tab-pane">
-        <div class="gufeng-card stage-soon">
-          <div class="card-title">闯关 · 即将开放</div>
-          <p class="gear-locked-text">自动闯关与章末渡劫门槛还在蕴养。门槛已记下：黑风寨主、青冥蛟王、赤炎魔君、九幽鬼母。</p>
-          <div id="stage-best-note" class="setting-sub">当前最高关：0</div>
+        <div id="stage-locked" class="gufeng-card stage-locked">
+          <div class="card-title">闯关未启</div>
+          <p class="gear-locked-text">突破至练气三层后开启闯关。</p>
+        </div>
+
+        <div id="stage-body" class="stage-body">
+          <div class="stage-chapter-bar">
+            <div class="chapter-top-row">
+              <span id="stage-chapter-title" class="chapter-title">第 1 章 · 凡尘野地</span>
+              <span id="stage-chapter-step" class="chapter-step">1/10</span>
+            </div>
+            <div class="chapter-dots-row">
+              <div id="stage-chapter-dots" class="chapter-dots" aria-label="章节进度"></div>
+            </div>
+          </div>
+
+          <div id="battle-stage" class="battle-stage" data-region="0">
+            <div class="battle-hud">
+              <div class="fighter-hud fighter-hud-player">
+                <div class="hp-bar-track">
+                  <div id="hp-bar-player" class="hp-bar-fill hp-fill-player"></div>
+                </div>
+                <div id="hp-text-player" class="hp-label">我 · 血 120/120</div>
+              </div>
+              <div class="fighter-hud fighter-hud-enemy">
+                <div class="hp-bar-track">
+                  <div id="hp-bar-enemy" class="hp-bar-fill hp-fill-enemy"></div>
+                </div>
+                <div id="hp-text-enemy" class="hp-label">山贼喽啰</div>
+              </div>
+            </div>
+
+            <div class="battle-arena">
+              <div id="fighter-player" class="fighter-box fighter-player">
+                <img
+                  class="fighter-hero-img"
+                  src="assets/hero_j_hd.jpg?v=11"
+                  alt="主角"
+                />
+                <div id="float-layer-player" class="fighter-float-layer"></div>
+              </div>
+
+              <div id="fighter-enemy" class="fighter-box fighter-enemy">
+                <div id="enemy-silhouette" class="enemy-silhouette">
+                  <div class="enemy-figure" aria-hidden="true"></div>
+                  <span id="enemy-tag" class="enemy-tag" hidden>Boss</span>
+                  <span id="enemy-nameplate" class="enemy-nameplate">山贼喽啰</span>
+                </div>
+                <div id="float-layer-enemy" class="fighter-float-layer"></div>
+              </div>
+            </div>
+
+            <div id="battle-log-line" class="battle-log-line">准备就绪 · 点击挑战开始推关</div>
+
+            <div id="battle-result-overlay" class="battle-result-overlay" hidden>
+              <div class="battle-result-card">
+                <div id="battle-result-title" class="battle-result-title">败 · 还差约 8% 战力</div>
+                <div id="battle-result-sub" class="battle-result-sub">提升装备或功法后可再来挑战</div>
+                <div id="battle-fail-actions" class="battle-fail-actions" hidden>
+                  <button id="btn-goto-peach" class="btn btn-primary" type="button">去摘桃</button>
+                  <button id="btn-goto-gongfa" class="btn" type="button">去功法</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage-compare-row">
+            <div class="compare-cell">我方 <strong id="stage-cp-player">0</strong></div>
+            <div class="compare-cell">推荐 <strong id="stage-cp-enemy">600</strong></div>
+            <div class="compare-cell">胜率 <strong id="stage-winrate">五五开</strong></div>
+          </div>
+
+          <div class="stage-action-row">
+            <button id="btn-stage-challenge" class="btn btn-primary stage-btn-main" type="button">挑 战</button>
+            <button id="btn-stage-auto" class="btn stage-btn-toggle" type="button" aria-pressed="true">自动</button>
+            <button id="btn-stage-speed" class="btn stage-btn-toggle" type="button">2×</button>
+          </div>
+
+          <div class="stage-idle-card">
+            <div class="stage-idle-info">
+              <div id="stage-idle-time" class="stage-idle-time">挂机 0分</div>
+              <div id="stage-idle-reward" class="stage-idle-reward">灵玉 +0 · 仙桃 +0</div>
+            </div>
+            <button id="btn-stage-claim" class="btn stage-btn-claim" type="button" disabled>领取</button>
+          </div>
         </div>
       </section>
 
@@ -314,9 +395,10 @@
         <span class="nav-icon">桃</span>
         <span class="nav-text">法宝</span>
       </button>
-      <button class="nav-btn" data-tab="tab-stage">
+      <button id="nav-btn-stage" class="nav-btn" data-tab="tab-stage" title="需练气三层解锁">
+        <span id="badge-stage" class="nav-badge"></span>
         <span class="nav-icon">⚔</span>
-        <span class="nav-text">闯关</span>
+        <span id="nav-stage-text" class="nav-text">闯关</span>
       </button>
       <button class="nav-btn" data-tab="tab-upgrades">
         <span id="badge-upgrade" class="nav-badge"></span>
@@ -414,12 +496,14 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=12"></script>
-  <script src="js/equip.js?v=12"></script>
-  <script src="js/state.js?v=12"></script>
-  <script src="js/titles.js?v=12"></script>
-  <script src="js/gear.js?v=12"></script>
-  <script src="js/game.js?v=12"></script>
+  <script src="js/config.js?v=13"></script>
+  <script src="js/equip.js?v=13"></script>
+  <script src="js/state.js?v=13"></script>
+  <script src="js/titles.js?v=13"></script>
+  <script src="js/battle.js?v=13"></script>
+  <script src="js/gear.js?v=13"></script>
+  <script src="js/stage-ui.js?v=13"></script>
+  <script src="js/game.js?v=13"></script>
 </body>
 </html>
 

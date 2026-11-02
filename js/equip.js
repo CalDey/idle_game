@@ -25,12 +25,24 @@
   }
 
   function defaultStage(now) {
-    return { cur: 1, best: 0, auto: true, idleAt: now || Date.now() };
+    return {
+      cur: 1,
+      best: 0,
+      auto: true,
+      idleAt: now || Date.now(),
+      speed: 2,
+      fails: 0,
+      wins: 0,
+      losses: 0,
+      streak: 0,
+      maxStreak: 0,
+      sweep: { date: '', used: 0 }
+    };
   }
 
   function defaultV2Fields(now) {
     return {
-      version: 2,
+      version: 3,
       lingyu: 0,
       tree: defaultTree(now),
       equip: emptyEquip(),
@@ -231,6 +243,7 @@
 
   window.Equip = {
     emptyEquip,
+    defaultStage,
     defaultV2Fields,
     qualityWeights,
     subScale,

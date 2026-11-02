@@ -53,9 +53,6 @@
     const body = $('gear-body');
     if (lockedEl) lockedEl.style.display = locked ? 'block' : 'none';
     if (body) body.style.display = locked ? 'none' : 'flex';
-    if ($('stage-best-note')) {
-      $('stage-best-note').textContent = `当前最高关：${(s.stage && s.stage.best) || 0} · 历代 ${(s.lifeBestStage || 0)}`;
-    }
     if (locked) {
       const badge = $('badge-gear');
       if (badge) badge.classList.remove('visible');
