@@ -917,7 +917,7 @@ body {
 .bottom-nav {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: linear-gradient(180deg, #161332, #0e0c24);
   border-top: 1px solid rgba(230, 201, 138, 0.35);
   padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
@@ -946,8 +946,8 @@ body {
 }
 
 .nav-btn .nav-text {
-  font-size: 11px;
-  letter-spacing: 1px;
+  font-size: 10px;
+  letter-spacing: 0;
 }
 
 .nav-btn.active {
@@ -1036,6 +1036,224 @@ body {
   display: flex;
   justify-content: center;
   gap: 10px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-gold);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--accent-gold-bright);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.gear-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.gear-locked-text,
+.stage-soon p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.cp-bar {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
+  background: rgba(10, 8, 24, 0.45);
+}
+
+.cp-main {
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.cp-main strong {
+  color: var(--accent-gold-bright);
+  font-size: 18px;
+}
+
+.cp-stats {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.equip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.equip-slot {
+  position: relative;
+  min-height: 52px;
+  border-radius: 8px;
+  border: 1px solid rgba(230, 201, 138, 0.35);
+  background: rgba(8, 6, 20, 0.45);
+  color: var(--text-main);
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.slot-lv {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 10px;
+  color: var(--accent-gold);
+}
+
+.slot-name {
+  font-size: 12px;
+}
+
+.slot-item {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.peach-card,
+.tree-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.peach-head,
+.tree-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.peach-count {
+  color: #f3a6c8;
+  font-weight: 700;
+}
+
+.peach-tree-art {
+  width: 54px;
+  height: 54px;
+  margin: 6px auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f3a6c8;
+  border: 1px solid rgba(243, 166, 200, 0.45);
+  box-shadow: 0 0 18px rgba(243, 166, 200, 0.25);
+  font-size: 22px;
+}
+
+.peach-next {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.peach-btn {
+  width: 100%;
+}
+
+.peach-reveal {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 0 12px currentColor;
+}
+
+.peach-reveal.show {
+  animation: peachPop 0.6s ease;
+}
+
+@keyframes peachPop {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.6); }
+  35% { opacity: 1; transform: translate(-50%, -55%) scale(1.08); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(1.2); }
+}
+
+.mini-select {
+  font-family: inherit;
+  background: #141226;
+  color: var(--text-main);
+  border: 1px solid var(--border-gold);
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+.auto-row {
+  margin-top: 6px;
+}
+
+.compare-dialog {
+  max-width: 420px;
+}
+
+.compare-delta {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.compare-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.item-card {
+  border: 1px solid var(--border-gold);
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 96px;
+  background: rgba(8, 6, 20, 0.45);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.item-name {
+  font-weight: 700;
+}
+
+.item-main,
+.item-subs {
+  color: var(--text-main);
+}
+
+.settings-dialog {
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

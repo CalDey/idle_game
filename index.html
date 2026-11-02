@@ -20,7 +20,10 @@
           <span class="seal-badge">仙</span>
           <h1>太虚修仙录</h1>
         </div>
-        <div id="header-realm-pill" class="realm-pill">练气一层</div>
+        <div class="header-actions">
+          <div id="header-realm-pill" class="realm-pill">练气一层</div>
+          <button id="btn-open-settings" class="icon-btn" type="button" aria-label="设置">⚙</button>
+        </div>
       </div>
 
       <div class="resource-grid">
@@ -136,6 +139,64 @@
         </div>
       </section>
 
+      <!-- 页签：法宝 / 仙桃树 -->
+      <section id="tab-gear" class="tab-pane">
+        <div id="gear-locked" class="gufeng-card gear-locked">
+          <div class="card-title">法宝未启</div>
+          <p class="gear-locked-text">突破至练气二层后，仙桃树赠桃三十枚，方可摘桃开装备。</p>
+        </div>
+        <div id="gear-body" class="gear-body">
+          <div class="cp-bar">
+            <div class="cp-main">战力 <strong id="cp-value">0</strong></div>
+            <div id="cp-stats" class="cp-stats">攻0 · 血0 · 防0 · 速0</div>
+          </div>
+          <div id="equip-grid" class="equip-grid"></div>
+          <div class="gufeng-card peach-card">
+            <div class="peach-head">
+              <span class="card-title">仙桃树</span>
+              <span id="peach-count" class="peach-count">0/52</span>
+            </div>
+            <div id="peach-tree-art" class="peach-tree-art" aria-hidden="true">桃</div>
+            <div id="peach-next" class="peach-next">下一枚 3:00</div>
+            <div id="peach-reveal" class="peach-reveal"></div>
+            <button id="btn-pick-peach" class="btn btn-primary peach-btn" type="button">摘桃</button>
+          </div>
+          <div class="gufeng-card tree-card">
+            <div class="tree-row">
+              <div>
+                <div id="tree-lv-label" class="card-title">树 Lv1</div>
+                <div id="tree-cost-label" class="setting-sub">升级需 30 灵玉</div>
+              </div>
+              <button id="btn-tree-up" class="btn" type="button">升级</button>
+            </div>
+            <div class="tree-row">
+              <div>
+                <div class="setting-label">灵玉 <strong id="lingyu-val">0</strong></div>
+                <div id="pity-label" class="setting-sub">地品保底 0/50 · 天品 0/200</div>
+              </div>
+            </div>
+            <div id="auto-decomp-row" class="tree-row auto-row">
+              <label class="setting-label"><input id="auto-decomp-on" type="checkbox" /> 自动分解更弱装备</label>
+              <select id="auto-decomp-q" class="mini-select">
+                <option value="0">≤凡品</option>
+                <option value="1">≤灵品</option>
+                <option value="2">≤玄品</option>
+                <option value="3">≤地品</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 页签：闯关（P2 占位） -->
+      <section id="tab-stage" class="tab-pane">
+        <div class="gufeng-card stage-soon">
+          <div class="card-title">闯关 · 即将开放</div>
+          <p class="gear-locked-text">自动闯关与章末渡劫门槛还在蕴养。门槛已记下：黑风寨主、青冥蛟王、赤炎魔君、九幽鬼母。</p>
+          <div id="stage-best-note" class="setting-sub">当前最高关：0</div>
+        </div>
+      </section>
+
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
         <div class="gufeng-card">
@@ -192,9 +253,13 @@
         </div>
       </section>
 
-      <!-- 页签4：设置与存档 -->
-      <section id="tab-settings" class="tab-pane">
-        <div class="gufeng-card">
+      <!-- 设置改到顶部齿轮弹窗 -->
+      <section id="tab-settings" class="tab-pane" hidden></section>
+    </main>
+
+    <div id="settings-modal" class="modal-backdrop">
+      <div class="modal-dialog settings-dialog">
+        <div class="gufeng-card settings-card">
           <div class="card-header">
             <span class="card-title">仙途设置</span>
             <span id="last-save-status" class="card-subtitle">自动存档已开启</span>
@@ -232,29 +297,37 @@
             <button id="btn-reset-save" class="btn btn-danger">重置存档</button>
           </div>
         </div>
-      </section>
-    </main>
+        <div class="modal-actions">
+          <button id="btn-close-settings" class="btn" type="button">关闭</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 底部导航栏 -->
     <nav class="bottom-nav">
       <button class="nav-btn active" data-tab="tab-cultivate">
         <span id="badge-breakthrough" class="nav-badge"></span>
         <span class="nav-icon">☯</span>
-        <span class="nav-text">打坐修行</span>
+        <span class="nav-text">修行</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-gear">
+        <span id="badge-gear" class="nav-badge"></span>
+        <span class="nav-icon">桃</span>
+        <span class="nav-text">法宝</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-stage">
+        <span class="nav-icon">⚔</span>
+        <span class="nav-text">闯关</span>
       </button>
       <button class="nav-btn" data-tab="tab-upgrades">
         <span id="badge-upgrade" class="nav-badge"></span>
         <span class="nav-icon">⛰</span>
-        <span class="nav-text">功法洞府</span>
+        <span class="nav-text">功法</span>
       </button>
       <button class="nav-btn" data-tab="tab-reincarnate">
         <span id="badge-reincarnate" class="nav-badge"></span>
         <span class="nav-icon">☸</span>
-        <span class="nav-text">轮回转世</span>
-      </button>
-      <button class="nav-btn" data-tab="tab-settings">
-        <span class="nav-icon">⚙</span>
-        <span class="nav-text">仙途设置</span>
+        <span class="nav-text">轮回</span>
       </button>
     </nav>
   </div>
@@ -277,6 +350,14 @@
             <span>洞府孕育灵石：</span>
             <strong id="offline-stone" style="color: var(--accent-gold);">+0</strong>
           </div>
+          <div class="offline-reward-row">
+            <span>仙桃回复：</span>
+            <strong id="offline-peach" style="color: #f3a6c8;">+0</strong>
+          </div>
+          <div class="offline-reward-row">
+            <span>挂机灵玉：</span>
+            <strong id="offline-lingyu" style="color: #c084fc;">+0</strong>
+          </div>
         </div>
       </div>
       <div class="modal-actions">
@@ -297,8 +378,35 @@
     </div>
   </div>
 
+  <div id="compare-modal" class="modal-backdrop">
+    <div class="modal-dialog compare-dialog">
+      <h2 class="modal-title">装备对比</h2>
+      <div id="compare-delta" class="compare-delta">战力 +0</div>
+      <div class="compare-cols">
+        <div id="compare-old" class="compare-col"></div>
+        <div id="compare-new" class="compare-col"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-decompose" class="btn" type="button">分解</button>
+        <button id="btn-replace" class="btn btn-primary" type="button">替换</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="item-modal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <h2 id="item-modal-title" class="modal-title">装备</h2>
+      <div id="item-modal-body" class="modal-body"></div>
+      <div class="modal-actions">
+        <button id="btn-close-item" class="btn" type="button">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/config.js?v=7"></script>
+  <script src="js/equip.js?v=7"></script>
   <script src="js/state.js?v=7"></script>
+  <script src="js/gear.js?v=7"></script>
   <script src="js/game.js?v=7"></script>
 </body>
 </html>

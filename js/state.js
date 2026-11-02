@@ -1,6 +1,7 @@
 // 修仙挂机 - 状态管理、存档与离线收益结算
 (function () {
   const SAVE_KEY = 'xiuxian_idle_save_v1';
+  const SAVE_BACKUP_KEY = 'xiuxian_idle_save_v1_bak';
 
   function createDefaultState() {
     const gongfaLevels = {};
@@ -18,8 +19,9 @@
       talentLevels[t.id] = 0;
     });
 
+    const now = Date.now();
     return {
-      version: 1,
+      version: 2,
       realmIndex: 0, // 0 = 练气一层
       qi: 0,
       stones: 25,
@@ -31,8 +33,13 @@
       totalDaoGuo: 0, // 历史累计获得道果点（提供永久基础倍率）
       talents: talentLevels,
       totalClicks: 0,
-      lastSaveTime: Date.now()
+      lastSaveTime: now,
+      ...window.Equip.defaultV2Fields(now)
     };
+  }
+
+  function chapterBonus(best) {
+    return Math.floor((best || 0) / 10);
   }
 
   let state = createDefaultState();
@@ -65,7 +72,9 @@
         rawQi += item.baseQiPerSec * lv;
       }
     });
-    return rawQi * stage.multiplier * getDaoGuoQiMultiplier();
+    const qiPct = window.Equip.subSum(state.equip, 'qi');
+    const chapters = chapterBonus(state.stage && state.stage.best);
+    return rawQi * stage.multiplier * getDaoGuoQiMultiplier() * (1 + qiPct) * (1 + 0.02 * chapters);
   }
 
   function getStonePerSec() {
@@ -77,7 +86,64 @@
         rawStone += item.baseStonePerSec * lv;
       }
     });
-    return rawStone * Math.pow(stage.multiplier, 0.65) * getDaoGuoStoneMultiplier();
+    const stonePct = window.Equip.subSum(state.equip, 'stone');
+    const chapters = chapterBonus(state.stage && state.stage.best);
+    return (
+      rawStone *
+      Math.pow(stage.multiplier, 0.65) *
+      getDaoGuoStoneMultiplier() *
+      (1 + stonePct) *
+      (1 + 0.02 * chapters)
+    );
+  }
+
+  function grantPeachGift() {
+    if (!state.tree || state.tree.gifted) return false;
+    if ((state.realmIndex || 0) < window.GameConfig.PEACH.UNLOCK_REALM) return false;
+    state.tree.gifted = true;
+    state.tree.peaches = (state.tree.peaches || 0) + window.GameConfig.PEACH.GIFT;
+    return true;
+  }
+
+  function finishTreeUpgrade(now) {
+    if (!state.tree || !state.tree.upEnd) return false;
+    if (now < state.tree.upEnd) return false;
+    state.tree.lv = Math.min(window.GameConfig.TREE_MAX_LEVEL, (state.tree.lv || 1) + 1);
+    state.tree.upEnd = 0;
+    return true;
+  }
+
+  function applyPeachRegen(fromTs, toTs) {
+    const tree = state.tree;
+    if (!tree || toTs <= fromTs) return 0;
+    const cap = window.GameConfig.peachCap(tree.lv || 1);
+    const interval = window.GameConfig.PEACH.INTERVAL_MS;
+    if ((tree.peaches || 0) >= cap) {
+      tree.regenAt = toTs;
+      return 0;
+    }
+    let cursor = tree.regenAt || fromTs;
+    let peaches = tree.peaches || 0;
+    let gained = 0;
+    while (cursor + interval <= toTs && peaches < cap) {
+      cursor += interval;
+      peaches += 1;
+      gained += 1;
+    }
+    tree.peaches = peaches;
+    tree.regenAt = peaches >= cap ? toTs : cursor;
+    return gained;
+  }
+
+  function applyIdleStageRewards(seconds) {
+    const best = (state.stage && state.stage.best) || 0;
+    if (seconds <= 0 || best <= 0) return { peaches: 0, lingyu: 0 };
+    const hours = seconds / 3600;
+    const peaches = Math.floor((1 + Math.floor(best / 50)) * hours);
+    const lingyu = Math.floor((6 + 0.4 * best) * hours);
+    state.tree.peaches = (state.tree.peaches || 0) + peaches;
+    state.lingyu = (state.lingyu || 0) + lingyu;
+    return { peaches, lingyu };
   }
 
   function getTapQiGain() {
@@ -117,7 +183,47 @@
     const stepsAbove = state.realmIndex - window.GameConfig.REINCARNATION_MIN_STAGE;
     const realmBonus = Math.floor(Math.pow(1.22, stepsAbove) * 2);
     const qiBonus = Math.floor(Math.log10(Math.max(1, state.qi / 1e6)));
-    return Math.max(2, realmBonus + Math.max(0, qiBonus));
+    const chapter = chapterBonus(Math.max((state.stage && state.stage.best) || 0, state.lifeBestStage || 0));
+    return Math.max(2, realmBonus + Math.max(0, qiBonus) + Math.floor(chapter / 5));
+  }
+
+  function migrateV1toV2(parsed) {
+    const now = Date.now();
+    const realmIndex = parsed.realmIndex || 0;
+    const major = Math.floor(realmIndex / 9);
+    const passed = [0, 30, 90, 150, 210][Math.min(major, 4)];
+    const peaches = Math.min(200, 30 + 5 * realmIndex);
+    const fields = window.Equip.defaultV2Fields(parsed.lastSaveTime || now);
+    fields.tree.peaches = peaches;
+    fields.tree.gifted = true;
+    fields.tree.regenAt = parsed.lastSaveTime || now;
+    fields.stage.best = passed;
+    fields.stage.idleAt = parsed.lastSaveTime || now;
+    fields.lifeBestStage = passed;
+    return { ...parsed, ...fields, version: 2 };
+  }
+
+  function mergeV2(def, saved) {
+    const equip = { ...def.equip };
+    if (saved.equip) {
+      Object.keys(equip).forEach((key) => {
+        if (key in saved.equip) equip[key] = saved.equip[key];
+      });
+    }
+    return {
+      ...def,
+      ...saved,
+      version: 2,
+      gongfa: { ...def.gongfa, ...(saved.gongfa || {}) },
+      dongfu: { ...def.dongfu, ...(saved.dongfu || {}) },
+      talents: { ...def.talents, ...(saved.talents || {}) },
+      tree: { ...def.tree, ...(saved.tree || {}) },
+      equip,
+      pity: { ...def.pity, ...(saved.pity || {}) },
+      autoDecomp: { ...def.autoDecomp, ...(saved.autoDecomp || {}) },
+      stage: { ...def.stage, ...(saved.stage || {}) },
+      pending: saved.pending || null
+    };
   }
 
   function saveGame() {
@@ -138,17 +244,18 @@
         state = createDefaultState();
         return { isNew: true, offlineReport: null };
       }
-      const parsed = JSON.parse(raw);
+      let parsed = JSON.parse(raw);
+      if ((parsed.version || 1) < 2) {
+        try {
+          localStorage.setItem(SAVE_BACKUP_KEY, raw);
+        } catch (err) {
+          console.warn('旧档备份失败:', err);
+        }
+        parsed = migrateV1toV2(parsed);
+      }
       const def = createDefaultState();
-      state = {
-        ...def,
-        ...parsed,
-        gongfa: { ...def.gongfa, ...(parsed.gongfa || {}) },
-        dongfu: { ...def.dongfu, ...(parsed.dongfu || {}) },
-        talents: { ...def.talents, ...(parsed.talents || {}) }
-      };
+      state = mergeV2(def, parsed);
 
-      // 计算离线收益
       const now = Date.now();
       const savedTime = Number(parsed.lastSaveTime) || now;
       const elapsedSec = Math.floor((now - savedTime) / 1000);
@@ -160,15 +267,33 @@
         const stoneGain = getStonePerSec() * cappedSec;
         state.qi += qiGain;
         state.stones += stoneGain;
+        const windowEnd = savedTime + cappedSec * 1000;
+        let treeDone = false;
+        if (state.tree.upEnd && state.tree.upEnd > windowEnd) {
+          state.tree.upEnd += now - windowEnd;
+        } else {
+          treeDone = finishTreeUpgrade(windowEnd);
+        }
+        const peachGain = applyPeachRegen(savedTime, windowEnd);
+        const idle = applyIdleStageRewards(cappedSec);
+        state.tree.regenAt = now;
+        if (state.stage) state.stage.idleAt = now;
         state.lastSaveTime = now;
         offlineReport = {
           rawSeconds: elapsedSec,
           effectiveSeconds: cappedSec,
           capped: elapsedSec > window.GameConfig.OFFLINE_CAP_SECONDS,
           qiGain,
-          stoneGain
+          stoneGain,
+          peachGain: peachGain + idle.peaches,
+          lingyuGain: idle.lingyu,
+          treeDone
         };
+      } else {
+        finishTreeUpgrade(now);
+        applyPeachRegen(state.tree.regenAt || now, now);
       }
+      grantPeachGift();
 
       return { isNew: false, offlineReport };
     } catch (err) {
@@ -193,16 +318,48 @@
     const keepDaoGuo = (state.daoGuo || 0) + gain;
     const keepTotalDaoGuo = (state.totalDaoGuo || 0) + gain;
     const keepTalents = { ...(state.talents || {}) };
+    let refund = 0;
+    window.GameConfig.EQUIP_SLOTS.forEach((slot) => {
+      const item = state.equip && state.equip[slot.id];
+      if (item) refund += Math.floor(window.Equip.decomposeValue(item) * 0.5);
+    });
+    if (state.pending) refund += Math.floor(window.Equip.decomposeValue(state.pending) * 0.5);
+    const keepLingyu = (state.lingyu || 0) + refund;
+    const keepTree = {
+      ...state.tree,
+      gifted: true
+    };
+    const keepPity = { ...(state.pity || { di: 0, tian: 0 }) };
+    const keepAuto = { ...(state.autoDecomp || {}) };
+    const keepLife = Math.max(state.lifeBestStage || 0, (state.stage && state.stage.best) || 0);
+    const keepSeq = state.seq || 0;
+    const keepPeaches = (state.tree && state.tree.peaches) || 0;
 
     const fresh = createDefaultState();
     fresh.reincarnationCount = keepReincarnations;
     fresh.daoGuo = keepDaoGuo;
     fresh.totalDaoGuo = keepTotalDaoGuo;
     fresh.talents = keepTalents;
+    fresh.lingyu = keepLingyu;
+    fresh.tree = { ...keepTree, peaches: keepPeaches };
+    fresh.pity = keepPity;
+    fresh.autoDecomp = keepAuto;
+    fresh.lifeBestStage = keepLife;
+    fresh.seq = keepSeq;
+    fresh.stage = { cur: 1, best: 0, auto: true, idleAt: Date.now() };
+    fresh.equip = window.Equip.emptyEquip();
+    fresh.pending = null;
 
     state = fresh;
     saveGame();
-    return { ok: true, gain };
+    return { ok: true, gain, refund };
+  }
+
+  function tickTimers(now) {
+    grantPeachGift();
+    const leveled = finishTreeUpgrade(now);
+    const peaches = applyPeachRegen(state.tree.regenAt || now, now);
+    return { leveled, peaches };
   }
 
   window.GameState = {
@@ -223,6 +380,8 @@
     saveGame,
     loadGame,
     resetGame,
-    performReincarnation
+    performReincarnation,
+    tickTimers,
+    grantPeachGift
   };
 })();

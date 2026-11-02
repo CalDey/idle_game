@@ -202,6 +202,11 @@
       addLog('道友已臻至化神九层大圆满，可前往【轮回】转世重修，凝聚无上道果！', 'gold');
       return;
     }
+    const gate = window.Equip && Equip.tribulationLock(GameState.state);
+    if (gate) {
+      addLog(`大境界渡劫前需先击败【${gate.boss}】（第 ${gate.chapter} 章）。`, 'warn');
+      return;
+    }
     if (s.qi < stage.reqQi) {
       addLog(`灵气尚未充盈，还需 ${formatNumber(stage.reqQi - s.qi)} 灵气方可尝试破境。`, 'warn');
       return;
@@ -532,6 +537,10 @@
     els.offlineDuration.textContent = formatDuration(report.effectiveSeconds);
     els.offlineQi.textContent = `+${formatNumber(report.qiGain)}`;
     els.offlineStone.textContent = `+${formatNumber(report.stoneGain)}`;
+    const offlinePeach = document.getElementById('offline-peach');
+    const offlineLingyu = document.getElementById('offline-lingyu');
+    if (offlinePeach) offlinePeach.textContent = `+${formatNumber(report.peachGain || 0)}`;
+    if (offlineLingyu) offlineLingyu.textContent = `+${formatNumber(report.lingyuGain || 0)}`;
     els.offlineCapNote.style.display = report.capped ? 'block' : 'none';
     els.offlineModal.classList.add('active');
     addLog(
@@ -829,6 +838,7 @@
     if (dt > 0) {
       GameState.state.qi += GameState.getQiPerSec() * dt;
       GameState.state.stones += GameState.getStonePerSec() * dt;
+      if (window.GearUI) GearUI.tick();
       updateHeaderAndMeditationUI();
     }
 
@@ -917,6 +927,16 @@
         GameState.saveGame();
       }
     });
+
+    if (window.GearUI) {
+      GearUI.init({
+        log: addLog,
+        onChange() {
+          renderUpgradeLists();
+          updateHeaderAndMeditationUI();
+        }
+      });
+    }
 
     lastTickTime = performance.now();
     requestAnimationFrame(gameLoop);

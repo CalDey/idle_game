@@ -98,6 +98,82 @@
     });
   });
 
+  // P0：筑基之后抬高灵气需求，避免十几分钟修到化神。倍数由 tools/sim.js 校准。
+  const LATE_REALM_QI_MULT = [1, 12, 90, 500, 2200];
+  REALM_STAGES.forEach((stage) => {
+    const mult = LATE_REALM_QI_MULT[stage.majorIndex] || 1;
+    if (mult !== 1) stage.reqQi = Math.round(stage.reqQi * mult);
+  });
+
+  const EQUIP_SLOTS = [
+    { id: 'weapon', name: '武器', itemName: '青锋飞剑', stat: 'atk', base: 8, growth: 1.06 },
+    { id: 'charm', name: '护符', itemName: '温玉佩', stat: 'atk', base: 5, growth: 1.06 },
+    { id: 'crown', name: '头冠', itemName: '白玉簪', stat: 'hp', base: 70, growth: 1.06 },
+    { id: 'belt', name: '腰带', itemName: '流云丝绦', stat: 'hp', base: 50, growth: 1.06 },
+    { id: 'robe', name: '法袍', itemName: '练气短衫', stat: 'def', base: 5, growth: 1.06 },
+    { id: 'boots', name: '靴', itemName: '踏云履', stat: 'spd', base: 4, growth: 1.02 }
+  ];
+
+  const QUALITIES = [
+    { id: 'fan', name: '凡品', color: '#e7e2d6', mult: 1.0, subs: 0, jade: 1 },
+    { id: 'ling', name: '灵品', color: '#7ddea0', mult: 1.3, subs: 1, jade: 3 },
+    { id: 'xuan', name: '玄品', color: '#67c6e3', mult: 1.7, subs: 1, jade: 8 },
+    { id: 'di', name: '地品', color: '#c084fc', mult: 2.2, subs: 2, jade: 20 },
+    { id: 'tian', name: '天品', color: '#f5c76a', mult: 2.9, subs: 3, jade: 50 },
+    { id: 'xian', name: '仙品', color: '#f07167', mult: 3.8, subs: 4, jade: 120 }
+  ];
+
+  // 树等级锚点上的品质权重（凡灵玄地天仙），中间等级线性插值。
+  const TREE_WEIGHT_ANCHORS = [
+    { lv: 1, w: [70, 25, 5, 0, 0, 0] },
+    { lv: 3, w: [60, 30, 9, 1, 0, 0] },
+    { lv: 5, w: [48, 34, 14, 4, 0, 0] },
+    { lv: 8, w: [35, 35, 20, 9, 1, 0] },
+    { lv: 12, w: [22, 33, 26, 15, 4, 0] },
+    { lv: 16, w: [12, 28, 30, 21, 8, 1] },
+    { lv: 20, w: [5, 22, 32, 26, 13, 2] },
+    { lv: 25, w: [0, 15, 30, 32, 19, 4] }
+  ];
+
+  const SUBSTATS = [
+    { key: 'atkPct', name: '攻击', min: 0.02, max: 0.04, pct: true },
+    { key: 'hpPct', name: '生命', min: 0.02, max: 0.04, pct: true },
+    { key: 'defPct', name: '防御', min: 0.03, max: 0.05, pct: true },
+    { key: 'crit', name: '暴击率', min: 0.01, max: 0.02, pct: true },
+    { key: 'critDmg', name: '暴击伤害', min: 0.04, max: 0.08, pct: true },
+    { key: 'spd', name: '速度', min: 2, max: 5, pct: false },
+    { key: 'qi', name: '吐纳', min: 0.02, max: 0.05, pct: true },
+    { key: 'stone', name: '聚财', min: 0.02, max: 0.05, pct: true }
+  ];
+
+  // 大境界渡劫门槛。P2 打开 ENABLE_STAGE_GATES 后才会拦住突破。
+  const TRIBULATION_GATES = {
+    8: { chapter: 3, stage: 30, boss: '黑风寨主' },
+    17: { chapter: 9, stage: 90, boss: '青冥蛟王' },
+    26: { chapter: 15, stage: 150, boss: '赤炎魔君' },
+    35: { chapter: 21, stage: 210, boss: '九幽鬼母' }
+  };
+
+  const PEACH = {
+    INTERVAL_MS: 3 * 60 * 1000,
+    BASE_CAP: 50,
+    CAP_PER_LEVEL: 2,
+    GIFT: 30,
+    UNLOCK_REALM: 1
+  };
+
+  function treeUpgradeCost(level) {
+    return Math.round(30 * Math.pow(1.38, level - 1));
+  }
+
+  function treeUpgradeMs(level) {
+    return Math.min(8 * 3600 * 1000, 3 * 60 * 1000 * Math.pow(1.4, level - 1));
+  }
+
+  function peachCap(treeLevel) {
+    return PEACH.BASE_CAP + PEACH.CAP_PER_LEVEL * treeLevel;
+  }
+
   // 功法升级配置 (消耗灵石 -> 提升灵气/秒 & 点击吐纳灵气)
   const GONGFA_LIST = [
     {
@@ -285,6 +361,18 @@
     DAOGUO_TALENTS,
     OFFLINE_CAP_SECONDS: 12 * 3600, // 12小时上限
     REINCARNATION_MIN_STAGE: 27, // 元婴一层 (index 27)
+    ENABLE_STAGE_GATES: false,
+    LATE_REALM_QI_MULT,
+    EQUIP_SLOTS,
+    QUALITIES,
+    TREE_WEIGHT_ANCHORS,
+    SUBSTATS,
+    TRIBULATION_GATES,
+    PEACH,
+    TREE_MAX_LEVEL: 25,
+    treeUpgradeCost,
+    treeUpgradeMs,
+    peachCap,
     formatNumber,
     formatDuration
   };
