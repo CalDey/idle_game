@@ -42,6 +42,10 @@
     els.btnBreakthrough = document.getElementById('btn-breakthrough');
 
     els.logBox = document.getElementById('cultivation-log');
+    els.logModal = document.getElementById('log-modal');
+    els.btnOpenLog = document.getElementById('btn-open-log');
+    els.btnCloseLog = document.getElementById('btn-close-log');
+    els.badgeLog = document.getElementById('badge-log');
     els.gongfaList = document.getElementById('gongfa-list');
     els.dongfuList = document.getElementById('dongfu-list');
 
@@ -144,6 +148,10 @@
 
     while (els.logBox.children.length > 35) {
       els.logBox.removeChild(els.logBox.lastChild);
+    }
+
+    if (els.badgeLog && (!els.logModal || !els.logModal.classList.contains('active'))) {
+      els.badgeLog.classList.add('visible');
     }
   }
 
@@ -930,6 +938,21 @@
     els.btnCloseOffline.addEventListener('click', () => {
       els.offlineModal.classList.remove('active');
     });
+
+    if (els.btnOpenLog && els.logModal) {
+      els.btnOpenLog.addEventListener('click', () => {
+        els.logModal.classList.add('active');
+        if (els.badgeLog) els.badgeLog.classList.remove('visible');
+      });
+      if (els.btnCloseLog) {
+        els.btnCloseLog.addEventListener('click', () => els.logModal.classList.remove('active'));
+      }
+      els.logModal.addEventListener('click', (e) => {
+        if (e.target === els.logModal) {
+          els.logModal.classList.remove('active');
+        }
+      });
+    }
 
     els.btnManualSave.addEventListener('click', () => {
       GameState.saveGame();
