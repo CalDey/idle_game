@@ -1,6 +1,6 @@
 :root {
   /* Ink-wash xianxia: indigo night, cinnabar, antique gold, jade */
-  --bg-stage: #100e31;
+  --bg-stage: #000726;
   --bg-deep: #0c0a22;
   --bg-card: rgba(28, 24, 48, 0.92);
   --bg-card-alt: rgba(18, 16, 36, 0.94);
@@ -109,7 +109,7 @@ body {
   font-size: 12px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(16, 14, 49, 0.55);
+  background: rgba(0, 7, 38, 0.55);
   border: 1px solid var(--aura);
   color: var(--aura);
   font-weight: 700;
@@ -336,8 +336,8 @@ body {
   z-index: 3;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(16, 14, 49, 0.28) 0%, rgba(16, 14, 49, 0) 14%, rgba(16, 14, 49, 0) 80%, var(--bg-stage) 100%),
-    radial-gradient(ellipse 88% 80% at 50% 46%, transparent 52%, rgba(16, 14, 49, 0.18) 74%, rgba(16, 14, 49, 0.72) 100%);
+    linear-gradient(180deg, rgba(0, 7, 38, 0.28) 0%, rgba(0, 7, 38, 0) 14%, rgba(0, 7, 38, 0) 80%, var(--bg-stage) 100%),
+    radial-gradient(ellipse 88% 80% at 50% 46%, transparent 52%, rgba(0, 7, 38, 0.18) 74%, rgba(0, 7, 38, 0.72) 100%);
 }
 
 .realm-title-plate {

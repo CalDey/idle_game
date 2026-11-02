@@ -584,9 +584,12 @@
     video.loop = true;
     video.playsInline = true;
     const markPlaying = function () {
+      if (stage.classList.contains('use-fallback')) return;
       if (video.currentTime > 0 || video.readyState >= 2) stage.classList.add('is-playing');
     };
     video.addEventListener('playing', markPlaying);
+    video.addEventListener('loadeddata', markPlaying);
+    video.addEventListener('timeupdate', markPlaying);
     video.addEventListener('error', function () {
       stage.classList.add('use-fallback');
       stage.classList.remove('is-playing');
@@ -596,7 +599,10 @@
       pending.catch(function () {
         stage.classList.add('use-fallback');
       });
+    } else {
+      markPlaying();
     }
+    if (!video.paused) markPlaying();
   }
 
   function initQiMotes() {
