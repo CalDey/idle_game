@@ -22,6 +22,7 @@
 
   function cacheElements() {
     els.realmPill = document.getElementById('header-realm-pill');
+    els.realmText = document.getElementById('header-realm-text');
     els.qiVal = document.getElementById('res-qi-val');
     els.qiRate = document.getElementById('res-qi-rate');
     els.stoneVal = document.getElementById('res-stone-val');
@@ -516,7 +517,7 @@
     const tapGain = GameState.getTapQiGain();
 
     syncRealmAura(stage);
-    els.realmPill.textContent = stage.fullName;
+    els.realmText.textContent = stage.fullName;
     els.qiVal.textContent = formatNumber(s.qi);
     els.qiRate.textContent = `+${formatNumber(qiPerSec)}/秒`;
     els.stoneVal.textContent = formatNumber(s.stones);

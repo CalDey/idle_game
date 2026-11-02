@@ -39,6 +39,15 @@
   unicode-range: U+4ED9, U+4FEE, U+6697, U+9ED1;
 }
 
+@font-face {
+  font-family: "AnHeiRealm";
+  src: url("../assets/fonts/MaShanZheng-Realm.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+4E00, U+4E03, U+4E09, U+4E39, U+4E5D, U+4E8C, U+4E94, U+5143, U+516B, U+516D, U+5316, U+56DB, U+57FA, U+5A74, U+5C42, U+6C14, U+795E, U+7B51, U+7EC3, U+91D1;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -142,22 +151,34 @@ body {
 }
 
 .realm-pill {
-  max-width: 108px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(14, 20, 52, 0.72) 0%, rgba(2, 7, 34, 0.85) 100%);
+  border: 1px solid var(--aura);
+  box-shadow:
+    0 0 10px var(--aura-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
-.realm-pill {
-  font-size: 12px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(0, 7, 38, 0.55);
-  border: 1px solid var(--aura);
+.realm-pill-text {
+  display: inline-block;
+  padding-top: 2px;
+  font-family: "AnHeiRealm", var(--font-title);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #ffffff 0%, #f4efe4 28%, var(--aura) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
   color: var(--aura);
-  font-weight: 700;
-  letter-spacing: 1px;
-  box-shadow: 0 0 12px var(--aura-glow);
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 5px var(--aura-glow));
 }
 
 .resource-grid {
