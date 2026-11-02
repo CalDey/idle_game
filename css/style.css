@@ -62,6 +62,22 @@ body {
   text-size-adjust: 100%;
 }
 
+*,
+*::before,
+*::after {
+  touch-action: manipulation;
+}
+
+button,
+a,
+.icon-btn,
+.btn,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 body {
   background:
     radial-gradient(ellipse at 50% 18%, #1a1744 0%, #070612 62%);
