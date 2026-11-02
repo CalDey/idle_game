@@ -154,6 +154,32 @@
     35: { chapter: 21, stage: 210, boss: '九幽鬼母' }
   };
 
+  const BATTLE = {
+    GROWTH: 1.0223,
+    BASE_CP: 600,
+    BOSS_MULT: 1.5,
+    SPLIT: { atk: 0.04, hp: 0.40, def: 0.0165 },
+    MAX_ROUNDS: 20,
+    UNLOCK_REALM: 2,
+    CRUSH_RATIO: 3,
+    REGIONS: [
+      { name: '凡尘野地', chapters: [1, 5], mobs: ['山贼喽啰', '野狼', '游荡僵尸'] },
+      { name: '青冥山脉', chapters: [6, 10], mobs: ['青蛇妖', '树妖', '雷鹰'] },
+      { name: '赤炎荒原', chapters: [11, 15], mobs: ['火灵', '熔岩蜥', '魔修散人'] },
+      { name: '玄冰海', chapters: [16, 20], mobs: ['冰魄蛛', '寒水妖', '雪尸'] },
+      { name: '九幽魔域', chapters: [21, 25], mobs: ['怨魂', '骨魔', '血傀'] },
+      { name: '天外天', chapters: [26, 30], mobs: ['星骸', '天魔', '虚空剑影'] }
+    ],
+    BOSSES: [
+      '山魈', '赤眼狼王', '黑风寨主', '尸傀道人', '血蝠老祖',
+      '青鳞蟒', '枯木妖婆', '雷翼鹰王', '青冥蛟王', '白额山君',
+      '火鸦王', '熔岩巨傀', '焚骨老魔', '炎魔将', '赤炎魔君',
+      '冰魄蛛后', '寒潮巨鲸', '雪发剑尸', '玄冰龙女', '北溟鲲影',
+      '九幽鬼母', '噬魂魔将', '血海修罗', '白骨魔尊', '幽冥判官',
+      '天外剑魔', '星陨神将', '太虚古神', '混沌魔祖', '天道化身'
+    ]
+  };
+
   const PEACH = {
     INTERVAL_MS: 3 * 60 * 1000,
     BASE_CAP: 50,
@@ -371,6 +397,7 @@
     TREE_WEIGHT_ANCHORS,
     SUBSTATS,
     TRIBULATION_GATES,
+    BATTLE,
     PEACH,
     TREE_MAX_LEVEL: 25,
     treeUpgradeCost,
