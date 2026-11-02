@@ -643,7 +643,7 @@
       return;
     }
     stage.classList.remove('is-still', 'use-fallback');
-    const heroSrc = video.getAttribute('src') || 'assets/hero_j_hd.mp4?v=13';
+    const heroSrc = video.getAttribute('src') || 'assets/hero_j_hd.mp4?v=14';
     while (video.firstChild) video.removeChild(video.firstChild);
     video.src = heroSrc;
 
