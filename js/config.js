@@ -167,88 +167,88 @@
         name: '凡尘野地',
         chapters: [1, 5],
         mobs: [
-          { name: '山贼喽啰', img: 'mob_shanzei' },
-          { name: '野狼', img: 'mob_yelang' },
-          { name: '游荡僵尸', img: 'mob_jiangshi' }
+          { name: '山贼喽啰', img: 'placeholder' },
+          { name: '野狼', img: 'placeholder' },
+          { name: '游荡僵尸', img: 'placeholder' }
         ]
       },
       {
         name: '青冥山脉',
         chapters: [6, 10],
         mobs: [
-          { name: '青蛇妖', img: 'mob_qingshe' },
-          { name: '树妖', img: 'mob_shuyao' },
-          { name: '雷鹰', img: 'mob_leiying' }
+          { name: '青蛇妖', img: 'placeholder' },
+          { name: '树妖', img: 'placeholder' },
+          { name: '雷鹰', img: 'placeholder' }
         ]
       },
       {
         name: '赤炎荒原',
         chapters: [11, 15],
         mobs: [
-          { name: '火灵', img: 'mob_huoling' },
-          { name: '熔岩蜥', img: 'mob_rongxi' },
-          { name: '魔修散人', img: 'mob_moxiu' }
+          { name: '火灵', img: 'placeholder' },
+          { name: '熔岩蜥', img: 'placeholder' },
+          { name: '魔修散人', img: 'placeholder' }
         ]
       },
       {
         name: '玄冰海',
         chapters: [16, 20],
         mobs: [
-          { name: '冰魄蛛', img: 'mob_bingpozhu' },
-          { name: '寒水妖', img: 'mob_hanshuiyao' },
-          { name: '雪尸', img: 'mob_xueshi' }
+          { name: '冰魄蛛', img: 'placeholder' },
+          { name: '寒水妖', img: 'placeholder' },
+          { name: '雪尸', img: 'placeholder' }
         ]
       },
       {
         name: '九幽魔域',
         chapters: [21, 25],
         mobs: [
-          { name: '怨魂', img: 'mob_yuanhun' },
-          { name: '骨魔', img: 'mob_gumo' },
-          { name: '血傀', img: 'mob_xuekui' }
+          { name: '怨魂', img: 'placeholder' },
+          { name: '骨魔', img: 'placeholder' },
+          { name: '血傀', img: 'placeholder' }
         ]
       },
       {
         name: '天外天',
         chapters: [26, 30],
         mobs: [
-          { name: '星骸', img: 'mob_xinghai' },
-          { name: '天魔', img: 'mob_tianmo' },
-          { name: '虚空剑影', img: 'mob_jianying' }
+          { name: '星骸', img: 'placeholder' },
+          { name: '天魔', img: 'placeholder' },
+          { name: '虚空剑影', img: 'placeholder' }
         ]
       }
     ],
     BOSSES: [
-      { name: '山魈', img: 'boss_shanxiao' },
-      { name: '赤眼狼王', img: 'boss_langwang' },
-      { name: '黑风寨主', img: 'boss_heifeng' },
-      { name: '尸傀道人', img: 'boss_shikui' },
-      { name: '血蝠老祖', img: 'boss_xuefu' },
-      { name: '青鳞蟒', img: 'boss_qinglin' },
-      { name: '枯木妖婆', img: 'boss_kumu' },
-      { name: '雷翼鹰王', img: 'boss_leiying' },
-      { name: '青冥蛟王', img: 'boss_qingming' },
-      { name: '白额山君', img: 'boss_baie' },
-      { name: '火鸦王', img: 'boss_huoya' },
-      { name: '熔岩巨傀', img: 'boss_rongyan' },
-      { name: '焚骨老魔', img: 'boss_fengu' },
-      { name: '炎魔将', img: 'boss_yanmojiang' },
-      { name: '赤炎魔君', img: 'boss_chiyan' },
-      { name: '冰魄蛛后', img: 'boss_zhuhou' },
-      { name: '寒潮巨鲸', img: 'boss_hanchao' },
-      { name: '雪发剑尸', img: 'boss_xuefa' },
-      { name: '玄冰龙女', img: 'boss_longnv' },
-      { name: '北溟鲲影', img: 'boss_beiming' },
-      { name: '九幽鬼母', img: 'boss_jiuyou' },
-      { name: '噬魂魔将', img: 'boss_shihun' },
-      { name: '血海修罗', img: 'boss_xiuluo' },
-      { name: '白骨魔尊', img: 'boss_baigu' },
-      { name: '幽冥判官', img: 'boss_panguan' },
-      { name: '天外剑魔', img: 'boss_jianmo' },
-      { name: '星陨神将', img: 'boss_xingyun' },
-      { name: '太虚古神', img: 'boss_taixu' },
-      { name: '混沌魔祖', img: 'boss_hundun' },
-      { name: '天道化身', img: 'boss_tiandao' }
+      { name: '山魈', img: 'placeholder' },
+      { name: '赤眼狼王', img: 'placeholder' },
+      { name: '黑风寨主', img: 'placeholder' },
+      { name: '尸傀道人', img: 'placeholder' },
+      { name: '血蝠老祖', img: 'placeholder' },
+      { name: '青鳞蟒', img: 'placeholder' },
+      { name: '枯木妖婆', img: 'placeholder' },
+      { name: '雷翼鹰王', img: 'placeholder' },
+      { name: '青冥蛟王', img: 'placeholder' },
+      { name: '白额山君', img: 'placeholder' },
+      { name: '火鸦王', img: 'placeholder' },
+      { name: '熔岩巨傀', img: 'placeholder' },
+      { name: '焚骨老魔', img: 'placeholder' },
+      { name: '炎魔将', img: 'placeholder' },
+      { name: '赤炎魔君', img: 'placeholder' },
+      { name: '冰魄蛛后', img: 'placeholder' },
+      { name: '寒潮巨鲸', img: 'placeholder' },
+      { name: '雪发剑尸', img: 'placeholder' },
+      { name: '玄冰龙女', img: 'placeholder' },
+      { name: '北溟鲲影', img: 'placeholder' },
+      { name: '九幽鬼母', img: 'placeholder' },
+      { name: '噬魂魔将', img: 'placeholder' },
+      { name: '血海修罗', img: 'placeholder' },
+      { name: '白骨魔尊', img: 'placeholder' },
+      { name: '幽冥判官', img: 'placeholder' },
+      { name: '天外剑魔', img: 'placeholder' },
+      { name: '星陨神将', img: 'placeholder' },
+      { name: '太虚古神', img: 'placeholder' },
+      { name: '混沌魔祖', img: 'placeholder' },
+      { name: '天道化身', img: 'placeholder' }
     ]
   };
 
