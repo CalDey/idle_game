@@ -48,6 +48,14 @@
   unicode-range: U+4E00, U+4E03, U+4E09, U+4E39, U+4E5D, U+4E8C, U+4E94, U+5143, U+516B, U+516D, U+5316, U+56DB, U+57FA, U+5A74, U+5C42, U+6C14, U+795E, U+7B51, U+7EC3, U+91D1;
 }
 
+@font-face {
+  font-family: "AnHeiTitle";
+  src: url("../assets/fonts/MaShanZheng-Title.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -573,12 +581,17 @@ body {
 }
 
 .realm-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 4px;
+  font-family: "AnHeiTitle", var(--font-title);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
   color: inherit;
-  line-height: 1.2;
-  text-shadow: 0 0 12px currentColor, 0 2px 8px rgba(0, 0, 0, 0.85);
+  line-height: 1.1;
+  background: linear-gradient(180deg, #ffffff 0%, #fffaf0 30%, currentColor 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 5px currentColor);
   white-space: nowrap;
 }
 
@@ -1655,8 +1668,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .title-row-name {
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-family: "AnHeiTitle", var(--font-title);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .title-row-meta {
@@ -1676,7 +1692,9 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   border: 1px solid rgba(245, 199, 106, 0.8);
   background: rgba(16, 12, 32, 0.92);
   color: #ffe7b0;
-  font-size: 14px;
+  font-family: "AnHeiTitle", var(--font-title);
+  font-size: 17px;
+  font-weight: 400;
   letter-spacing: 1px;
   opacity: 0;
   pointer-events: none;
@@ -1720,8 +1738,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 @media (max-height: 700px) {
   .realm-title {
-    font-size: 22px;
-    letter-spacing: 4px;
+    font-size: 24px;
+    letter-spacing: 0.12em;
   }
 }
 
