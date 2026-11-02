@@ -374,7 +374,25 @@
     treeUpgradeMs,
     peachCap,
     formatNumber,
-    formatDuration
+    formatDuration,
+    TITLE_COLLECTION_QI: 0.005,
+    TITLES: [
+      { id: 'churu', name: '初入仙途', cat: '入门', tier: 'intro', stat: 'qi', value: 0.01, bonus: '灵气 +1%', cond: '踏入仙途' },
+      { id: 'yinqiruti', name: '引气入体', cat: '入门', tier: 'intro', stat: 'tap', value: 0.01, bonus: '点击灵气 +1%', cond: '达到练气一层' },
+      { id: 'tunaxinren', name: '吐纳新人', cat: '入门', tier: 'intro', stat: 'tap', value: 0.02, bonus: '点击灵气 +2%', cond: '累计点击 100 次' },
+      { id: 'jingzuo', name: '静坐童子', cat: '入门', tier: 'intro', stat: 'qi', value: 0.02, bonus: '灵气 +2%', cond: '累计修炼 1 小时' },
+      { id: 'qinxiubuchuo', name: '勤修不辍', cat: '修炼', tier: 'cultivate', stat: 'break', value: 0.01, bonus: '突破成功率 +1%', cond: '连续 3 日登录' },
+      { id: 'lingqixiaofu', name: '灵气小富', cat: '修炼', tier: 'cultivate', stat: 'qi', value: 0.02, bonus: '灵气 +2%', cond: '累计获得灵气 10 万' },
+      { id: 'yiyerzhuji', name: '一夜筑基', cat: '修炼', tier: 'cultivate', stat: 'qi', value: 0.03, bonus: '灵气 +3%', cond: '开档 24 小时内筑基' },
+      { id: 'lvbailvzhan', name: '屡败屡战', cat: '修炼', tier: 'cultivate', stat: 'break', value: 0.01, bonus: '突破成功率 +1%', cond: '突破失败累计 3 次' },
+      { id: 'zhaotaoxiaoxian', name: '摘桃小仙', cat: '仙桃', tier: 'peach', stat: 'peach', value: 0.02, bonus: '仙桃回复 +2%', cond: '累计摘桃 50 次' },
+      { id: 'chudelingbao', name: '初得灵宝', cat: '仙桃', tier: 'peach', stat: 'jade', value: 0.02, bonus: '分解灵玉 +2%', cond: '获得第一件灵品及以上' },
+      { id: 'hongyundangtou', name: '鸿运当头', cat: '仙桃', tier: 'peach', stat: 'cp', value: 0.03, bonus: '战力 +3%', cond: '获得第一件地品及以上' },
+      { id: 'suibaokuangren', name: '碎宝狂人', cat: '仙桃', tier: 'peach', stat: 'jade', value: 0.03, bonus: '分解灵玉 +3%', cond: '累计分解 100 件' },
+      { id: 'jianxinchumeng', name: '剑心初萌', cat: '彩蛋', tier: 'egg', stat: 'cp', value: 0.02, bonus: '战力 +2%', cond: '第一次装备武器' },
+      { id: 'biguanbuchu', name: '闭关不出', cat: '彩蛋', tier: 'egg', stat: 'qi', value: 0.03, bonus: '灵气 +3%', cond: '一次离线结算满 12 小时' },
+      { id: 'diandaoshousuan', name: '点到手酸', cat: '彩蛋', tier: 'egg', stat: 'tap', value: 0.03, bonus: '点击灵气 +3%', cond: '单日点击 1000 次' }
+    ]
   };
 })();
 

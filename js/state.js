@@ -34,6 +34,16 @@
       talents: talentLevels,
       totalClicks: 0,
       lastSaveTime: now,
+      createdAt: now,
+      playTimeMs: 0,
+      lifetimeQi: 0,
+      failBreakthroughs: 0,
+      peachesPicked: 0,
+      decomposed: 0,
+      flags: { ling: false, di: false, weapon: false, offlineCap: false },
+      login: { last: '', streak: 0 },
+      dayTaps: { date: '', count: 0 },
+      titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
       ...window.Equip.defaultV2Fields(now)
     };
   }
@@ -74,7 +84,8 @@
     });
     const qiPct = window.Equip.subSum(state.equip, 'qi');
     const chapters = chapterBonus(state.stage && state.stage.best);
-    return rawQi * stage.multiplier * getDaoGuoQiMultiplier() * (1 + qiPct) * (1 + 0.02 * chapters);
+    const titleFactor = window.Titles ? window.Titles.qiFactor(state) : 1;
+    return rawQi * stage.multiplier * getDaoGuoQiMultiplier() * (1 + qiPct) * (1 + 0.02 * chapters) * titleFactor;
   }
 
   function getStonePerSec() {
@@ -93,7 +104,8 @@
       Math.pow(stage.multiplier, 0.65) *
       getDaoGuoStoneMultiplier() *
       (1 + stonePct) *
-      (1 + 0.02 * chapters)
+      (1 + 0.02 * chapters) *
+      (window.Titles ? window.Titles.factor(state, 'stone') : 1)
     );
   }
 
@@ -117,7 +129,9 @@
     const tree = state.tree;
     if (!tree || toTs <= fromTs) return 0;
     const cap = window.GameConfig.peachCap(tree.lv || 1);
-    const interval = window.GameConfig.PEACH.INTERVAL_MS;
+    const interval = window.Titles
+      ? window.Titles.peachIntervalMs(state)
+      : window.GameConfig.PEACH.INTERVAL_MS;
     if ((tree.peaches || 0) >= cap) {
       tree.regenAt = toTs;
       return 0;
@@ -149,7 +163,8 @@
   function getTapQiGain() {
     // 每次点击获得相当于 3 + 0.35秒打坐灵气
     const perSec = getQiPerSec();
-    return Math.max(2, Math.round((3 + perSec * 0.35) * 10) / 10);
+    const tap = window.Titles ? window.Titles.factor(state, 'tap') : 1;
+    return Math.max(2, Math.round((3 + perSec * 0.35) * tap * 10) / 10);
   }
 
   function getGongfaCost(item) {
@@ -171,7 +186,8 @@
     const stage = getCurrentStage();
     const talentLv = (state.talents && state.talents.pomo_daoxin) || 0;
     const talentBonus = Math.min(0.30, talentLv * 0.03);
-    const total = stage.successRate + (state.pityBonus || 0) + talentBonus;
+    const titleBonus = window.Titles ? window.Titles.addend(state, 'break') : 0;
+    const total = stage.successRate + (state.pityBonus || 0) + talentBonus + titleBonus;
     return Math.min(0.98, Number(total.toFixed(3)));
   }
 
@@ -222,7 +238,21 @@
       pity: { ...def.pity, ...(saved.pity || {}) },
       autoDecomp: { ...def.autoDecomp, ...(saved.autoDecomp || {}) },
       stage: { ...def.stage, ...(saved.stage || {}) },
-      pending: saved.pending || null
+      pending: saved.pending || null,
+      titles: {
+        owned: (saved.titles && saved.titles.owned) || def.titles.owned,
+        worn: (saved.titles && saved.titles.worn) || def.titles.worn,
+        seen: (saved.titles && saved.titles.seen) || def.titles.seen
+      },
+      flags: { ...def.flags, ...(saved.flags || {}) },
+      login: { ...def.login, ...(saved.login || {}) },
+      dayTaps: { ...def.dayTaps, ...(saved.dayTaps || {}) },
+      createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
+      playTimeMs: saved.playTimeMs || 0,
+      lifetimeQi: saved.lifetimeQi || 0,
+      failBreakthroughs: saved.failBreakthroughs || 0,
+      peachesPicked: saved.peachesPicked || 0,
+      decomposed: saved.decomposed || 0
     };
   }
 
@@ -266,6 +296,9 @@
         const qiGain = getQiPerSec() * cappedSec;
         const stoneGain = getStonePerSec() * cappedSec;
         state.qi += qiGain;
+        state.lifetimeQi = (state.lifetimeQi || 0) + qiGain;
+        state.playTimeMs = (state.playTimeMs || 0) + cappedSec * 1000;
+        if (elapsedSec > window.GameConfig.OFFLINE_CAP_SECONDS) state.flags.offlineCap = true;
         state.stones += stoneGain;
         const windowEnd = savedTime + cappedSec * 1000;
         let treeDone = false;
@@ -321,9 +354,17 @@
     let refund = 0;
     window.GameConfig.EQUIP_SLOTS.forEach((slot) => {
       const item = state.equip && state.equip[slot.id];
-      if (item) refund += Math.floor(window.Equip.decomposeValue(item) * 0.5);
+      if (item) {
+        const value = window.Titles ? window.Titles.jadeValue(state, item) : window.Equip.decomposeValue(item);
+        refund += Math.floor(value * 0.5);
+      }
     });
-    if (state.pending) refund += Math.floor(window.Equip.decomposeValue(state.pending) * 0.5);
+    if (state.pending) {
+      const value = window.Titles
+        ? window.Titles.jadeValue(state, state.pending)
+        : window.Equip.decomposeValue(state.pending);
+      refund += Math.floor(value * 0.5);
+    }
     const keepLingyu = (state.lingyu || 0) + refund;
     const keepTree = {
       ...state.tree,
@@ -349,6 +390,20 @@
     fresh.stage = { cur: 1, best: 0, auto: true, idleAt: Date.now() };
     fresh.equip = window.Equip.emptyEquip();
     fresh.pending = null;
+    fresh.createdAt = state.createdAt;
+    fresh.playTimeMs = state.playTimeMs || 0;
+    fresh.lifetimeQi = state.lifetimeQi || 0;
+    fresh.failBreakthroughs = state.failBreakthroughs || 0;
+    fresh.peachesPicked = state.peachesPicked || 0;
+    fresh.decomposed = state.decomposed || 0;
+    fresh.flags = { ...(state.flags || {}) };
+    fresh.login = { ...(state.login || {}) };
+    fresh.dayTaps = { ...(state.dayTaps || {}) };
+    fresh.titles = {
+      owned: [...((state.titles && state.titles.owned) || ['churu'])],
+      worn: (state.titles && state.titles.worn) || 'churu',
+      seen: [...((state.titles && state.titles.seen) || ['churu'])]
+    };
 
     state = fresh;
     saveGame();

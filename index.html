@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=8" />
+  <link rel="stylesheet" href="css/style.css?v=9" />
 </head>
 <body>
   <div class="app-container">
@@ -91,11 +91,12 @@
             <div class="hero-mask" aria-hidden="true"></div>
             <div id="realm-flash" class="realm-flash" aria-hidden="true"></div>
             <div id="realm-shockwave" class="realm-shockwave" aria-hidden="true"></div>
-            <div class="realm-title-plate">
+            <button id="title-plate" class="realm-title-plate" type="button" data-tier="intro">
               <span class="plate-wing" aria-hidden="true"></span>
-              <div id="cultivator-realm-text" class="realm-title">练气一层</div>
+              <span id="title-plate-name" class="realm-title">初入仙途</span>
+              <span id="title-plate-badge" class="plate-badge"></span>
               <span class="plate-wing plate-wing-right" aria-hidden="true"></span>
-            </div>
+            </button>
             <div class="meditation-caption">
               <div class="meditation-hint">盘膝打坐 · 周天搬运</div>
               <div id="tap-gain-hint" class="meditation-subhint">点击画面凝神吐纳（每次 +4 灵气）</div>
@@ -403,11 +404,24 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=8"></script>
-  <script src="js/equip.js?v=8"></script>
-  <script src="js/state.js?v=8"></script>
-  <script src="js/gear.js?v=8"></script>
-  <script src="js/game.js?v=8"></script>
+  <div id="title-toast" class="title-toast"></div>
+  <div id="title-modal" class="modal-backdrop">
+    <div class="modal-dialog title-dialog">
+      <h2 class="modal-title">称号</h2>
+      <div id="title-summary" class="title-summary">已收集 0</div>
+      <div id="title-list" class="title-list"></div>
+      <div class="modal-actions">
+        <button id="btn-close-titles" class="btn" type="button">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js?v=9"></script>
+  <script src="js/equip.js?v=9"></script>
+  <script src="js/state.js?v=9"></script>
+  <script src="js/titles.js?v=9"></script>
+  <script src="js/gear.js?v=9"></script>
+  <script src="js/game.js?v=9"></script>
 </body>
 </html>
 

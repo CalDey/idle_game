@@ -194,7 +194,9 @@
   }
 
   function combatPower(state) {
-    return combatPowerFrom(attributes(state));
+    const base = combatPowerFrom(attributes(state));
+    const mult = window.Titles ? window.Titles.factor(state, 'cp') : 1;
+    return base * mult;
   }
 
   function powerWithSwap(state, item) {

@@ -132,6 +132,7 @@
     if (!current) {
       const before = window.Equip.combatPower(s);
       s.equip[item.s] = item;
+      if (item.s === 'weapon') s.flags.weapon = true;
       const delta = Math.round(window.Equip.combatPower(s) - before);
       log(`空位纳入【${window.Equip.itemName(item)}】，战力 +${fmt(delta)}`, 'success');
       showReveal(item);
@@ -142,8 +143,9 @@
     const auto = s.autoDecomp || {};
     const worse = newCp <= oldCp;
     if (auto.on && worse && item.q <= (auto.maxQ || 0)) {
-      const jade = window.Equip.decomposeValue(item);
+      const jade = window.Titles.jadeValue(s, item);
       s.lingyu = (s.lingyu || 0) + jade;
+      s.decomposed = (s.decomposed || 0) + 1;
       log(`自动分解【${window.Equip.itemName(item)}】，灵玉 +${jade}`, 'gold');
       showReveal(item);
       return;
@@ -157,9 +159,14 @@
     const s = window.GameState.state;
     if (!unlocked() || s.pending || (s.tree.peaches || 0) < 1) return;
     s.tree.peaches -= 1;
+    s.peachesPicked = (s.peachesPicked || 0) + 1;
     const item = window.Equip.rollItem(s);
+    if (item.q >= 1) s.flags.ling = true;
+    if (item.q >= 3) s.flags.di = true;
     equipOrPrompt(item);
     window.GameState.saveGame();
+    if (window.Titles) Titles.sync(s);
+    if (window.TitlesUI) TitlesUI.flushToasts();
     onChange();
     renderTree();
   }
@@ -170,14 +177,18 @@
     if (!item) return;
     const old = s.equip[item.s];
     if (old) {
-      const jade = window.Equip.decomposeValue(old);
+      const jade = window.Titles.jadeValue(s, old);
       s.lingyu = (s.lingyu || 0) + jade;
+      s.decomposed = (s.decomposed || 0) + 1;
       log(`替换并分解旧装备，灵玉 +${jade}`, 'gold');
     }
     s.equip[item.s] = item;
+    if (item.s === 'weapon') s.flags.weapon = true;
     s.pending = null;
     closeCompare();
     window.GameState.saveGame();
+    if (window.Titles) Titles.sync(s);
+    if (window.TitlesUI) TitlesUI.flushToasts();
     onChange();
     renderTree();
   }
@@ -186,12 +197,15 @@
     const s = window.GameState.state;
     const item = s.pending;
     if (!item) return;
-    const jade = window.Equip.decomposeValue(item);
+    const jade = window.Titles.jadeValue(s, item);
     s.lingyu = (s.lingyu || 0) + jade;
+    s.decomposed = (s.decomposed || 0) + 1;
     s.pending = null;
     log(`分解【${window.Equip.itemName(item)}】，灵玉 +${jade}`, 'gold');
     closeCompare();
     window.GameState.saveGame();
+    if (window.Titles) Titles.sync(s);
+    if (window.TitlesUI) TitlesUI.flushToasts();
     onChange();
     renderTree();
   }

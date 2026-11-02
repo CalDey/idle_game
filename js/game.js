@@ -30,7 +30,7 @@
     els.daoguoMult = document.getElementById('res-daoguo-mult');
 
     els.meditationZone = document.getElementById('meditation-zone');
-    els.cultivatorRealmText = document.getElementById('cultivator-realm-text');
+    els.titlePlateName = document.getElementById('title-plate-name');
     els.tapGainHint = document.getElementById('tap-gain-hint');
 
     els.realmDesc = document.getElementById('realm-desc');
@@ -182,7 +182,9 @@
   function handleMeditationTap(e) {
     const gain = GameState.getTapQiGain();
     GameState.state.qi += gain;
+    GameState.state.lifetimeQi = (GameState.state.lifetimeQi || 0) + gain;
     GameState.state.totalClicks = (GameState.state.totalClicks || 0) + 1;
+    if (window.Titles) Titles.noteTap(GameState.state);
 
     let clientX = null;
     let clientY = null;
@@ -231,17 +233,22 @@
       renderReincarnationUI();
       GameState.saveGame();
       triggerRealmFx('success');
+      if (window.Titles) Titles.sync(s);
+      if (window.TitlesUI) TitlesUI.flushToasts();
     } else {
       // 突破失败：损失部分当前灵气，并增加气运补偿
       const loss = Math.floor(s.qi * stage.failureLossRatio);
       s.qi = Math.max(0, s.qi - loss);
       s.pityBonus = Math.min(0.35, (s.pityBonus || 0) + 0.04);
+      s.failBreakthroughs = (s.failBreakthroughs || 0) + 1;
       addLog(
         `${actionName}受挫，心神震荡，散去 ${formatNumber(loss)} 灵气（下次破境成功率 +4%）。`,
         'warn'
       );
       GameState.saveGame();
       triggerRealmFx('fail');
+      if (window.Titles) Titles.sync(s);
+      if (window.TitlesUI) TitlesUI.flushToasts();
     }
 
     updateHeaderAndMeditationUI();
@@ -493,7 +500,7 @@
     els.daoguoVal.textContent = `${s.daoGuo} (累${s.totalDaoGuo || 0})`;
     els.daoguoMult.textContent = `灵气×${GameState.getDaoGuoQiMultiplier().toFixed(2)}`;
 
-    els.cultivatorRealmText.textContent = stage.fullName;
+    if (window.TitlesUI) TitlesUI.paintPlate();
     els.tapGainHint.textContent = `点击画面凝神吐纳（每次 +${formatNumber(tapGain)} 灵气）`;
     els.realmDesc.textContent = stage.desc;
 
@@ -836,9 +843,16 @@
     lastTickTime = now;
 
     if (dt > 0) {
-      GameState.state.qi += GameState.getQiPerSec() * dt;
+      const qiGain = GameState.getQiPerSec() * dt;
+      GameState.state.qi += qiGain;
+      GameState.state.lifetimeQi = (GameState.state.lifetimeQi || 0) + qiGain;
+      GameState.state.playTimeMs = (GameState.state.playTimeMs || 0) + dt * 1000;
       GameState.state.stones += GameState.getStonePerSec() * dt;
       if (window.GearUI) GearUI.tick();
+      if (window.Titles && Math.floor(GameState.state.playTimeMs / 5000) !== Math.floor((GameState.state.playTimeMs - dt * 1000) / 5000)) {
+        Titles.sync(GameState.state);
+        if (window.TitlesUI) TitlesUI.flushToasts();
+      }
       updateHeaderAndMeditationUI();
     }
 
@@ -927,6 +941,8 @@
         GameState.saveGame();
       }
     });
+
+    if (window.TitlesUI) TitlesUI.init();
 
     if (window.GearUI) {
       GearUI.init({
