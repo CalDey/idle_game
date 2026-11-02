@@ -1,9 +1,9 @@
 // 闯关页 UI（B2 MVP）：章节进度、回合事件播放、倍速与跳过、自动推关、失败指引与挂机收益领取。
 (function () {
   const fmt = (n) => window.GameConfig.formatNumber(n);
-  let log = function () {};
-  let onChange = function () {};
-  let switchTab = function () {};
+  let log = function () { };
+  let onChange = function () { };
+  let switchTab = function () { };
 
   let isPlaying = false;
   let playTimer = 0;
@@ -149,18 +149,40 @@
     if (le) le.innerHTML = '';
   }
 
+  let atkPulseTimer = 0;
+  let hitPulseTimer = 0;
+
+  function clearFighterPulse() {
+    clearTimeout(atkPulseTimer);
+    clearTimeout(hitPulseTimer);
+    atkPulseTimer = 0;
+    hitPulseTimer = 0;
+    const p = $('fighter-player');
+    const e = $('fighter-enemy');
+    if (p) p.classList.remove('is-attacking', 'is-hit');
+    if (e) e.classList.remove('is-attacking', 'is-hit');
+  }
+
   function pulseFighter(attackerSide) {
     const atkEl = $(attackerSide === 'a' ? 'fighter-player' : 'fighter-enemy');
     const defEl = $(attackerSide === 'a' ? 'fighter-enemy' : 'fighter-player');
+    clearTimeout(atkPulseTimer);
+    clearTimeout(hitPulseTimer);
     if (atkEl) {
       atkEl.classList.remove('is-attacking');
       void atkEl.offsetWidth;
       atkEl.classList.add('is-attacking');
+      atkPulseTimer = setTimeout(() => {
+        atkEl.classList.remove('is-attacking');
+      }, 130);
     }
     if (defEl) {
       defEl.classList.remove('is-hit');
       void defEl.offsetWidth;
       defEl.classList.add('is-hit');
+      hitPulseTimer = setTimeout(() => {
+        defEl.classList.remove('is-hit');
+      }, 130);
     }
   }
 
@@ -353,6 +375,7 @@
   function finishBattle() {
     clearTimeout(playTimer);
     playTimer = 0;
+    clearFighterPulse();
     if (!isPlaying || !currentSim || !currentEnemy || !currentPlayer) {
       isPlaying = false;
       return;
@@ -503,6 +526,7 @@
 
     clearTimeout(autoNextTimer);
     autoNextTimer = 0;
+    clearFighterPulse();
     clearBattleFloats();
     hideResultOverlay();
 
