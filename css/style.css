@@ -294,11 +294,9 @@ body {
 .hero-stage {
   position: relative;
   z-index: 2;
-  flex: none;
+  flex: 1 1 auto;
+  min-height: 168px;
   width: calc(100% + 24px);
-  /* Viewport-only height so log lines, prices, and toasts cannot resize the portrait. */
-  height: clamp(168px, calc(100vh - 448px), 520px);
-  height: clamp(168px, calc(100dvh - 448px), 520px);
   margin: 0 -12px;
   cursor: pointer;
   background: var(--bg-stage);
