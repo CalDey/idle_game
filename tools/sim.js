@@ -93,7 +93,7 @@ function fmt(sec) {
 
 const result = simulate();
 const lines = [];
-lines.push('太虚修仙录 · 贪心模拟（不计突破失败，不计装备）');
+lines.push('暗黑修仙 · 贪心模拟（不计突破失败，不计装备）');
 lines.push(`筑基后灵气倍率 LATE_REALM_QI_MULT = ${JSON.stringify(CFG.LATE_REALM_QI_MULT)}`);
 lines.push(`用时 ${fmt(result.seconds)}，停在 ${CFG.REALM_STAGES[result.realm].fullName}`);
 ['筑基一层', '金丹一层', '元婴一层', '化神一层', '化神九层'].forEach((name) => {
