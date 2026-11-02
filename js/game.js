@@ -72,6 +72,60 @@
     els.confirmMessage = document.getElementById('confirm-message');
     els.btnConfirmYes = document.getElementById('btn-confirm-yes');
     els.btnConfirmNo = document.getElementById('btn-confirm-no');
+
+    els.heroVideo = document.getElementById('hero-video');
+    els.heroFrame = document.querySelector('.hero-frame');
+    els.realmFlash = document.getElementById('realm-flash');
+    els.realmShockwave = document.getElementById('realm-shockwave');
+    els.qiMotes = document.getElementById('qi-motes');
+    els.appContainer = document.querySelector('.app-container');
+  }
+
+  // 立绘光效只改表现，不改数值。境界色：练气青、筑基碧、金丹金、元婴紫、化神白金。
+  const REALM_AURAS = {
+    lianqi: { core: '#67e8f9', glow: 'rgba(103, 232, 249, 0.55)', mote: 'rgba(186, 244, 255, 0.95)' },
+    zhuji: { core: '#4ade80', glow: 'rgba(74, 222, 128, 0.5)', mote: 'rgba(190, 255, 214, 0.95)' },
+    jindan: { core: '#f5c76a', glow: 'rgba(245, 199, 106, 0.58)', mote: 'rgba(255, 226, 160, 0.96)' },
+    yuanying: { core: '#c084fc', glow: 'rgba(192, 132, 252, 0.58)', mote: 'rgba(230, 204, 255, 0.96)' },
+    huashen: { core: '#fff3c4', glow: 'rgba(255, 236, 180, 0.62)', mote: 'rgba(255, 248, 226, 0.98)' }
+  };
+  let auraMoteColor = REALM_AURAS.lianqi.mote;
+  let lastAuraRealm = '';
+  let burstMotes = function () {};
+
+  function syncRealmAura(stage) {
+    const aura = REALM_AURAS[stage.majorId] || REALM_AURAS.lianqi;
+    auraMoteColor = aura.mote;
+    if (stage.majorId === lastAuraRealm) return;
+    lastAuraRealm = stage.majorId;
+    const root = document.documentElement;
+    root.style.setProperty('--aura', aura.core);
+    root.style.setProperty('--aura-glow', aura.glow);
+    if (els.meditationZone) els.meditationZone.dataset.realm = stage.majorId;
+    if (els.appContainer) els.appContainer.dataset.realm = stage.majorId;
+  }
+
+  function triggerRealmFx(kind) {
+    const flash = els.realmFlash;
+    const shock = els.realmShockwave;
+    const frame = els.heroFrame;
+    if (flash) {
+      flash.classList.remove('play', 'play-fail');
+      void flash.offsetWidth;
+      flash.classList.add(kind === 'success' ? 'play' : 'play-fail');
+    }
+    if (kind === 'success') {
+      if (shock) {
+        shock.classList.remove('play');
+        void shock.offsetWidth;
+        shock.classList.add('play');
+      }
+      burstMotes(26);
+    } else if (frame) {
+      frame.classList.remove('is-shaking');
+      void frame.offsetWidth;
+      frame.classList.add('is-shaking');
+    }
   }
 
   function addLog(text, type = '') {
@@ -105,10 +159,23 @@
     span.style.top = `${relY}px`;
     span.textContent = text;
     els.meditationZone.appendChild(span);
+    spawnTapRipple(relX, relY);
 
     setTimeout(() => {
       if (span.parentNode) span.parentNode.removeChild(span);
-    }, 850);
+    }, 980);
+  }
+
+  function spawnTapRipple(x, y) {
+    if (!els.meditationZone) return;
+    const ripple = document.createElement('span');
+    ripple.className = 'tap-ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    els.meditationZone.appendChild(ripple);
+    setTimeout(() => {
+      if (ripple.parentNode) ripple.parentNode.removeChild(ripple);
+    }, 680);
   }
 
   // 点击打坐区获取额外灵气
@@ -158,6 +225,7 @@
       renderUpgradeLists();
       renderReincarnationUI();
       GameState.saveGame();
+      triggerRealmFx('success');
     } else {
       // 突破失败：损失部分当前灵气，并增加气运补偿
       const loss = Math.floor(s.qi * stage.failureLossRatio);
@@ -168,6 +236,7 @@
         'warn'
       );
       GameState.saveGame();
+      triggerRealmFx('fail');
     }
 
     updateHeaderAndMeditationUI();
@@ -410,6 +479,7 @@
     const stonePerSec = GameState.getStonePerSec();
     const tapGain = GameState.getTapQiGain();
 
+    syncRealmAura(stage);
     els.realmPill.textContent = stage.fullName;
     els.qiVal.textContent = formatNumber(s.qi);
     els.qiRate.textContent = `+${formatNumber(qiPerSec)}/秒`;
@@ -493,8 +563,142 @@
         const targetId = btn.getAttribute('data-tab');
         navBtns.forEach((b) => b.classList.toggle('active', b === btn));
         panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
+        if (targetId === 'tab-cultivate') resumeHeroVideo();
       });
     });
+  }
+
+  function resumeHeroVideo() {
+    const video = els.heroVideo;
+    if (!video || !els.meditationZone || els.meditationZone.classList.contains('use-fallback')) return;
+    const pending = video.play();
+    if (pending && typeof pending.catch === 'function') pending.catch(function () {});
+  }
+
+  function initHeroVideo() {
+    const video = els.heroVideo;
+    const stage = els.meditationZone;
+    if (!video || !stage) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.playsInline = true;
+    const markPlaying = function () {
+      if (video.currentTime > 0 || video.readyState >= 2) stage.classList.add('is-playing');
+    };
+    video.addEventListener('playing', markPlaying);
+    video.addEventListener('error', function () {
+      stage.classList.add('use-fallback');
+      stage.classList.remove('is-playing');
+    });
+    const pending = video.play();
+    if (pending && typeof pending.catch === 'function') {
+      pending.catch(function () {
+        stage.classList.add('use-fallback');
+      });
+    }
+  }
+
+  function initQiMotes() {
+    const canvas = els.qiMotes;
+    const frame = els.heroFrame;
+    if (!canvas || !frame) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const motes = [];
+    let width = 0;
+    let height = 0;
+    let last = performance.now();
+    const maxMotes = 72;
+
+    function resize() {
+      const rect = frame.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function qiScale() {
+      let qps = 1;
+      try {
+        qps = Math.max(0, GameState.getQiPerSec());
+      } catch (err) {
+        qps = 1;
+      }
+      const log = Math.log10(1 + qps);
+      return {
+        count: Math.round(Math.min(maxMotes, 16 + log * 14)),
+        speed: Math.min(2.6, 0.7 + log * 0.38)
+      };
+    }
+
+    function makeMote(fromBottom) {
+      return {
+        x: Math.random() * width,
+        y: fromBottom ? height + Math.random() * 16 : Math.random() * height,
+        r: 0.7 + Math.random() * 2.1,
+        vy: 16 + Math.random() * 34,
+        drift: 8 + Math.random() * 18,
+        phase: Math.random() * Math.PI * 2,
+        a: 0.28 + Math.random() * 0.62,
+        color: auraMoteColor
+      };
+    }
+
+    burstMotes = function (n) {
+      const extra = Math.min(36, n);
+      for (let i = 0; i < extra; i++) {
+        const m = makeMote(false);
+        m.x = width * (0.3 + Math.random() * 0.4);
+        m.y = height * (0.42 + Math.random() * 0.28);
+        m.vy = 40 + Math.random() * 90;
+        m.r = 1.2 + Math.random() * 2.4;
+        m.a = 0.75;
+        motes.push(m);
+      }
+    };
+
+    function frameMotes(now) {
+      const dt = Math.max(0.001, Math.min(0.05, (now - last) / 1000));
+      last = now;
+      if (!document.hidden && width > 2 && height > 2) {
+        const scale = qiScale();
+        while (motes.length < scale.count) motes.push(makeMote(false));
+        ctx.clearRect(0, 0, width, height);
+        for (let i = motes.length - 1; i >= 0; i--) {
+          const m = motes[i];
+          m.y -= m.vy * scale.speed * dt;
+          m.x += Math.sin(m.phase + now * 0.0015) * m.drift * dt;
+          if (m.y < -10 || m.x < -12 || m.x > width + 12) {
+            if (motes.length > scale.count) motes.splice(i, 1);
+            else Object.assign(m, makeMote(true));
+            continue;
+          }
+          ctx.globalAlpha = m.a;
+          ctx.fillStyle = m.color;
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      requestAnimationFrame(frameMotes);
+    }
+
+    resize();
+    if (typeof ResizeObserver === 'function') {
+      const observer = new ResizeObserver(resize);
+      observer.observe(frame);
+    } else {
+      window.addEventListener('resize', resize);
+    }
+    requestAnimationFrame(frameMotes);
   }
 
   function updateSaveTimestampUI() {
@@ -531,6 +735,8 @@
   function init() {
     cacheElements();
     initTabs();
+    initHeroVideo();
+    initQiMotes();
 
     const { isNew, offlineReport } = GameState.loadGame();
 
