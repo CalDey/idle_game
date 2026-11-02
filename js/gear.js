@@ -25,7 +25,7 @@
     const subs = (item.sub || []).map((pair) => `<div>${window.Equip.formatSub(pair)}</div>`).join('');
     return `<div class="item-card" style="border-color:${q.color};color:${q.color}">
       <div class="item-card-head">
-        <img class="gi item-card-icon${glow}" src="assets/icons/slot_${item.s}.webp?v=14" alt="" aria-hidden="true" loading="lazy">
+        <img class="gi item-card-icon${glow}" src="assets/icons/slot_${item.s}.webp?v=14" alt="" aria-hidden="true">
         <div class="item-card-meta">
           <div class="item-name">${window.Equip.itemName(item)}</div>
           <div class="item-lv">Lv.${item.lv}</div>
@@ -36,23 +36,57 @@
     </div>`;
   }
 
+  let lastGridSig = '';
+  let slotRefs = null;
+
   function renderGrid() {
     const grid = $('equip-grid');
     if (!grid) return;
+    const slots = window.GameConfig.EQUIP_SLOTS;
     const equip = window.GameState.state.equip;
-    grid.innerHTML = '';
-    window.GameConfig.EQUIP_SLOTS.forEach((slot) => {
+    const sig = slots
+      .map((slot) => {
+        const it = equip[slot.id];
+        return it ? `${slot.id}:${it.q}:${it.lv}` : `${slot.id}:-`;
+      })
+      .join('|');
+    const needRebuild = !slotRefs || grid.children.length !== slots.length;
+    if (!needRebuild && sig === lastGridSig) return;
+
+    if (needRebuild) {
+      grid.innerHTML = '';
+      slotRefs = {};
+      slots.forEach((slot) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'equip-slot';
+        btn.dataset.slot = slot.id;
+        btn.innerHTML = `<span class="slot-lv"></span><img class="gi slot-icon" src="assets/icons/slot_${slot.id}.webp?v=14" alt="" aria-hidden="true"><div class="slot-info"><span class="slot-name">${slot.name}</span><span class="slot-item"></span></div>`;
+        grid.appendChild(btn);
+        slotRefs[slot.id] = {
+          btn,
+          lvEl: btn.querySelector('.slot-lv'),
+          imgEl: btn.querySelector('.slot-icon'),
+          nameEl: btn.querySelector('.slot-name'),
+          itemEl: btn.querySelector('.slot-item'),
+        };
+      });
+    }
+
+    slots.forEach((slot) => {
+      const ref = slotRefs[slot.id];
       const item = equip[slot.id];
       const q = item ? window.GameConfig.QUALITIES[item.q] : null;
       const glow = !item || slot.id === 'robe' || slot.id === 'boots' ? ' gi-glow' : '';
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'equip-slot' + (item ? ' filled' : '');
-      btn.dataset.slot = slot.id;
-      btn.style.borderColor = q ? q.color : 'rgba(230,201,138,0.35)';
-      btn.innerHTML = `<span class="slot-lv">${item ? 'Lv' + item.lv : ''}</span><img class="gi slot-icon${glow}" src="assets/icons/slot_${slot.id}.webp?v=14" alt="" aria-hidden="true" loading="lazy"><div class="slot-info"><span class="slot-name">${slot.name}</span><span class="slot-item">${item ? window.GameConfig.QUALITIES[item.q].name : '空'}</span></div>`;
-      grid.appendChild(btn);
+      ref.btn.className = 'equip-slot' + (item ? ' filled' : '');
+      ref.btn.style.borderColor = q ? q.color : 'rgba(230,201,138,0.35)';
+      ref.lvEl.textContent = item ? 'Lv' + item.lv : '';
+      ref.imgEl.className = 'gi slot-icon' + glow;
+      ref.nameEl.textContent = slot.name;
+      ref.itemEl.textContent = q ? q.name : '空';
     });
+
+    lastGridSig = sig;
   }
 
   function renderTree() {
@@ -239,7 +273,7 @@
     const item = window.GameState.state.equip[slotId];
     const slot = window.Equip.slotDef(slotId);
     const glow = slotGlowCls(slotId);
-    const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="assets/icons/slot_${slotId}.webp?v=14" alt="" aria-hidden="true" loading="lazy"></div>`;
+    const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="assets/icons/slot_${slotId}.webp?v=14" alt="" aria-hidden="true"></div>`;
     $('item-modal-title').textContent = item ? window.Equip.itemName(item) : slot.name;
     $('item-modal-body').innerHTML =
       iconHtml +
