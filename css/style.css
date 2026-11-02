@@ -1611,12 +1611,17 @@ body {
 
 /* 2. 战斗区 (固定 clamp 高度 + contain) */
 .battle-stage {
-  --enemy-tint: #8b7ec8;
+  --enemy-tint: #9da8b8;
+  --stage-h: clamp(200px, calc(100vh - 444px), 380px);
+  --stage-h: clamp(200px, calc(100dvh - 444px), 380px);
+  --col-w: calc((min(100vw, 480px) - 48px) / 2);
+  --arena-h: calc(var(--stage-h) - 76px);
+  --card-w: min(var(--col-w), calc(var(--arena-h) * 0.75));
+  --card-h: calc(var(--card-w) * 4 / 3);
   position: relative;
   flex: none;
   width: calc(100% + 24px);
-  height: clamp(200px, calc(100vh - 452px), 380px);
-  height: clamp(200px, calc(100dvh - 452px), 380px);
+  height: var(--stage-h);
   margin: 0 -12px;
   padding: 8px 16px 6px;
   background:
@@ -1696,24 +1701,33 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  align-items: stretch;
+  place-items: center;
+  padding: 4px 0;
 }
 
 .fighter-box {
   position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  aspect-ratio: 3 / 4;
   border-radius: 10px;
-  border: 1px solid rgba(230, 201, 138, 0.35);
-  background: rgba(10, 8, 24, 0.72);
+  border: 1px solid rgba(230, 201, 138, 0.38);
+  background: rgba(10, 8, 24, 0.78);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 0;
-  transition: transform 0.12s ease, filter 0.12s ease;
+  transition: transform 0.12s ease, filter 0.12s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .battle-stage.is-boss .fighter-enemy {
-  border-color: rgba(224, 109, 83, 0.65);
+  border: 1.5px solid var(--enemy-tint);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--enemy-tint) 70%, transparent),
+    0 0 22px color-mix(in srgb, var(--enemy-tint) 35%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--enemy-tint) 38%, transparent);
 }
 
 .fighter-player.is-attacking {
@@ -1728,12 +1742,24 @@ body {
   filter: brightness(1.35);
 }
 
-.fighter-hero-img {
+.fighter-hero-img,
+.fighter-enemy-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center 16%;
+  display: block;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.fighter-enemy.is-fallback .fighter-enemy-img {
+  display: none;
+}
+
+.fighter-enemy:not(.is-fallback) .enemy-silhouette {
+  display: none;
 }
 
 .enemy-silhouette {
@@ -1744,7 +1770,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 8px 8px 26px;
   background:
     radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--enemy-tint) 26%, transparent) 0%, transparent 72%);
 }
@@ -1791,38 +1817,50 @@ body {
 }
 
 .battle-stage.is-boss .enemy-figure::before {
-  border-color: #e0897c;
-  box-shadow: 0 0 16px rgba(224, 109, 83, 0.48);
+  border-color: var(--enemy-tint);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--enemy-tint) 55%, transparent);
 }
 
 .battle-stage.is-boss .enemy-figure::after {
-  border-top-color: #e0897c;
+  border-top-color: var(--enemy-tint);
 }
 
 .enemy-tag {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 7px;
+  right: 7px;
+  z-index: 3;
   font-size: 10px;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(180, 48, 40, 0.45);
-  border: 1px solid #e0897c;
-  color: #ffe4de;
+  letter-spacing: 0.5px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(18, 12, 28, 0.8);
+  border: 1px solid var(--enemy-tint);
+  color: #fff3e6;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--enemy-tint) 55%, transparent);
+  pointer-events: none;
 }
 
 .enemy-nameplate {
-  margin-top: 6px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 20px 8px 6px;
+  background: linear-gradient(180deg, rgba(6, 5, 18, 0) 0%, rgba(6, 5, 18, 0.78) 65%, rgba(6, 5, 18, 0.94) 100%);
   font-size: 12px;
   font-weight: 700;
   color: var(--text-main);
+  text-align: center;
   letter-spacing: 1px;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  pointer-events: none;
 }
 
 .fighter-float-layer {

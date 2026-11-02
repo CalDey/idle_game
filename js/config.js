@@ -163,20 +163,92 @@
     UNLOCK_REALM: 2,
     CRUSH_RATIO: 3,
     REGIONS: [
-      { name: '凡尘野地', chapters: [1, 5], mobs: ['山贼喽啰', '野狼', '游荡僵尸'] },
-      { name: '青冥山脉', chapters: [6, 10], mobs: ['青蛇妖', '树妖', '雷鹰'] },
-      { name: '赤炎荒原', chapters: [11, 15], mobs: ['火灵', '熔岩蜥', '魔修散人'] },
-      { name: '玄冰海', chapters: [16, 20], mobs: ['冰魄蛛', '寒水妖', '雪尸'] },
-      { name: '九幽魔域', chapters: [21, 25], mobs: ['怨魂', '骨魔', '血傀'] },
-      { name: '天外天', chapters: [26, 30], mobs: ['星骸', '天魔', '虚空剑影'] }
+      {
+        name: '凡尘野地',
+        chapters: [1, 5],
+        mobs: [
+          { name: '山贼喽啰', img: 'mob_shanzei' },
+          { name: '野狼', img: 'mob_yelang' },
+          { name: '游荡僵尸', img: 'mob_jiangshi' }
+        ]
+      },
+      {
+        name: '青冥山脉',
+        chapters: [6, 10],
+        mobs: [
+          { name: '青蛇妖', img: 'mob_qingshe' },
+          { name: '树妖', img: 'mob_shuyao' },
+          { name: '雷鹰', img: 'mob_leiying' }
+        ]
+      },
+      {
+        name: '赤炎荒原',
+        chapters: [11, 15],
+        mobs: [
+          { name: '火灵', img: 'mob_huoling' },
+          { name: '熔岩蜥', img: 'mob_rongxi' },
+          { name: '魔修散人', img: 'mob_moxiu' }
+        ]
+      },
+      {
+        name: '玄冰海',
+        chapters: [16, 20],
+        mobs: [
+          { name: '冰魄蛛', img: 'mob_bingpozhu' },
+          { name: '寒水妖', img: 'mob_hanshuiyao' },
+          { name: '雪尸', img: 'mob_xueshi' }
+        ]
+      },
+      {
+        name: '九幽魔域',
+        chapters: [21, 25],
+        mobs: [
+          { name: '怨魂', img: 'mob_yuanhun' },
+          { name: '骨魔', img: 'mob_gumo' },
+          { name: '血傀', img: 'mob_xuekui' }
+        ]
+      },
+      {
+        name: '天外天',
+        chapters: [26, 30],
+        mobs: [
+          { name: '星骸', img: 'mob_xinghai' },
+          { name: '天魔', img: 'mob_tianmo' },
+          { name: '虚空剑影', img: 'mob_jianying' }
+        ]
+      }
     ],
     BOSSES: [
-      '山魈', '赤眼狼王', '黑风寨主', '尸傀道人', '血蝠老祖',
-      '青鳞蟒', '枯木妖婆', '雷翼鹰王', '青冥蛟王', '白额山君',
-      '火鸦王', '熔岩巨傀', '焚骨老魔', '炎魔将', '赤炎魔君',
-      '冰魄蛛后', '寒潮巨鲸', '雪发剑尸', '玄冰龙女', '北溟鲲影',
-      '九幽鬼母', '噬魂魔将', '血海修罗', '白骨魔尊', '幽冥判官',
-      '天外剑魔', '星陨神将', '太虚古神', '混沌魔祖', '天道化身'
+      { name: '山魈', img: 'boss_shanxiao' },
+      { name: '赤眼狼王', img: 'boss_langwang' },
+      { name: '黑风寨主', img: 'boss_heifeng' },
+      { name: '尸傀道人', img: 'boss_shikui' },
+      { name: '血蝠老祖', img: 'boss_xuefu' },
+      { name: '青鳞蟒', img: 'boss_qinglin' },
+      { name: '枯木妖婆', img: 'boss_kumu' },
+      { name: '雷翼鹰王', img: 'boss_leiying' },
+      { name: '青冥蛟王', img: 'boss_qingming' },
+      { name: '白额山君', img: 'boss_baie' },
+      { name: '火鸦王', img: 'boss_huoya' },
+      { name: '熔岩巨傀', img: 'boss_rongyan' },
+      { name: '焚骨老魔', img: 'boss_fengu' },
+      { name: '炎魔将', img: 'boss_yanmojiang' },
+      { name: '赤炎魔君', img: 'boss_chiyan' },
+      { name: '冰魄蛛后', img: 'boss_zhuhou' },
+      { name: '寒潮巨鲸', img: 'boss_hanchao' },
+      { name: '雪发剑尸', img: 'boss_xuefa' },
+      { name: '玄冰龙女', img: 'boss_longnv' },
+      { name: '北溟鲲影', img: 'boss_beiming' },
+      { name: '九幽鬼母', img: 'boss_jiuyou' },
+      { name: '噬魂魔将', img: 'boss_shihun' },
+      { name: '血海修罗', img: 'boss_xiuluo' },
+      { name: '白骨魔尊', img: 'boss_baigu' },
+      { name: '幽冥判官', img: 'boss_panguan' },
+      { name: '天外剑魔', img: 'boss_jianmo' },
+      { name: '星陨神将', img: 'boss_xingyun' },
+      { name: '太虚古神', img: 'boss_taixu' },
+      { name: '混沌魔祖', img: 'boss_hundun' },
+      { name: '天道化身', img: 'boss_tiandao' }
     ]
   };
 

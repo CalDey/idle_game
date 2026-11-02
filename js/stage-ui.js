@@ -23,9 +23,66 @@
   let cachedWinRateVal = 0.5;
   let lastIdlePaint = 0;
   let lastUnlocked = null;
+  let preloadedNextUrl = '';
+  let preloadImg = null;
 
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function resolveEnemyImgUrl(enemy) {
+    if (!enemy) return '';
+    let raw = enemy.img || '';
+    if (!raw && window.GameConfig && window.GameConfig.BATTLE) {
+      const B = window.GameConfig.BATTLE;
+      if (enemy.isBoss) {
+        const b = B.BOSSES && B.BOSSES[Math.min(B.BOSSES.length - 1, (enemy.chapter || 1) - 1)];
+        if (b && typeof b === 'object') raw = b.img || '';
+      } else {
+        const rIdx = Math.min((B.REGIONS && B.REGIONS.length - 1) || 0, Math.floor(((enemy.chapter || 1) - 1) / 5));
+        const r = B.REGIONS && B.REGIONS[rIdx];
+        const m = r && r.mobs && r.mobs[((enemy.n || 1) - 1) % r.mobs.length];
+        if (m && typeof m === 'object') raw = m.img || '';
+      }
+    }
+    if (!raw) return '';
+    if (raw.includes('/')) {
+      return raw.includes('?') ? raw : `${raw}?v=15`;
+    }
+    const filename = raw.endsWith('.webp') ? raw : `${raw}.webp`;
+    return `assets/enemies/${filename}?v=15`;
+  }
+
+  function updateEnemyPortrait(enemy) {
+    const box = $('fighter-enemy');
+    const imgEl = $('enemy-portrait');
+    if (!box || !imgEl) return;
+    const url = resolveEnemyImgUrl(enemy);
+    if (!url) {
+      imgEl.dataset.srcKey = '';
+      box.classList.add('is-fallback');
+      imgEl.removeAttribute('src');
+      return;
+    }
+    imgEl.alt = (enemy && enemy.name) || '';
+    if (imgEl.dataset.srcKey !== url) {
+      imgEl.dataset.srcKey = url;
+      box.classList.remove('is-fallback');
+      imgEl.src = url;
+    }
+  }
+
+  function preloadNextStageEnemy(stageNum) {
+    const cur = Math.max(1, Math.floor(stageNum || 1));
+    if (cur >= 300) return;
+    const nextEnemy = window.Battle.enemyFor(cur + 1);
+    const nextUrl = resolveEnemyImgUrl(nextEnemy);
+    if (!nextUrl || nextUrl === preloadedNextUrl) return;
+    preloadedNextUrl = nextUrl;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = nextUrl;
+    preloadImg = img;
   }
 
   function unlocked() {
@@ -234,8 +291,8 @@
     if (!isUnlocked) return;
 
     const stageNum = st.cur;
-    const enemy = window.Battle.enemyFor(stageNum);
-    const player = window.Battle.playerStats(s);
+    const enemy = isPlaying && currentEnemy ? currentEnemy : window.Battle.enemyFor(stageNum);
+    const player = isPlaying && currentPlayer ? currentPlayer : window.Battle.playerStats(s);
 
     renderChapterBar(enemy, st.best || 0);
 
@@ -253,6 +310,9 @@
       enemyTag.hidden = !enemy.isBoss;
       enemyTag.textContent = 'Boss';
     }
+
+    updateEnemyPortrait(enemy);
+    preloadNextStageEnemy(enemy.n);
 
     if (!isPlaying) {
       updateHpBars(player.hp, player.hp, enemy.hp, enemy.hp, enemy);
@@ -572,6 +632,17 @@
     const btnClaim = $('btn-stage-claim');
     const btnGotoPeach = $('btn-goto-peach');
     const btnGotoGongfa = $('btn-goto-gongfa');
+    const enemyPortrait = $('enemy-portrait');
+    const fighterEnemy = $('fighter-enemy');
+
+    if (enemyPortrait && fighterEnemy) {
+      enemyPortrait.addEventListener('load', () => {
+        fighterEnemy.classList.remove('is-fallback');
+      });
+      enemyPortrait.addEventListener('error', () => {
+        fighterEnemy.classList.add('is-fallback');
+      });
+    }
 
     if (btnChallenge) {
       btnChallenge.addEventListener('click', () => startBattle(true));

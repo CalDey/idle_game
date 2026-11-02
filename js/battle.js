@@ -27,9 +27,11 @@
     const regionIdx = Math.min(B.REGIONS.length - 1, Math.floor((chapter - 1) / 5));
     const regionObj = B.REGIONS[regionIdx];
     const mobs = regionObj.mobs || [];
-    const name = isBoss
+    const entry = isBoss
       ? B.BOSSES[Math.min(B.BOSSES.length - 1, chapter - 1)]
       : mobs[(stageNum - 1) % mobs.length];
+    const name = entry && typeof entry === 'object' ? entry.name : entry;
+    const img = entry && typeof entry === 'object' ? entry.img : '';
     const cp = B.BASE_CP * Math.pow(B.GROWTH, stageNum - 1) * (isBoss ? B.BOSS_MULT : 1);
     return {
       n: stageNum,
@@ -37,6 +39,7 @@
       stageInChapter,
       region: regionObj.name,
       name,
+      img,
       isBoss,
       cp,
       atk: cp * B.SPLIT.atk,
