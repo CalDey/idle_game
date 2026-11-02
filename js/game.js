@@ -570,12 +570,10 @@
 
   // 立绘开关：true 播放练气视频，false 退回静图（静图才有呼吸/漂浮）。
   const HERO_USE_VIDEO = true;
+  let tryPlayHero = function () {};
 
   function resumeHeroVideo() {
-    const video = els.heroVideo;
-    if (!HERO_USE_VIDEO || !video || !els.meditationZone || els.meditationZone.classList.contains('use-fallback')) return;
-    const pending = video.play();
-    if (pending && typeof pending.catch === 'function') pending.catch(function () {});
+    tryPlayHero();
   }
 
   function initHeroVideo() {
@@ -592,28 +590,111 @@
       video.pause();
       return;
     }
-    stage.classList.remove('is-still');
+    stage.classList.remove('is-still', 'use-fallback');
     video.preload = 'auto';
-    const markPlaying = function () {
-      if (stage.classList.contains('use-fallback')) return;
-      if (video.currentTime > 0 || video.readyState >= 2) stage.classList.add('is-playing');
-    };
-    video.addEventListener('playing', markPlaying);
-    video.addEventListener('loadeddata', markPlaying);
-    video.addEventListener('timeupdate', markPlaying);
-    video.addEventListener('error', function () {
-      stage.classList.add('use-fallback');
-      stage.classList.remove('is-playing');
-    });
-    const pending = video.play();
-    if (pending && typeof pending.catch === 'function') {
-      pending.catch(function () {
-        stage.classList.add('use-fallback');
-      });
-    } else {
-      markPlaying();
+
+    let retriesBound = false;
+    let playAttempt = null;
+    let confirmToken = 0;
+
+    function isActuallyPlaying() {
+      return !video.paused && !video.ended && video.readyState >= 2;
     }
-    if (!video.paused) markPlaying();
+
+    function unbindHeroRetries() {
+      if (!retriesBound) return;
+      retriesBound = false;
+      document.removeEventListener('pointerdown', tryPlayHero, true);
+      document.removeEventListener('touchstart', tryPlayHero, true);
+      document.removeEventListener('click', tryPlayHero, true);
+      document.removeEventListener('visibilitychange', onHeroVisible);
+      video.removeEventListener('canplay', tryPlayHero);
+      video.removeEventListener('loadeddata', tryPlayHero);
+    }
+
+    function showPoster() {
+      if (stage.classList.contains('use-fallback')) return;
+      stage.classList.remove('is-playing');
+      bindHeroRetries();
+    }
+
+    function markHeroPlaying() {
+      if (video.error || stage.classList.contains('use-fallback')) return;
+      const token = ++confirmToken;
+      // A play() promise can resolve or a 'playing' event can fire and then be
+      // aborted immediately. Only hide the poster once playback sticks.
+      setTimeout(function () {
+        if (token !== confirmToken) return;
+        if (video.error || stage.classList.contains('use-fallback')) return;
+        if (!isActuallyPlaying()) {
+          showPoster();
+          return;
+        }
+        stage.classList.add('is-playing');
+        stage.classList.remove('is-still');
+        unbindHeroRetries();
+      }, 60);
+    }
+
+    function onHeroVisible() {
+      if (document.visibilityState === 'visible') tryPlayHero();
+    }
+
+    function bindHeroRetries() {
+      if (retriesBound) return;
+      retriesBound = true;
+      document.addEventListener('pointerdown', tryPlayHero, true);
+      document.addEventListener('touchstart', tryPlayHero, true);
+      document.addEventListener('click', tryPlayHero, true);
+      document.addEventListener('visibilitychange', onHeroVisible);
+      video.addEventListener('canplay', tryPlayHero);
+      video.addEventListener('loadeddata', tryPlayHero);
+    }
+
+    tryPlayHero = function () {
+      if (!HERO_USE_VIDEO || !video || stage.classList.contains('use-fallback')) return;
+      if (isActuallyPlaying()) {
+        markHeroPlaying();
+        return;
+      }
+      if (playAttempt) return;
+      let pending = null;
+      try {
+        pending = video.play();
+      } catch (err) {
+        pending = Promise.reject(err);
+      }
+      playAttempt = pending;
+      if (pending && typeof pending.then === 'function') {
+        pending.then(function () {
+          if (playAttempt === pending) playAttempt = null;
+          markHeroPlaying();
+        }).catch(function () {
+          if (playAttempt === pending) playAttempt = null;
+          // NotAllowedError / AbortError: keep the poster and retry. Do not lock the still.
+          if (isActuallyPlaying()) markHeroPlaying();
+        });
+      } else {
+        playAttempt = null;
+        markHeroPlaying();
+      }
+    };
+
+    video.addEventListener('playing', markHeroPlaying);
+    video.addEventListener('pause', function () {
+      if (video.ended || stage.classList.contains('use-fallback')) return;
+      confirmToken += 1;
+      showPoster();
+    });
+    video.addEventListener('error', function () {
+      if (!video.error) return;
+      stage.classList.add('use-fallback', 'is-still');
+      stage.classList.remove('is-playing');
+      unbindHeroRetries();
+    });
+
+    bindHeroRetries();
+    tryPlayHero();
   }
 
   function initQiMotes() {

@@ -356,15 +356,26 @@ body {
 
 .hero-stage.is-playing .hero-video {
   opacity: 1;
+  visibility: visible;
+  z-index: 2;
 }
 
+.hero-stage.is-playing .hero-still,
 .hero-stage.is-playing .hero-fallback,
-.hero-stage.use-fallback .hero-video {
+.hero-stage.is-playing.is-still .hero-still,
+.hero-stage.is-playing.is-still .hero-fallback {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hero-stage.use-fallback:not(.is-playing) .hero-video {
   opacity: 0;
 }
 
-.hero-stage.use-fallback .hero-fallback {
+.hero-stage.use-fallback:not(.is-playing) .hero-fallback,
+.hero-stage.use-fallback:not(.is-playing) .hero-still {
   opacity: 1;
+  visibility: visible;
   z-index: 1;
 }
 
