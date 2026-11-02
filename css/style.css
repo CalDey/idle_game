@@ -353,6 +353,14 @@ body {
   object-position: center top;
   background: var(--bg-stage);
   pointer-events: none;
+  image-rendering: auto;
+  filter: none;
+}
+
+.hero-stage.is-playing .hero-portrait,
+.hero-stage.is-playing .hero-breathe {
+  animation: none;
+  transform: none;
 }
 
 .hero-still {
