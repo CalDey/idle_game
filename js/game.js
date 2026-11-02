@@ -580,10 +580,17 @@
     const video = els.heroVideo;
     const stage = els.meditationZone;
     if (!video || !stage) return;
-    video.muted = true;
     video.defaultMuted = true;
+    video.muted = true;
     video.loop = true;
+    video.autoplay = true;
     video.playsInline = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('autoplay', '');
+    video.setAttribute('loop', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.preload = HERO_USE_VIDEO ? 'auto' : 'none';
     if (!HERO_USE_VIDEO) {
       stage.classList.add('is-still');
       video.preload = 'none';
@@ -591,7 +598,9 @@
       return;
     }
     stage.classList.remove('is-still', 'use-fallback');
-    video.preload = 'auto';
+    const heroSrc = video.getAttribute('src') || 'assets/hero_lianqi_idle.mp4?v=7';
+    while (video.firstChild) video.removeChild(video.firstChild);
+    video.src = heroSrc;
 
     let retriesBound = false;
     let playAttempt = null;
@@ -694,6 +703,7 @@
     });
 
     bindHeroRetries();
+    video.load();
     tryPlayHero();
   }
 

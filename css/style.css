@@ -66,11 +66,14 @@ body {
 
 /* Top bar */
 .top-header {
-  flex: 0 0 auto;
+  flex: none;
+  height: 100px;
+  box-sizing: border-box;
   padding: 8px 12px 8px;
   background: linear-gradient(180deg, #141232 0%, var(--bg-stage) 100%);
   border-bottom: 1px solid rgba(230, 201, 138, 0.18);
   z-index: 12;
+  overflow: hidden;
 }
 
 .header-title-row {
@@ -160,6 +163,9 @@ body {
   margin-top: 1px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .res-value.gold {
@@ -268,12 +274,16 @@ body {
 .hero-stage {
   position: relative;
   z-index: 2;
-  flex: 1 1 0;
-  min-height: 0;
+  flex: none;
+  width: calc(100% + 24px);
+  /* Viewport-only height so log lines, prices, and toasts cannot resize the portrait. */
+  height: clamp(168px, calc(100vh - 448px), 520px);
+  height: clamp(168px, calc(100dvh - 448px), 520px);
   margin: 0 -12px;
   cursor: pointer;
   background: var(--bg-stage);
   overflow: hidden;
+  contain: layout size;
 }
 
 .hero-frame {
@@ -284,7 +294,21 @@ body {
 }
 
 #tab-cultivate > .gufeng-card {
-  flex: 0 0 auto;
+  flex: none;
+}
+
+#tab-cultivate > .gufeng-card:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#tab-cultivate .log-box {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
 }
 
 .hero-portrait,
@@ -349,7 +373,10 @@ body {
 }
 
 .hero-video {
+  display: block;
   z-index: 1;
+  /* Opacity only. iOS Safari will not start playback on display:none, visibility:hidden, or a 0×0 box. */
+  visibility: visible;
   opacity: 0;
   transition: opacity 0.45s ease;
 }
@@ -1023,8 +1050,5 @@ body {
   .realm-title {
     font-size: 22px;
     letter-spacing: 4px;
-  }
-  #tab-cultivate .log-box {
-    max-height: 72px;
   }
 }
