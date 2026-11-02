@@ -47,10 +47,10 @@
     }
     if (!raw) return '';
     if (raw.includes('/')) {
-      return raw.includes('?') ? raw : `${raw}?v=16`;
+      return raw.includes('?') ? raw : `${raw}?v=17`;
     }
     const filename = raw.endsWith('.webp') ? raw : `${raw}.webp`;
-    return `assets/enemies/${filename}?v=16`;
+    return `assets/enemies/${filename}?v=17`;
   }
 
   function updateEnemyPortrait(enemy) {
