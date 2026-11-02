@@ -1,6 +1,6 @@
 :root {
   /* Ink-wash xianxia: indigo night, cinnabar, antique gold, jade */
-  --bg-stage: #000726;
+  --bg-stage: #000624;
   --bg-deep: #0c0a22;
   --bg-card: rgba(28, 24, 48, 0.92);
   --bg-card-alt: rgba(18, 16, 36, 0.94);
@@ -264,7 +264,37 @@ body {
   overflow: hidden;
 }
 
+.hero-portrait,
+.hero-breathe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-breathe {
+  transform-origin: 50% 82%;
+}
+
+.hero-stage.is-still .hero-portrait {
+  animation: heroFloat 5.2s ease-in-out infinite;
+}
+
+.hero-stage.is-still .hero-breathe {
+  animation: heroBreathe 4s ease-in-out infinite;
+}
+
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes heroBreathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.012); }
+}
+
 .hero-video,
+.hero-still,
 .hero-fallback {
   position: absolute;
   inset: 0;
@@ -274,6 +304,20 @@ body {
   object-position: center center;
   background: var(--bg-stage);
   pointer-events: none;
+}
+
+.hero-still {
+  z-index: 1;
+  opacity: 0;
+}
+
+.hero-stage.is-still .hero-still {
+  opacity: 1;
+}
+
+.hero-stage.is-still .hero-video,
+.hero-stage.is-still .hero-fallback {
+  opacity: 0;
 }
 
 .hero-fallback {
@@ -336,8 +380,8 @@ body {
   z-index: 3;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(0, 7, 38, 0.28) 0%, rgba(0, 7, 38, 0) 14%, rgba(0, 7, 38, 0) 80%, var(--bg-stage) 100%),
-    radial-gradient(ellipse 88% 80% at 50% 46%, transparent 52%, rgba(0, 7, 38, 0.18) 74%, rgba(0, 7, 38, 0.72) 100%);
+    linear-gradient(180deg, rgba(0, 6, 36, 0.28) 0%, rgba(0, 6, 36, 0) 14%, rgba(0, 6, 36, 0) 80%, var(--bg-stage) 100%),
+    radial-gradient(ellipse 88% 80% at 50% 46%, transparent 52%, rgba(0, 6, 36, 0.18) 74%, rgba(0, 6, 36, 0.72) 100%);
 }
 
 .realm-title-plate {
@@ -931,6 +975,14 @@ body {
   display: flex;
   justify-content: center;
   gap: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-stage.is-still .hero-portrait,
+  .hero-stage.is-still .hero-breathe,
+  .hero-aura {
+    animation: none;
+  }
 }
 
 @media (max-height: 700px) {

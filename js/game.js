@@ -568,9 +568,12 @@
     });
   }
 
+  // 立绘开关：false 用练气静图，true 播放 assets 里的 heroine 视频。
+  const HERO_USE_VIDEO = false;
+
   function resumeHeroVideo() {
     const video = els.heroVideo;
-    if (!video || !els.meditationZone || els.meditationZone.classList.contains('use-fallback')) return;
+    if (!HERO_USE_VIDEO || !video || !els.meditationZone || els.meditationZone.classList.contains('use-fallback')) return;
     const pending = video.play();
     if (pending && typeof pending.catch === 'function') pending.catch(function () {});
   }
@@ -583,6 +586,14 @@
     video.defaultMuted = true;
     video.loop = true;
     video.playsInline = true;
+    if (!HERO_USE_VIDEO) {
+      stage.classList.add('is-still');
+      video.preload = 'none';
+      video.pause();
+      return;
+    }
+    stage.classList.remove('is-still');
+    video.preload = 'auto';
     const markPlaying = function () {
       if (stage.classList.contains('use-fallback')) return;
       if (video.currentTime > 0 || video.readyState >= 2) stage.classList.add('is-playing');
@@ -670,10 +681,12 @@
       }
     };
 
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     function frameMotes(now) {
       const dt = Math.max(0.001, Math.min(0.05, (now - last) / 1000));
       last = now;
-      if (!document.hidden && width > 2 && height > 2) {
+      if (!reduceMotion && !document.hidden && width > 2 && height > 2) {
         const scale = qiScale();
         while (motes.length < scale.count) motes.push(makeMote(false));
         ctx.clearRect(0, 0, width, height);
