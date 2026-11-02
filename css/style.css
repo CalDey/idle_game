@@ -35,6 +35,8 @@
 html, body {
   width: 100%;
   height: 100%;
+  height: 100vh;
+  height: 100dvh;
   background: #070612;
   color: var(--text-main);
   font-family: var(--font-display);
@@ -50,7 +52,10 @@ body {
   position: relative;
   width: 100%;
   max-width: 480px;
+  height: 100vh;
   height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   margin: 0 auto;
   background: var(--bg-stage);
   display: flex;
@@ -61,11 +66,11 @@ body {
 
 /* Top bar */
 .top-header {
+  flex: 0 0 auto;
   padding: 8px 12px 8px;
   background: linear-gradient(180deg, #141232 0%, var(--bg-stage) 100%);
   border-bottom: 1px solid rgba(230, 201, 138, 0.18);
   z-index: 12;
-  flex-shrink: 0;
 }
 
 .header-title-row {
@@ -167,25 +172,34 @@ body {
 }
 
 .main-content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 12px 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 12px 8px;
   display: flex;
   flex-direction: column;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(230, 201, 138, 0.35) transparent;
 }
 
 .tab-pane {
   display: none;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  min-height: 0;
 }
 
 .tab-pane.active {
   display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(230, 201, 138, 0.35) transparent;
   animation: paneIn 0.36s cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+
+#tab-cultivate.active {
+  overflow: hidden;
 }
 
 @keyframes paneIn {
@@ -234,13 +248,17 @@ body {
 }
 
 .card-title {
+  flex: 0 0 auto;
   font-size: 16px;
   color: var(--accent-gold-bright);
   font-weight: 700;
   letter-spacing: 2px;
+  white-space: nowrap;
 }
 
 .card-subtitle {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 12px;
   color: var(--text-muted);
   text-align: right;
@@ -250,18 +268,23 @@ body {
 .hero-stage {
   position: relative;
   z-index: 2;
-  margin: 0 -12px 2px;
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0 -12px;
   cursor: pointer;
   background: var(--bg-stage);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .hero-frame {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
+  position: absolute;
+  inset: 0;
   background: var(--bg-stage);
   overflow: hidden;
+}
+
+#tab-cultivate > .gufeng-card {
+  flex: 0 0 auto;
 }
 
 .hero-portrait,
@@ -300,7 +323,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
   background: var(--bg-stage);
   pointer-events: none;
@@ -854,13 +877,13 @@ body {
 }
 
 .bottom-nav {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   background: linear-gradient(180deg, #161332, #0e0c24);
   border-top: 1px solid rgba(230, 201, 138, 0.35);
   padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
   z-index: 12;
-  flex-shrink: 0;
 }
 
 .nav-btn {
@@ -986,12 +1009,11 @@ body {
 }
 
 @media (max-height: 700px) {
-  .hero-frame {
-    aspect-ratio: auto;
-    height: 46vh;
-  }
   .realm-title {
     font-size: 22px;
     letter-spacing: 4px;
+  }
+  #tab-cultivate .log-box {
+    max-height: 72px;
   }
 }
