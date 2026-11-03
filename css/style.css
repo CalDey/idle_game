@@ -954,30 +954,44 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
-  padding: 8px 8px;
+  gap: 8px;
+  padding: 8px;
   background: rgba(10, 8, 24, 0.45);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
 }
 
-.upgrade-icon {
-  width: 40px;
-  height: 40px;
+.upgrade-icon-wrap {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 42%, rgba(56, 48, 88, 0.85) 0%, rgba(22, 18, 42, 0.95) 100%);
+  border: 1px solid rgba(212, 175, 95, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.upgrade-item.locked .upgrade-icon {
-  opacity: 0.65;
-  filter: grayscale(0.7) brightness(0.95) drop-shadow(0 0 2px rgba(230, 201, 138, 0.3));
+.upgrade-icon,
+.gi.upgrade-icon {
+  width: 44px;
+  height: 44px;
+  display: block;
 }
 
-.upgrade-item.locked .upgrade-icon.gi-glow {
-  opacity: 0.65;
-  filter: grayscale(0.65) brightness(1.1) drop-shadow(0 0 3px rgba(230, 201, 138, 0.45));
+.upgrade-item.locked .upgrade-icon-wrap {
+  border-color: rgba(212, 175, 95, 0.15);
+}
+
+.upgrade-item.locked .upgrade-icon,
+.upgrade-item.locked .gi.upgrade-icon {
+  opacity: 1;
+  filter: grayscale(0.75) brightness(0.55);
 }
 
 .upgrade-meta {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
 }
 
@@ -1010,16 +1024,31 @@ body {
 }
 
 .upgrade-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-top: 3px;
-  line-height: 1.45;
+  line-height: 1.4;
+  overflow-wrap: break-word;
 }
 
 .upgrade-effect {
   font-size: 11px;
   color: var(--accent-jade);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 390px) {
+  .upgrade-item {
+    gap: 6px;
+    padding: 8px 6px;
+  }
+
+  .upgrade-name {
+    font-size: 12px;
+  }
 }
 
 .log-dialog {
@@ -1407,13 +1436,14 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .equip-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 
 .equip-slot {
   position: relative;
-  min-height: 52px;
+  min-height: 54px;
+  min-width: 0;
   border-radius: 8px;
   border: 1px solid rgba(230, 201, 138, 0.35);
   background: rgba(8, 6, 20, 0.45);
@@ -1424,14 +1454,18 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
-  padding: 4px 6px;
+  padding: 5px 6px;
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
 }
 
-.slot-icon {
-  width: 36px;
-  height: 36px;
+.slot-icon,
+.gi.slot-icon {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  display: block;
 }
 
 .equip-slot:not(.filled) .slot-icon {
@@ -1449,10 +1483,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .slot-info {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -1461,16 +1497,26 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   top: 3px;
   right: 4px;
   font-size: 10px;
+  line-height: 1;
   color: var(--accent-gold);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .slot-name {
   font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .slot-item {
   font-size: 10px;
+  line-height: 1.15;
   opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .peach-card,
@@ -2423,8 +2469,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   }
 
   #tab-gear .equip-slot {
-    min-height: 46px;
-    padding: 3px 6px;
+    min-height: 48px;
+    padding: 4px 6px;
   }
 
   #tab-gear .gufeng-card {

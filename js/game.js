@@ -295,7 +295,9 @@
       const row = document.createElement('div');
       row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
       row.innerHTML = `
-        <img class="gi upgrade-icon" src="assets/icons/gf_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
+        <div class="upgrade-icon-wrap">
+          <img class="gi upgrade-icon" src="assets/icons/gf_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
+        </div>
         <div class="upgrade-meta">
           <div class="upgrade-name-row">
             <span class="upgrade-name">${item.name}</span>
@@ -331,7 +333,9 @@
       const row = document.createElement('div');
       row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
       row.innerHTML = `
-        <img class="gi upgrade-icon${glow}" src="assets/icons/df_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
+        <div class="upgrade-icon-wrap">
+          <img class="gi upgrade-icon${glow}" src="assets/icons/df_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
+        </div>
         <div class="upgrade-meta">
           <div class="upgrade-name-row">
             <span class="upgrade-name">${item.name}</span>

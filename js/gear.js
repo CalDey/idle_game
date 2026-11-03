@@ -61,7 +61,7 @@
         btn.type = 'button';
         btn.className = 'equip-slot';
         btn.dataset.slot = slot.id;
-        btn.innerHTML = `<span class="slot-lv"></span><img class="gi slot-icon" src="assets/icons/slot_${slot.id}.webp?v=18" alt="" aria-hidden="true"><div class="slot-info"><span class="slot-name">${slot.name}</span><span class="slot-item"></span></div>`;
+        btn.innerHTML = `<span class="slot-lv"></span><img class="gi slot-icon" width="34" height="34" src="assets/icons/slot_${slot.id}.webp?v=18" alt="" aria-hidden="true"><div class="slot-info"><span class="slot-name">${slot.name}</span><span class="slot-item"></span></div>`;
         grid.appendChild(btn);
         slotRefs[slot.id] = {
           btn,
