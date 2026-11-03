@@ -496,7 +496,7 @@
       { id: 'diandaoshousuan', name: '点到手酸', cat: '彩蛋', tier: 'egg', stat: 'tap', value: 0.03, bonus: '点击灵气 +3%', cond: '单日点击 1000 次' }
     ],
     HEROES: [
-      { id: 'lanyi', name: '清冷剑仙', img: 'assets/hero_dawn_hd.jpg?v=1', poster: 'assets/hero_dawn_poster.jpg?v=1', video: 'assets/hero_dawn_hd.mp4?v=1' },
+      { id: 'lanyi', name: '清冷剑仙', img: 'assets/hero_v21_new_hd.jpg?v=1', poster: 'assets/hero_v21_new_poster.jpg?v=1', video: 'assets/hero_v21_new_main.mp4?v=1' },
       { id: 'cloak', name: '魔灵光', img: 'assets/hero_mlg_dawn_hd.jpg?v=1', poster: 'assets/hero_mlg_dawn_poster.jpg?v=1', video: 'assets/hero_mlg_dawn_hd.mp4?v=1' },
       { id: 'saintess', name: '圣王女', img: 'assets/hero_saintess_v4b_hd.jpg?v=1', poster: 'assets/hero_saintess_v4b_poster.jpg?v=1', video: 'assets/hero_saintess_v4b_hd.mp4?v=1' },
       { id: 'miko', name: '灼樱巫女', img: 'assets/hero_miko_dawn_hd.jpg?v=1', poster: 'assets/hero_miko_dawn_poster.jpg?v=1', video: 'assets/hero_miko_dawn_main.mp4?v=1' }
