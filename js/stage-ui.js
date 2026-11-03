@@ -293,7 +293,7 @@
       }
     }
     if (rewardEl) {
-      rewardEl.innerHTML = `<img class="gi gi-14" src="assets/icons/res_lingyu@64.webp?v=14" alt="" aria-hidden="true"> +${fmt(lingyu)} · <img class="gi gi-14" src="assets/icons/res_peach@64.webp?v=14" alt="" aria-hidden="true"> +${fmt(peaches)}`;
+      rewardEl.innerHTML = `<img class="gi gi-14" src="assets/icons/res_lingyu@64.webp?v=18" alt="" aria-hidden="true"> +${fmt(lingyu)} · <img class="gi gi-14" src="assets/icons/res_peach@64.webp?v=18" alt="" aria-hidden="true"> +${fmt(peaches)}`;
     }
     if (claimBtn) {
       claimBtn.disabled = best <= 0 || cappedSec < 60;

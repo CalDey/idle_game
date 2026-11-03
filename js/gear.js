@@ -25,7 +25,7 @@
     const subs = (item.sub || []).map((pair) => `<div>${window.Equip.formatSub(pair)}</div>`).join('');
     return `<div class="item-card" style="border-color:${q.color};color:${q.color}">
       <div class="item-card-head">
-        <img class="gi item-card-icon${glow}" src="assets/icons/slot_${item.s}.webp?v=14" alt="" aria-hidden="true">
+        <img class="gi item-card-icon${glow}" src="assets/icons/slot_${item.s}.webp?v=18" alt="" aria-hidden="true">
         <div class="item-card-meta">
           <div class="item-name">${window.Equip.itemName(item)}</div>
           <div class="item-lv">Lv.${item.lv}</div>
@@ -61,7 +61,7 @@
         btn.type = 'button';
         btn.className = 'equip-slot';
         btn.dataset.slot = slot.id;
-        btn.innerHTML = `<span class="slot-lv"></span><img class="gi slot-icon" src="assets/icons/slot_${slot.id}.webp?v=14" alt="" aria-hidden="true"><div class="slot-info"><span class="slot-name">${slot.name}</span><span class="slot-item"></span></div>`;
+        btn.innerHTML = `<span class="slot-lv"></span><img class="gi slot-icon" src="assets/icons/slot_${slot.id}.webp?v=18" alt="" aria-hidden="true"><div class="slot-info"><span class="slot-name">${slot.name}</span><span class="slot-item"></span></div>`;
         grid.appendChild(btn);
         slotRefs[slot.id] = {
           btn,
@@ -273,7 +273,7 @@
     const item = window.GameState.state.equip[slotId];
     const slot = window.Equip.slotDef(slotId);
     const glow = slotGlowCls(slotId);
-    const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="assets/icons/slot_${slotId}.webp?v=14" alt="" aria-hidden="true"></div>`;
+    const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="assets/icons/slot_${slotId}.webp?v=18" alt="" aria-hidden="true"></div>`;
     $('item-modal-title').textContent = item ? window.Equip.itemName(item) : slot.name;
     $('item-modal-body').innerHTML =
       iconHtml +
