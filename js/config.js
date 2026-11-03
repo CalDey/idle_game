@@ -494,7 +494,14 @@
       { id: 'jianxinchumeng', name: '剑心初萌', cat: '彩蛋', tier: 'egg', stat: 'cp', value: 0.02, bonus: '战力 +2%', cond: '第一次装备武器' },
       { id: 'biguanbuchu', name: '闭关不出', cat: '彩蛋', tier: 'egg', stat: 'qi', value: 0.03, bonus: '灵气 +3%', cond: '一次离线结算满 12 小时' },
       { id: 'diandaoshousuan', name: '点到手酸', cat: '彩蛋', tier: 'egg', stat: 'tap', value: 0.03, bonus: '点击灵气 +3%', cond: '单日点击 1000 次' }
+    ],
+    HEROES: [
+      { id: 'lanyi', name: '蓝衣剑修', img: 'assets/hero_j_hd.jpg?v=15', video: 'assets/hero_j_hd.mp4?v=15' },
+      { id: 'locked1', name: '敬请期待', locked: true },
+      { id: 'locked2', name: '敬请期待', locked: true },
+      { id: 'locked3', name: '敬请期待', locked: true }
     ]
   };
+  window.CONFIG = window.GameConfig;
 })();
 

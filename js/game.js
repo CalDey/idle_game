@@ -47,6 +47,10 @@
     els.btnOpenLog = document.getElementById('btn-open-log');
     els.btnCloseLog = document.getElementById('btn-close-log');
     els.badgeLog = document.getElementById('badge-log');
+    els.roleModal = document.getElementById('role-modal');
+    els.roleList = document.getElementById('role-list');
+    els.btnOpenRole = document.getElementById('btn-open-role');
+    els.btnCloseRole = document.getElementById('btn-close-role');
     els.gongfaList = document.getElementById('gongfa-list');
     els.dongfuList = document.getElementById('dongfu-list');
 
@@ -79,6 +83,8 @@
     els.btnConfirmNo = document.getElementById('btn-confirm-no');
 
     els.heroVideo = document.getElementById('hero-video');
+    els.heroStill = document.getElementById('hero-still');
+    els.heroFallback = document.getElementById('hero-fallback');
     els.battleHeroVideo = document.querySelector('#fighter-player .fighter-hero-video');
     els.fighterPlayer = document.getElementById('fighter-player');
     els.tabStage = document.getElementById('tab-stage');
@@ -1027,6 +1033,163 @@
     els.lastSaveStatus.textContent = `上次自动存档：${t}`;
   }
 
+  function getHeroList() {
+    if (window.CONFIG && Array.isArray(window.CONFIG.HEROES)) return window.CONFIG.HEROES;
+    if (window.GameConfig && Array.isArray(window.GameConfig.HEROES)) return window.GameConfig.HEROES;
+    return [];
+  }
+
+  function resolveHero(heroId) {
+    const heroes = getHeroList();
+    let hero = heroes.find((h) => h && h.id === heroId && !h.locked);
+    if (!hero) {
+      hero = heroes.find((h) => h && !h.locked) || {
+        id: 'lanyi',
+        name: '蓝衣剑修',
+        img: 'assets/hero_j_hd.jpg?v=15',
+        video: 'assets/hero_j_hd.mp4?v=15'
+      };
+    }
+    return hero;
+  }
+
+  function applyHeroAppearance(heroId) {
+    const hero = resolveHero(heroId);
+    if (GameState && GameState.state) {
+      GameState.state.heroId = hero.id;
+    }
+
+    const heroStill = els.heroStill || document.getElementById('hero-still');
+    const heroFallback = els.heroFallback || document.getElementById('hero-fallback');
+    const heroVideo = els.heroVideo || document.getElementById('hero-video');
+
+    if (heroStill && hero.img) {
+      heroStill.setAttribute('src', hero.img);
+      heroStill.src = hero.img;
+      if (hero.name) heroStill.setAttribute('alt', hero.name);
+    }
+    if (heroFallback && hero.img) {
+      heroFallback.setAttribute('src', hero.img);
+      heroFallback.src = hero.img;
+    }
+    if (heroVideo) {
+      if (hero.img) {
+        heroVideo.setAttribute('poster', hero.img);
+        heroVideo.poster = hero.img;
+      }
+      if (hero.video) {
+        const prevSrc = heroVideo.getAttribute('src');
+        heroVideo.setAttribute('src', hero.video);
+        if (prevSrc !== hero.video) {
+          if (els.meditationZone) {
+            els.meditationZone.classList.remove('use-fallback', 'is-playing');
+          }
+          heroVideo.src = hero.video;
+          try {
+            heroVideo.load();
+          } catch (err) {}
+          resumeHeroVideo();
+        }
+      }
+    }
+
+    const fighterPlayer = els.fighterPlayer || document.getElementById('fighter-player');
+    if (fighterPlayer) {
+      const nodes = fighterPlayer.querySelectorAll('.fighter-hero-img');
+      nodes.forEach((node) => {
+        const tag = (node.tagName || '').toUpperCase();
+        if (tag === 'IMG' && hero.img) {
+          node.setAttribute('src', hero.img);
+          node.src = hero.img;
+          if (hero.name) node.setAttribute('alt', hero.name);
+        } else if (tag === 'VIDEO') {
+          if (hero.img) {
+            node.setAttribute('poster', hero.img);
+            node.poster = hero.img;
+          }
+          if (hero.video) {
+            const prevBattleSrc = node.getAttribute('src');
+            node.setAttribute('src', hero.video);
+            if (prevBattleSrc !== hero.video) {
+              fighterPlayer.classList.remove('use-fallback');
+              node.src = hero.video;
+              try {
+                node.load();
+              } catch (err) {}
+              resumeBattleHeroVideo();
+            }
+          }
+        }
+      });
+    }
+  }
+
+  function renderRoleList() {
+    const box = els.roleList || document.getElementById('role-list');
+    if (!box) return;
+    const heroes = getHeroList();
+    const activeHero = resolveHero(GameState.state && GameState.state.heroId);
+    box.innerHTML = '';
+
+    heroes.forEach((hero) => {
+      if (!hero) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('data-hero-id', hero.id);
+
+      if (hero.locked) {
+        btn.className = 'role-card is-locked';
+        btn.disabled = true;
+        btn.setAttribute('aria-disabled', 'true');
+        btn.innerHTML = `
+          <div class="role-locked-body" aria-hidden="true">
+            <svg class="role-silhouette" viewBox="0 0 120 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M54 18C54 13.5 56.7 10 60 10C63.3 10 66 13.5 66 18C66 20.5 64.8 22.7 63 23.8C69.5 26 74 32.5 74 40.5C74 48 69.8 54.4 64 56.8L68 62L92 72L100 138L20 138L28 72L52 62L56 56.8C50.2 54.4 46 48 46 40.5C46 32.5 50.5 26 57 23.8C55.2 22.7 54 20.5 54 18Z" fill="currentColor"/>
+              <path d="M28 32L36 26L88 118L82 124L28 32Z" fill="currentColor" opacity="0.55"/>
+            </svg>
+            <span class="role-lock-badge">
+              <svg class="role-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+              </svg>
+            </span>
+          </div>
+          <div class="role-card-footer">
+            <span class="role-card-name">${hero.name || '敬请期待'}</span>
+          </div>
+        `;
+      } else {
+        const isActive = hero.id === activeHero.id;
+        btn.className = 'role-card' + (isActive ? ' is-active' : '');
+        btn.innerHTML = `
+          <img class="role-card-img" src="${hero.img}" alt="${hero.name}" loading="lazy" />
+          ${isActive ? '<span class="role-card-badge">使用中</span>' : ''}
+          <div class="role-card-footer">
+            <span class="role-card-name">${hero.name}</span>
+          </div>
+        `;
+      }
+      box.appendChild(btn);
+    });
+  }
+
+  function handleRoleListClick(e) {
+    const card = e.target.closest('.role-card[data-hero-id]');
+    if (!card || card.classList.contains('is-locked') || card.disabled) return;
+    const heroId = card.getAttribute('data-hero-id');
+    const heroes = getHeroList();
+    const hero = heroes.find((h) => h && h.id === heroId);
+    if (!hero || hero.locked) return;
+
+    GameState.state.heroId = hero.id;
+    GameState.saveGame();
+    applyHeroAppearance(hero.id);
+    renderRoleList();
+    if (els.roleModal) {
+      els.roleModal.classList.remove('active');
+    }
+  }
+
   function gameLoop(now) {
     const dt = Math.max(0, Math.min(1.0, (now - lastTickTime) / 1000));
     lastTickTime = now;
@@ -1064,6 +1227,8 @@
     initQiMotes();
 
     const { isNew, offlineReport } = GameState.loadGame();
+    applyHeroAppearance(GameState.state.heroId);
+    renderRoleList();
 
     renderUpgradeLists();
     renderReincarnationUI();
@@ -1107,6 +1272,24 @@
       });
     }
 
+    if (els.btnOpenRole && els.roleModal) {
+      els.btnOpenRole.addEventListener('click', () => {
+        renderRoleList();
+        els.roleModal.classList.add('active');
+      });
+      if (els.btnCloseRole) {
+        els.btnCloseRole.addEventListener('click', () => els.roleModal.classList.remove('active'));
+      }
+      els.roleModal.addEventListener('click', (e) => {
+        if (e.target === els.roleModal) {
+          els.roleModal.classList.remove('active');
+        }
+      });
+      if (els.roleList) {
+        els.roleList.addEventListener('click', handleRoleListClick);
+      }
+    }
+
     els.btnManualSave.addEventListener('click', () => {
       GameState.saveGame();
       updateSaveTimestampUI();
@@ -1119,6 +1302,8 @@
         '确定要彻底清空当前所有修仙进度、灵石、功法与道果吗？此操作不可撤销！',
         () => {
           GameState.resetGame();
+          applyHeroAppearance(GameState.state.heroId);
+          renderRoleList();
           els.logBox.innerHTML = '';
           addLog('已散尽修为，重归凡尘，开启全新仙途！', 'warn');
           renderUpgradeLists();

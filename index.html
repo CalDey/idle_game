@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=26" />
+  <link rel="stylesheet" href="css/style.css?v=27" />
 </head>
 
 <body>
@@ -100,6 +100,8 @@
             <span class="card-title"><img class="gi" src="assets/icons/nav_cultivate@64.webp?v=16" alt=""
                 aria-hidden="true">境界突破</span>
             <span id="realm-desc" class="card-subtitle">引天地灵气入体，初窥仙门径。</span>
+            <button id="btn-open-role" class="icon-btn role-switch-btn" type="button" aria-label="更换角色"><img class="gi"
+                src="assets/icons/ui_role@64.webp?v=17" alt="" aria-hidden="true"></button>
           </div>
 
           <div class="qi-progress-wrap">
@@ -359,6 +361,20 @@
       </div>
     </div>
 
+    <div id="role-modal" class="modal-backdrop">
+      <div class="modal-dialog role-dialog">
+        <div class="card-header">
+          <span class="card-title"><img class="gi" src="assets/icons/ui_role@64.webp?v=17" alt=""
+              aria-hidden="true">更换角色</span>
+          <span class="card-subtitle">择一法身，踏入仙途</span>
+        </div>
+        <div id="role-list" class="role-grid"></div>
+        <div class="modal-actions">
+          <button id="btn-close-role" class="btn" type="button">关闭</button>
+        </div>
+      </div>
+    </div>
+
     <div id="settings-modal" class="modal-backdrop">
       <div class="modal-dialog settings-dialog">
         <div class="gufeng-card settings-card">
@@ -527,14 +543,14 @@
   </div>
 
   <script src="js/no-zoom.js?v=22"></script>
-  <script src="js/config.js?v=22"></script>
+  <script src="js/config.js?v=23"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=22"></script>
+  <script src="js/state.js?v=23"></script>
   <script src="js/titles.js?v=22"></script>
   <script src="js/battle.js?v=22"></script>
   <script src="js/gear.js?v=24"></script>
   <script src="js/stage-ui.js?v=22"></script>
-  <script src="js/game.js?v=24"></script>
+  <script src="js/game.js?v=25"></script>
 </body>
 
 </html>

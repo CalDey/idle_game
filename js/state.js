@@ -22,6 +22,7 @@
     const now = Date.now();
     return {
       version: 3,
+      heroId: 'lanyi',
       realmIndex: 0, // 0 = 练气一层
       qi: 0,
       stones: 25,
@@ -264,6 +265,7 @@
       ...def,
       ...saved,
       version: 3,
+      heroId: (saved && typeof saved.heroId === 'string' && saved.heroId) ? saved.heroId : 'lanyi',
       gongfa: { ...def.gongfa, ...(saved.gongfa || {}) },
       dongfu: { ...def.dongfu, ...(saved.dongfu || {}) },
       talents: { ...def.talents, ...(saved.talents || {}) },
@@ -414,6 +416,7 @@
     const keepPeaches = (state.tree && state.tree.peaches) || 0;
 
     const fresh = createDefaultState();
+    fresh.heroId = state.heroId || 'lanyi';
     fresh.reincarnationCount = keepReincarnations;
     fresh.daoGuo = keepDaoGuo;
     fresh.totalDaoGuo = keepTotalDaoGuo;
