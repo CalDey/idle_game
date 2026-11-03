@@ -499,7 +499,8 @@
       { id: 'lanyi', name: '清冷剑仙', img: 'assets/hero_v21_new_hd.jpg?v=1', poster: 'assets/hero_v21_new_poster.jpg?v=1', video: 'assets/hero_v21_new_main.mp4?v=1' },
       { id: 'cloak', name: '魔灵光', img: 'assets/hero_mlg_dawn_hd.jpg?v=1', poster: 'assets/hero_mlg_dawn_poster.jpg?v=1', video: 'assets/hero_mlg_dawn_hd.mp4?v=1' },
       { id: 'saintess', name: '圣王女', img: 'assets/hero_saintess_v4b_hd.jpg?v=1', poster: 'assets/hero_saintess_v4b_poster.jpg?v=1', video: 'assets/hero_saintess_v4b_hd.mp4?v=1' },
-      { id: 'miko', name: '灼樱巫女', img: 'assets/hero_miko_dawn_hd.jpg?v=2', poster: 'assets/hero_miko_dawn_poster.jpg?v=2', video: 'assets/hero_miko_v2_main.mp4?v=1' }
+      { id: 'miko', name: '灼樱巫女', img: 'assets/hero_miko_dawn_hd.jpg?v=2', poster: 'assets/hero_miko_dawn_poster.jpg?v=2', video: 'assets/hero_miko_v2_main.mp4?v=1' },
+      { id: 'shuanghua', name: '霜华玉仙', img: 'assets/hero_shuanghua_hd.jpg?v=1', poster: 'assets/hero_shuanghua_poster.jpg?v=1', video: 'assets/hero_shuanghua_main.mp4?v=1' }
     ]
   };
   window.CONFIG = window.GameConfig;
