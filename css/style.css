@@ -998,17 +998,15 @@ body {
 .upgrade-name-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  row-gap: 2px;
+  column-gap: 4px;
 }
 
 .upgrade-name {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
