@@ -2042,6 +2042,20 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   transition: filter 0.12s ease;
 }
 
+.fighter-player .fighter-hero-img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.fighter-player .fighter-hero-video {
+  z-index: 2;
+}
+
+.fighter-player.use-fallback .fighter-hero-video {
+  opacity: 0;
+}
+
 .fighter-enemy.is-fallback .fighter-enemy-img {
   display: none;
 }

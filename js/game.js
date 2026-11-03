@@ -79,6 +79,9 @@
     els.btnConfirmNo = document.getElementById('btn-confirm-no');
 
     els.heroVideo = document.getElementById('hero-video');
+    els.battleHeroVideo = document.querySelector('#fighter-player .fighter-hero-video');
+    els.fighterPlayer = document.getElementById('fighter-player');
+    els.tabStage = document.getElementById('tab-stage');
     els.heroFrame = document.querySelector('.hero-frame');
     els.realmFlash = document.getElementById('realm-flash');
     els.realmShockwave = document.getElementById('realm-shockwave');
@@ -610,6 +613,8 @@
       if (targetId === 'tab-stage') window.StageUI.onShow();
       else window.StageUI.onHide();
     }
+    if (targetId === 'tab-stage') resumeBattleHeroVideo();
+    else pauseBattleHeroVideo();
   }
 
   function initTabs() {
@@ -761,6 +766,152 @@
     tryPlayHero();
   }
 
+  let tryPlayBattleHero = function () {};
+  let pauseBattleHeroVideo = function () {};
+
+  function resumeBattleHeroVideo() {
+    tryPlayBattleHero();
+  }
+
+  function initBattleHeroVideo() {
+    const video = els.battleHeroVideo;
+    const box = els.fighterPlayer;
+    if (!video || !box) return;
+    video.defaultMuted = true;
+    video.muted = true;
+    video.loop = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('autoplay', '');
+    video.setAttribute('loop', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.preload = 'metadata';
+
+    let retriesBound = false;
+    let playAttempt = null;
+
+    function isStageVisible() {
+      return Boolean(
+        els.tabStage &&
+        els.tabStage.classList.contains('active') &&
+        document.visibilityState !== 'hidden'
+      );
+    }
+
+    function isActuallyPlaying() {
+      return !video.paused && !video.ended && video.readyState >= 2;
+    }
+
+    function unbindBattleRetries() {
+      if (!retriesBound) return;
+      retriesBound = false;
+      document.removeEventListener('pointerdown', tryPlayBattleHero, true);
+      document.removeEventListener('touchstart', tryPlayBattleHero, true);
+      document.removeEventListener('click', tryPlayBattleHero, true);
+      video.removeEventListener('canplay', tryPlayBattleHero);
+      video.removeEventListener('loadeddata', tryPlayBattleHero);
+    }
+
+    function bindBattleRetries() {
+      if (retriesBound) return;
+      retriesBound = true;
+      document.addEventListener('pointerdown', tryPlayBattleHero, true);
+      document.addEventListener('touchstart', tryPlayBattleHero, true);
+      document.addEventListener('click', tryPlayBattleHero, true);
+      video.addEventListener('canplay', tryPlayBattleHero);
+      video.addEventListener('loadeddata', tryPlayBattleHero);
+    }
+
+    function markBattleHeroPlaying() {
+      if (video.error) return;
+      box.classList.remove('use-fallback');
+      if (isActuallyPlaying()) {
+        unbindBattleRetries();
+      }
+    }
+
+    tryPlayBattleHero = function () {
+      if (!video || video.error || !isStageVisible()) return;
+      if (isActuallyPlaying()) {
+        markBattleHeroPlaying();
+        return;
+      }
+      if (playAttempt) return;
+      video.defaultMuted = true;
+      video.muted = true;
+      video.playsInline = true;
+      let pending = null;
+      try {
+        pending = video.play();
+      } catch (err) {
+        pending = Promise.reject(err);
+      }
+      playAttempt = pending;
+      if (pending && typeof pending.then === 'function') {
+        pending.then(function () {
+          if (playAttempt === pending) playAttempt = null;
+          if (!isStageVisible()) {
+            video.pause();
+            return;
+          }
+          markBattleHeroPlaying();
+        }).catch(function () {
+          if (playAttempt === pending) playAttempt = null;
+          if (isActuallyPlaying()) {
+            markBattleHeroPlaying();
+          } else {
+            box.classList.add('use-fallback');
+            bindBattleRetries();
+          }
+        });
+      } else {
+        playAttempt = null;
+        markBattleHeroPlaying();
+      }
+    };
+
+    pauseBattleHeroVideo = function () {
+      if (!video.paused) {
+        video.pause();
+      }
+    };
+
+    video.addEventListener('play', function () {
+      if (!isStageVisible()) {
+        video.pause();
+      }
+    });
+    video.addEventListener('playing', markBattleHeroPlaying);
+    video.addEventListener('pause', function () {
+      if (video.ended || video.error) return;
+      if (isStageVisible()) {
+        bindBattleRetries();
+      }
+    });
+    video.addEventListener('error', function () {
+      if (!video.error) return;
+      box.classList.add('use-fallback');
+      unbindBattleRetries();
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') {
+        pauseBattleHeroVideo();
+      } else if (isStageVisible()) {
+        tryPlayBattleHero();
+      }
+    });
+
+    if (isStageVisible()) {
+      bindBattleRetries();
+      tryPlayBattleHero();
+    } else {
+      pauseBattleHeroVideo();
+    }
+  }
+
   function initQiMotes() {
     const canvas = els.qiMotes;
     const frame = els.heroFrame;
@@ -909,6 +1060,7 @@
     cacheElements();
     initTabs();
     initHeroVideo();
+    initBattleHeroVideo();
     initQiMotes();
 
     const { isNew, offlineReport } = GameState.loadGame();
