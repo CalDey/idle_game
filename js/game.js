@@ -663,7 +663,7 @@
       return;
     }
     stage.classList.remove('is-still', 'use-fallback');
-    const heroSrc = video.getAttribute('src') || 'assets/hero_j_hd.mp4?v=15';
+    const heroSrc = video.getAttribute('src') || 'assets/hero_dawn_hd.mp4?v=1';
     while (video.firstChild) video.removeChild(video.firstChild);
     video.src = heroSrc;
 
@@ -1046,8 +1046,9 @@
       hero = heroes.find((h) => h && !h.locked) || {
         id: 'lanyi',
         name: '蓝衣剑修',
-        img: 'assets/hero_j_hd.jpg?v=15',
-        video: 'assets/hero_j_hd.mp4?v=15'
+        img: 'assets/hero_dawn_hd.jpg?v=1',
+        poster: 'assets/hero_dawn_poster.jpg?v=1',
+        video: 'assets/hero_dawn_hd.mp4?v=1'
       };
     }
     return hero;
