@@ -496,8 +496,8 @@
       { id: 'diandaoshousuan', name: '点到手酸', cat: '彩蛋', tier: 'egg', stat: 'tap', value: 0.03, bonus: '点击灵气 +3%', cond: '单日点击 1000 次' }
     ],
     HEROES: [
-      { id: 'lanyi', name: '蓝衣剑修', img: 'assets/hero_j_hd.jpg?v=15', video: 'assets/hero_j_hd.mp4?v=15' },
-      { id: 'cloak', name: '斗篷美女', img: 'assets/hero_cloak_hd.jpg?v=1', poster: 'assets/hero_cloak_poster.jpg?v=1', video: 'assets/hero_cloak_hd.mp4?v=1' },
+      { id: 'lanyi', name: '清冷剑仙', img: 'assets/hero_j_hd.jpg?v=15', video: 'assets/hero_j_hd.mp4?v=15' },
+      { id: 'cloak', name: '魔灵光', img: 'assets/hero_cloak_hd.jpg?v=1', poster: 'assets/hero_cloak_poster.jpg?v=1', video: 'assets/hero_cloak_hd.mp4?v=1' },
       { id: 'locked2', name: '敬请期待', locked: true },
       { id: 'locked3', name: '敬请期待', locked: true }
     ]
