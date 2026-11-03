@@ -497,7 +497,7 @@
     ],
     HEROES: [
       { id: 'lanyi', name: '蓝衣剑修', img: 'assets/hero_j_hd.jpg?v=15', video: 'assets/hero_j_hd.mp4?v=15' },
-      { id: 'locked1', name: '敬请期待', locked: true },
+      { id: 'cloak', name: '斗篷美女', img: 'assets/hero_cloak_hd.jpg?v=1', poster: 'assets/hero_cloak_poster.jpg?v=1', video: 'assets/hero_cloak_hd.mp4?v=1' },
       { id: 'locked2', name: '敬请期待', locked: true },
       { id: 'locked3', name: '敬请期待', locked: true }
     ]

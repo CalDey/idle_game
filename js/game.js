@@ -1062,6 +1062,7 @@
     const heroStill = els.heroStill || document.getElementById('hero-still');
     const heroFallback = els.heroFallback || document.getElementById('hero-fallback');
     const heroVideo = els.heroVideo || document.getElementById('hero-video');
+    const videoPoster = hero.poster || hero.img;
 
     if (heroStill && hero.img) {
       heroStill.setAttribute('src', hero.img);
@@ -1073,9 +1074,9 @@
       heroFallback.src = hero.img;
     }
     if (heroVideo) {
-      if (hero.img) {
-        heroVideo.setAttribute('poster', hero.img);
-        heroVideo.poster = hero.img;
+      if (videoPoster) {
+        heroVideo.setAttribute('poster', videoPoster);
+        heroVideo.poster = videoPoster;
       }
       if (hero.video) {
         const prevSrc = heroVideo.getAttribute('src');
@@ -1103,9 +1104,9 @@
           node.src = hero.img;
           if (hero.name) node.setAttribute('alt', hero.name);
         } else if (tag === 'VIDEO') {
-          if (hero.img) {
-            node.setAttribute('poster', hero.img);
-            node.poster = hero.img;
+          if (videoPoster) {
+            node.setAttribute('poster', videoPoster);
+            node.poster = videoPoster;
           }
           if (hero.video) {
             const prevBattleSrc = node.getAttribute('src');
