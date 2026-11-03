@@ -497,7 +497,7 @@
     ],
     HEROES: [
       { id: 'lanyi', name: '清冷剑仙', img: 'assets/hero_dawn_hd.jpg?v=1', poster: 'assets/hero_dawn_poster.jpg?v=1', video: 'assets/hero_dawn_hd.mp4?v=1' },
-      { id: 'cloak', name: '魔灵光', img: 'assets/hero_cloak_hd.jpg?v=1', poster: 'assets/hero_cloak_poster.jpg?v=1', video: 'assets/hero_cloak_hd.mp4?v=1' },
+      { id: 'cloak', name: '魔灵光', img: 'assets/hero_mlg_dawn_hd.jpg?v=1', poster: 'assets/hero_mlg_dawn_poster.jpg?v=1', video: 'assets/hero_mlg_dawn_hd.mp4?v=1' },
       { id: 'saintess', name: '圣女', img: 'assets/hero_saintess_hd.jpg?v=1', poster: 'assets/hero_saintess_poster.jpg?v=1', video: 'assets/hero_saintess_hd.mp4?v=1' },
       { id: 'locked3', name: '敬请期待', locked: true }
     ]
