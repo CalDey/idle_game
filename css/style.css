@@ -497,35 +497,6 @@ body {
   pointer-events: none;
 }
 
-.hero-aura {
-  position: absolute;
-  left: 50%;
-  top: 72%;
-  width: 78%;
-  height: 28%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse at center, var(--aura-glow), transparent 70%);
-  filter: blur(6px);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  z-index: 2;
-  animation: auraPulse 3.8s ease-in-out infinite;
-}
-
-@keyframes auraPulse {
-
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: translate(-50%, -50%) scale(0.96);
-  }
-
-  50% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.06);
-  }
-}
-
 .hero-mask {
   position: absolute;
   inset: 0;
@@ -1759,8 +1730,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 @media (prefers-reduced-motion: reduce) {
 
   .hero-stage.is-still .hero-portrait,
-  .hero-stage.is-still .hero-breathe,
-  .hero-aura {
+  .hero-stage.is-still .hero-breathe {
     animation: none;
   }
 }
