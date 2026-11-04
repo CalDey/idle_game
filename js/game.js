@@ -6,6 +6,11 @@
     DONGFU_LIST,
     DAOGUO_TALENTS,
     REINCARNATION_MIN_STAGE,
+    QUALITIES,
+    HOME_TIERS,
+    HOME_SCENE,
+    homeBuildingTier,
+    homeBgTier,
     formatNumber,
     formatDuration
   } = window.GameConfig;
@@ -53,6 +58,30 @@
     els.btnCloseRole = document.getElementById('btn-close-role');
     els.gongfaList = document.getElementById('gongfa-list');
     els.dongfuList = document.getElementById('dongfu-list');
+    els.dongfuCard = document.getElementById('dongfu-card');
+    els.dongfuCardHeader = document.getElementById('dongfu-card-header');
+    els.dongfuToggleArrow = document.getElementById('dongfu-toggle-arrow');
+
+    els.homeScene = document.getElementById('home-scene');
+    els.homeGlow = document.getElementById('home-glow');
+    els.homeLayer = document.getElementById('home-layer');
+    els.homeTitle = document.getElementById('home-title');
+    els.homeReveal = document.getElementById('home-reveal');
+
+    els.homeSheet = document.getElementById('home-sheet');
+    els.homeSheetName = document.getElementById('home-sheet-name');
+    els.homeSheetTier = document.getElementById('home-sheet-tier');
+    els.homeSheetLv = document.getElementById('home-sheet-lv');
+    els.homeSheetClose = document.getElementById('home-sheet-close');
+    els.homeSheetDesc = document.getElementById('home-sheet-desc');
+    els.homeSheetOutput = document.getElementById('home-sheet-output');
+    els.homeSheetLink = document.getElementById('home-sheet-link');
+    els.homeSheetCost = document.getElementById('home-sheet-cost');
+    els.homeSheetNext = document.getElementById('home-sheet-next');
+    els.homeSheetLock = document.getElementById('home-sheet-lock');
+    els.homeBuy1 = document.getElementById('home-buy-1');
+    els.homeBuy10 = document.getElementById('home-buy-10');
+    els.homeBuyMax = document.getElementById('home-buy-max');
 
     els.reincarnateCount = document.getElementById('reincarnate-count');
     els.reincarnateMult = document.getElementById('reincarnate-mult');
@@ -353,6 +382,319 @@
       `;
       els.dongfuList.appendChild(row);
     });
+
+    renderHomeScene();
+  }
+
+  let homeRefs = null;
+  let homeSyncedOnce = false;
+  let activeHomeSheetId = null;
+  let dongfuCollapsed = true;
+  let homeRevealTimer = null;
+
+  function showHomeReveal(tierIdx, text) {
+    if (!els.homeReveal) return;
+    if (homeRevealTimer) {
+      clearTimeout(homeRevealTimer);
+      homeRevealTimer = null;
+    }
+    const tierInfo = HOME_TIERS[tierIdx] || HOME_TIERS[0];
+    const q = QUALITIES[tierInfo.q] || QUALITIES[0];
+    const isXian = q.id === 'xian';
+    els.homeReveal.classList.toggle('q-xian-text', isXian);
+    els.homeReveal.style.color = isXian ? '' : q.color;
+    els.homeReveal.textContent = text;
+    els.homeReveal.classList.remove('show');
+    void els.homeReveal.offsetWidth;
+    els.homeReveal.classList.add('show');
+    homeRevealTimer = setTimeout(() => {
+      if (els.homeReveal) els.homeReveal.classList.remove('show');
+      homeRevealTimer = null;
+    }, 2200);
+  }
+
+  function renderHomeScene() {
+    if (!els.homeLayer) return;
+    const s = GameState.state;
+    if (!s.home) s.home = { maxTier: {}, bgMaxTier: 0 };
+    if (!s.home.maxTier) s.home.maxTier = {};
+
+    if (!homeRefs) {
+      els.homeLayer.innerHTML = '';
+      homeRefs = {};
+      DONGFU_LIST.forEach((item) => {
+        const id = item.id;
+        const isl = HOME_SCENE.island[id] || [0, 0, 0, 0];
+        const bdg = HOME_SCENE.badge[id] || [0, 0];
+
+        const patchEl = document.createElement('img');
+        patchEl.className = 'home-patch';
+        patchEl.alt = '';
+        patchEl.style.display = 'none';
+        els.homeLayer.appendChild(patchEl);
+
+        const fogEl = document.createElement('div');
+        fogEl.className = 'home-fog';
+        fogEl.style.left = `${isl[0]}%`;
+        fogEl.style.top = `${isl[1]}%`;
+        fogEl.style.width = `${isl[2]}%`;
+        fogEl.style.height = `${isl[3]}%`;
+        els.homeLayer.appendChild(fogEl);
+
+        const badgeEl = document.createElement('div');
+        badgeEl.className = 'home-badge';
+        badgeEl.style.left = `${bdg[0]}%`;
+        badgeEl.style.top = `${bdg[1]}%`;
+        els.homeLayer.appendChild(badgeEl);
+
+        const hotEl = document.createElement('button');
+        hotEl.type = 'button';
+        hotEl.className = 'home-hot';
+        hotEl.setAttribute('aria-label', item.name);
+        hotEl.dataset.homeId = id;
+        hotEl.style.left = `${isl[0]}%`;
+        hotEl.style.top = `${isl[1]}%`;
+        hotEl.style.width = `${isl[2]}%`;
+        hotEl.style.height = `${isl[3]}%`;
+        els.homeLayer.appendChild(hotEl);
+
+        homeRefs[id] = {
+          patchEl,
+          fogEl,
+          badgeEl,
+          hotEl,
+          lastTier: -1
+        };
+      });
+    }
+
+    let totalLv = 0;
+    let revealedInfo = null;
+
+    DONGFU_LIST.forEach((item) => {
+      const id = item.id;
+      const ref = homeRefs[id];
+      if (!ref) return;
+      const unlocked = s.realmIndex >= item.unlockRealmIndex;
+      const lv = (s.dongfu && s.dongfu[id]) || 0;
+      totalLv += lv;
+
+      const curTier = homeBuildingTier(lv);
+      const prevMax = Number(s.home.maxTier[id]) || 0;
+      const newMax = Math.max(curTier, prevMax);
+      if (newMax > prevMax) {
+        s.home.maxTier[id] = newMax;
+        if (homeSyncedOnce) {
+          const tName = (HOME_TIERS[newMax] && HOME_TIERS[newMax].name) || '';
+          const msg = `洞府进阶：${item.name}·${tName}`;
+          addLog(msg, 'success');
+          revealedInfo = { tier: newMax, text: msg };
+        }
+      } else if (s.home.maxTier[id] === undefined) {
+        s.home.maxTier[id] = prevMax;
+      }
+
+      const displayTier = GameState.getHomeDisplayTier(id);
+      const tierCfg = HOME_TIERS[displayTier] || HOME_TIERS[0];
+      const q = QUALITIES[tierCfg.q] || QUALITIES[0];
+      const isXian = q.id === 'xian';
+
+      if (displayTier === 0) {
+        ref.patchEl.style.display = 'none';
+        ref.patchEl.classList.remove('fade-in');
+        ref.lastTier = 0;
+      } else {
+        const tierKey = tierCfg.key;
+        const rect = HOME_SCENE.patch[`${id}_${tierKey}`] || [0, 0, 0, 0];
+        const nextSrc = `assets/home/p_${id}_${tierKey}.webp?v=1`;
+        ref.patchEl.style.left = `${rect[0]}%`;
+        ref.patchEl.style.top = `${rect[1]}%`;
+        ref.patchEl.style.width = `${rect[2]}%`;
+        ref.patchEl.style.height = `${rect[3]}%`;
+        ref.patchEl.style.display = 'block';
+        if (ref.patchEl.getAttribute('src') !== nextSrc) {
+          ref.patchEl.setAttribute('src', nextSrc);
+        }
+        if (ref.lastTier !== -1 && ref.lastTier !== displayTier) {
+          ref.patchEl.classList.remove('fade-in');
+          void ref.patchEl.offsetWidth;
+          ref.patchEl.classList.add('fade-in');
+        }
+        ref.lastTier = displayTier;
+      }
+
+      ref.fogEl.classList.toggle('is-unlocked', unlocked);
+
+      const shortName = HOME_SCENE.short[id] || item.name;
+      if (unlocked) {
+        ref.badgeEl.textContent = `${shortName} Lv.${lv}`;
+      } else {
+        const reqName = REALM_STAGES[item.unlockRealmIndex].fullName;
+        ref.badgeEl.textContent = `🔒 ${reqName}解锁`;
+      }
+      ref.badgeEl.classList.toggle('q-xian', isXian);
+      ref.badgeEl.style.borderColor = isXian ? '' : q.color;
+    });
+
+    const curBgTier = homeBgTier(totalLv);
+    const prevBgMax = Number(s.home.bgMaxTier) || 0;
+    const newBgMax = Math.max(curBgTier, prevBgMax);
+    if (newBgMax > prevBgMax) {
+      s.home.bgMaxTier = newBgMax;
+      if (homeSyncedOnce) {
+        const bgName = (HOME_TIERS[newBgMax] && HOME_TIERS[newBgMax].name) || '';
+        const msg = `洞府进阶：洞天${bgName}`;
+        addLog(msg, 'success');
+        revealedInfo = { tier: newBgMax, text: msg };
+      }
+    } else if (s.home.bgMaxTier === undefined) {
+      s.home.bgMaxTier = prevBgMax;
+    }
+
+    if (revealedInfo) {
+      showHomeReveal(revealedInfo.tier, revealedInfo.text);
+    }
+
+    const bgDisplayTier = GameState.getHomeBgDisplayTier();
+    if (els.homeGlow) {
+      els.homeGlow.dataset.tier = String(bgDisplayTier);
+    }
+    if (els.homeTitle) {
+      const bgTierName = (HOME_TIERS[bgDisplayTier] && HOME_TIERS[bgDisplayTier].name) || '凡品';
+      els.homeTitle.textContent = `洞府 · ${bgTierName} · 总等级 ${totalLv}`;
+    }
+
+    homeSyncedOnce = true;
+
+    if (activeHomeSheetId) {
+      renderHomeSheet();
+    }
+  }
+
+  function openHomeSheet(id) {
+    if (!els.homeSheet) return;
+    activeHomeSheetId = id;
+    renderHomeSheet();
+    els.homeSheet.classList.add('active');
+    els.homeSheet.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeHomeSheet() {
+    if (!els.homeSheet) return;
+    activeHomeSheetId = null;
+    els.homeSheet.classList.remove('active');
+    els.homeSheet.setAttribute('aria-hidden', 'true');
+  }
+
+  function renderHomeSheet() {
+    if (!activeHomeSheetId || !els.homeSheet) return;
+    const item = DONGFU_LIST.find((d) => d.id === activeHomeSheetId);
+    if (!item) return;
+
+    const s = GameState.state;
+    const stage = GameState.getCurrentStage();
+    const unlocked = s.realmIndex >= item.unlockRealmIndex;
+    const lv = (s.dongfu && s.dongfu[item.id]) || 0;
+    const displayTier = GameState.getHomeDisplayTier(item.id);
+    const tierCfg = HOME_TIERS[displayTier] || HOME_TIERS[0];
+    const q = QUALITIES[tierCfg.q] || QUALITIES[0];
+    const isXian = q.id === 'xian';
+
+    if (els.homeSheetName) els.homeSheetName.textContent = item.name;
+    if (els.homeSheetTier) {
+      els.homeSheetTier.textContent = tierCfg.name;
+      els.homeSheetTier.classList.toggle('q-xian-text', isXian);
+      els.homeSheetTier.style.color = isXian ? '' : q.color;
+    }
+    if (els.homeSheetLv) {
+      els.homeSheetLv.textContent = `Lv.${lv}`;
+    }
+    if (els.homeSheetDesc) {
+      els.homeSheetDesc.textContent = item.desc;
+    }
+
+    const perLvEffect =
+      item.baseStonePerSec *
+      Math.pow(stage.multiplier, 0.65) *
+      GameState.getDaoGuoStoneMultiplier();
+    const curOutput = perLvEffect * lv;
+    if (els.homeSheetOutput) {
+      els.homeSheetOutput.innerHTML = `每秒灵石产出：<strong>+${formatNumber(curOutput)}/秒</strong>（单级 +${formatNumber(perLvEffect)}/秒）`;
+    }
+
+    if (els.homeSheetLink) {
+      if (item.id === 'julingshi') {
+        const bonusPct = Math.floor(lv / 10);
+        els.homeSheetLink.textContent = `联动加成：灵气 +${bonusPct}%（每 10 级 +1%）`;
+        els.homeSheetLink.style.display = '';
+      } else if (item.id === 'lingquan') {
+        const capHours = (GameState.getOfflineCapSeconds() / 3600).toFixed(1).replace(/\.0$/, '');
+        els.homeSheetLink.textContent = `联动加成：离线上限 ${capHours}h（每 20 级 +0.5h，最高 15h）`;
+        els.homeSheetLink.style.display = '';
+      } else {
+        els.homeSheetLink.textContent = '';
+        els.homeSheetLink.style.display = 'none';
+      }
+    }
+
+    const nextCost = GameState.getDongfuCost(item);
+    if (els.homeSheetCost) {
+      els.homeSheetCost.innerHTML = `下一级花费：<img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)} 灵石</strong>`;
+    }
+
+    if (els.homeSheetNext) {
+      if (displayTier >= 2 || lv >= 100) {
+        els.homeSheetNext.textContent = '品阶门槛：已至仙品';
+      } else if (displayTier === 1 || lv >= 25) {
+        els.homeSheetNext.textContent = '下一档门槛：Lv100 进阶仙品';
+      } else {
+        els.homeSheetNext.textContent = '下一档门槛：Lv25 进阶玄品';
+      }
+    }
+
+    if (els.homeSheetLock) {
+      if (unlocked) {
+        els.homeSheetLock.hidden = true;
+      } else {
+        const reqName = REALM_STAGES[item.unlockRealmIndex].fullName;
+        els.homeSheetLock.hidden = false;
+        els.homeSheetLock.textContent = `需突破至【${reqName}】解锁扩建`;
+      }
+    }
+
+    updateHomeSheetButtons();
+  }
+
+  function updateHomeSheetButtons() {
+    if (!activeHomeSheetId || !els.homeSheet || !els.homeSheet.classList.contains('active')) return;
+    const item = DONGFU_LIST.find((d) => d.id === activeHomeSheetId);
+    if (!item) return;
+    const s = GameState.state;
+    const unlocked = s.realmIndex >= item.unlockRealmIndex;
+    const nextCost = GameState.getDongfuCost(item);
+    const canAfford = unlocked && s.stones >= nextCost;
+
+    if (els.homeSheetCost) {
+      els.homeSheetCost.innerHTML = `下一级花费：<img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)} 灵石</strong>`;
+    }
+    if (els.homeBuy1) els.homeBuy1.disabled = !canAfford;
+    if (els.homeBuy10) els.homeBuy10.disabled = !canAfford;
+    if (els.homeBuyMax) els.homeBuyMax.disabled = !canAfford;
+  }
+
+  function handleHomeSheetBuy(n) {
+    if (!activeHomeSheetId) return;
+    const id = activeHomeSheetId;
+    const item = DONGFU_LIST.find((d) => d.id === id);
+    if (!item) return;
+    const bought = GameState.buyDongfu(id, n);
+    if (bought > 0) {
+      addLog(`消耗灵石扩建【${item.name}】至 Lv.${GameState.state.dongfu[id]}！`, 'success');
+      renderUpgradeLists();
+      renderHomeSheet();
+      updateHeaderAndMeditationUI();
+      if (window.StageUI) StageUI.render();
+    }
   }
 
   // 动态刷新功法与洞府按钮的可用状态，避免整表重建闪烁
@@ -389,6 +731,8 @@
     if (els.badgeUpgrade) {
       els.badgeUpgrade.classList.toggle('visible', anyAffordable);
     }
+
+    updateHomeSheetButtons();
   }
 
   function handleUpgradeClick(e) {
@@ -414,10 +758,7 @@
       const id = dongfuBtn.getAttribute('data-dongfu-id');
       const item = DONGFU_LIST.find((d) => d.id === id);
       if (!item) return;
-      const cost = GameState.getDongfuCost(item);
-      if (GameState.state.realmIndex >= item.unlockRealmIndex && GameState.state.stones >= cost) {
-        GameState.state.stones -= cost;
-        GameState.state.dongfu[id] = (GameState.state.dongfu[id] || 0) + 1;
+      if (GameState.buyDongfu(id, 1) > 0) {
         addLog(`消耗灵石扩建【${item.name}】至 Lv.${GameState.state.dongfu[id]}！`, 'success');
         renderUpgradeLists();
         updateHeaderAndMeditationUI();
@@ -619,6 +960,7 @@
     navBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === targetId));
     panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
     if (targetId === 'tab-cultivate') resumeHeroVideo();
+    if (targetId === 'tab-upgrades') renderHomeScene();
     if (window.StageUI) {
       if (targetId === 'tab-stage') window.StageUI.onShow();
       else window.StageUI.onHide();
@@ -1259,6 +1601,53 @@
     els.talentList.addEventListener('click', handleTalentClick);
     els.btnReincarnate.addEventListener('click', handleReincarnateButton);
 
+    if (els.homeLayer) {
+      els.homeLayer.addEventListener('click', (e) => {
+        const hot = e.target.closest('.home-hot[data-home-id]');
+        if (hot) {
+          openHomeSheet(hot.dataset.homeId);
+        }
+      });
+    }
+
+    if (els.homeSheet) {
+      els.homeSheet.addEventListener('click', (e) => {
+        if (e.target === els.homeSheet) {
+          closeHomeSheet();
+        }
+      });
+    }
+    if (els.homeSheetClose) {
+      els.homeSheetClose.addEventListener('click', closeHomeSheet);
+    }
+    if (els.homeBuy1) {
+      els.homeBuy1.addEventListener('click', () => handleHomeSheetBuy(1));
+    }
+    if (els.homeBuy10) {
+      els.homeBuy10.addEventListener('click', () => handleHomeSheetBuy(10));
+    }
+    if (els.homeBuyMax) {
+      els.homeBuyMax.addEventListener('click', () => handleHomeSheetBuy(Infinity));
+    }
+
+    if (els.dongfuCardHeader && els.dongfuCard) {
+      const toggleDongfuCollapse = () => {
+        dongfuCollapsed = !dongfuCollapsed;
+        els.dongfuCard.classList.toggle('is-collapsed', dongfuCollapsed);
+        els.dongfuCardHeader.setAttribute('aria-expanded', dongfuCollapsed ? 'false' : 'true');
+        if (els.dongfuToggleArrow) {
+          els.dongfuToggleArrow.textContent = dongfuCollapsed ? '▸' : '▾';
+        }
+      };
+      els.dongfuCardHeader.addEventListener('click', toggleDongfuCollapse);
+      els.dongfuCardHeader.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleDongfuCollapse();
+        }
+      });
+    }
+
     els.btnCloseOffline.addEventListener('click', () => {
       els.offlineModal.classList.remove('active');
     });
@@ -1307,6 +1696,13 @@
         '散功重修（重置存档）',
         '确定要彻底清空当前所有修仙进度、灵石、功法与道果吗？此操作不可撤销！',
         () => {
+          closeHomeSheet();
+          homeSyncedOnce = false;
+          if (homeRefs) {
+            Object.values(homeRefs).forEach((r) => {
+              r.lastTier = -1;
+            });
+          }
           GameState.resetGame();
           applyHeroAppearance(GameState.state.heroId);
           renderRoleList();

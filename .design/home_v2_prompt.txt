@@ -1,0 +1,81 @@
+【任务】为本项目（纯原生 JS/CSS/HTML 放置修仙 H5，部署在 GitHub Pages，无构建步骤）实现新版“洞府”页。只改下列文件，不要新增依赖，不要动无关系统。
+【重要】不要运行任何终端命令，也不要执行任何 git 操作。只编辑文件。不要生成或修改任何图片。
+
+需要修改的文件：index.html、css/style.css、js/config.js、js/state.js、js/game.js、js/stage-ui.js（只改离线上限那两处）。
+
+【美术资源（已就位）】
+- 场景底图：assets/home/scene_base.webp，1080×1935（宽高比 1080/1935）。这是一整张云海浮岛图，6 栋建筑都以“凡品”外观画在各自的浮岛上。
+- 进阶贴片：assets/home/p_{id}_{tier}.webp，tier ∈ xuan, xian，是带透明羽化边的局部图。把它按下面给的百分比矩形绝对定位叠在底图上，就会无缝变成该建筑的玄品或仙品外观。凡品不需要贴片。
+- 所有图片 URL 带 ?v=1。
+
+一、config.js（在 window.GameConfig 中导出）
+1. HOME_TIERS = [{key:'fan', q:0, name:'凡品'}, {key:'xuan', q:2, name:'玄品'}, {key:'xian', q:5, name:'仙品'}]（q 是现有 QUALITIES 的下标，用于颜色）。
+2. HOME_BUILDING_TIER_LV = [0, 25, 100]：Lv<25 为凡（0），25–99 为玄（1），≥100 为仙（2）。
+3. HOME_BG_TIER_TOTAL = [0, 150, 600]：6 栋等级之和 <150 为 0，≥150 为 1，≥600 为 2（用于场景氛围光，见第五节）。
+4. HOME_SCENE，全部为相对场景宽高的百分比：
+   short：每栋的简称 { julingshi:'聚灵', lingquan:'灵泉', yaoyuan:'药园', lingmai:'灵脉', dongtian_fudi:'洞天', xiantian_zuqiao:'祖窍' }
+   island：点击热区和云雾遮罩的矩形 [left, top, width, height]
+     dongtian_fudi   [0.65, 12.72, 40.36, 31.61]
+     xiantian_zuqiao [41.67, 19.99, 28.65, 14.9]
+     lingmai         [63.8, 36.34, 32.55, 18.9]
+     yaoyuan         [23.44, 49.78, 31.9, 15.62]
+     lingquan        [67.71, 63.59, 27.99, 14.53]
+     julingshi       [9.11, 70.86, 31.25, 16.72]
+   badge：等级徽章中心点 [x, y]
+     dongtian_fudi [21.7, 31], xiantian_zuqiao [55.6, 29.5], lingmai [80, 48.4], yaoyuan [39.6, 58.6], lingquan [81.6, 71.2], julingshi [24.3, 80.4]
+   patch：贴片矩形 [left, top, width, height]，键为 `${id}_${tier}`
+     dongtian_fudi_xuan [0, 6.613, 51.953, 38.808]
+     dongtian_fudi_xian [0, 6.613, 51.953, 38.844]
+     xiantian_zuqiao_xuan [41.536, 19.985, 29.622, 15.116]
+     xiantian_zuqiao_xian [39.844, 16.061, 36.263, 19.004]
+     lingmai_xuan [64.062, 36.41, 34.375, 24.855]
+     lingmai_xian [59.44, 35.792, 38.867, 20.203]
+     yaoyuan_xuan [23.698, 50.218, 32.812, 15.843]
+     yaoyuan_xian [18.49, 43.677, 45.052, 22.311]
+     lingquan_xuan [67.578, 58.067, 32.422, 21.584]
+     lingquan_xian [64.974, 60.392, 32.878, 21.039]
+     julingshi_xuan [8.464, 70.385, 32.617, 23.292]
+     julingshi_xian [0, 65.334, 51.302, 28.343]
+5. 导出函数 homeBuildingTier(lv) 和 homeBgTier(totalLv)，都返回 0/1/2。
+
+二、state.js 存档
+1. createDefaultState() 新增 home: { maxTier: {每个 DONGFU_LIST id: 0}, bgMaxTier: 0 }。
+2. mergeSave(def, saved) 中合并：home: { ...def.home, ...(saved.home||{}), maxTier: { ...def.home.maxTier, ...((saved.home && saved.home.maxTier)||{}) } }。旧存档没有 home 或 home 结构不同（之前废弃版本写过 state.home）都要正常运行，不要改 version。
+3. performReincarnation()：在 fresh = createDefaultState() 之前深拷贝 state.home 为 keepHome，之后令 fresh.home = keepHome。建筑等级照旧重置，外观档位不重置。
+4. 新增并导出 getHomeDisplayTier(id) = max(homeBuildingTier(当前 lv), state.home.maxTier[id])；getHomeBgDisplayTier() = max(homeBgTier(总等级), state.home.bgMaxTier)。
+5. 新增并导出 getOfflineCapSeconds()：基础 GameConfig.OFFLINE_CAP_SECONDS（12h），加 floor(灵泉眼 lv / 20) × 0.5h，最多 15h。把 state.js loadGame 里三处 window.GameConfig.OFFLINE_CAP_SECONDS（约 334、340、357 行）换成 getOfflineCapSeconds()。stage-ui.js 里两处 `window.GameConfig.OFFLINE_CAP_SECONDS || 12 * 3600`（约 276、589 行）改为优先用 window.GameState.getOfflineCapSeconds()。
+6. getQiPerSec()：return 的乘积中加一项 (1 + 0.01 * Math.floor(聚灵石阵 lv / 10))。
+7. 导出公共升级函数 buyDongfu(id, n)，n 为 1、10 或 Infinity。逐级用现有 getDongfuCost(item) 计算，灵石足够且已解锁（realmIndex >= unlockRealmIndex）时扣灵石、lv+1，返回实际升级数。
+
+三、game.js
+1. handleUpgradeClick 中 data-dongfu-id 分支改为调用 GameState.buyDongfu(id, 1)，日志保持原样。
+2. 新增 renderHomeScene()，在 renderUpgradeLists() 末尾调用，切到 tab-upgrades 时也调用。DOM 只在第一次创建，之后只更新属性和文字，不要每次重建（避免图片闪烁）。
+   - 每栋建筑一个贴片 <img class="home-patch">，按 patch 矩形用 left/top/width/height 百分比定位，pointer-events:none。显示档为 0 时隐藏（不设置 src，不加载）；为 1 或 2 时 src 设为 p_{id}_{xuan|xian}.webp?v=1 并显示。只加载当前档需要的贴片，不预加载其他档。
+   - 每栋一个透明热区 <button class="home-hot" aria-label="建筑名">，按 island 矩形定位。点击打开底部抽屉。
+   - 每栋一个徽章 .home-badge，以 badge 点为中心（translate(-50%,-50%)），内容 “{简称} Lv.X”，边框颜色用当前显示档对应的 QUALITIES 颜色，仙档加现有类 q-xian。
+   - 未解锁（realmIndex < unlockRealmIndex）：在 island 矩形上叠一层云雾 .home-fog（见第五节），徽章显示 “🔒 {REALM_STAGES[unlockRealmIndex].fullName}解锁”。解锁后云雾淡出（opacity 过渡 0.8s）。
+   - 每次渲染时用较大值更新 state.home.maxTier[id] 和 bgMaxTier；如果比上次大，触发进阶提示（第 4 条）。贴片切换时用 opacity 0→1 的 0.6s 淡入。
+   - 场景右上角显示 “洞府 · {HOME_TIERS[背景档].name} · 总等级 N”。
+3. 点击热区弹出底部抽屉 #home-sheet（遮罩加面板，点遮罩或关闭按钮关闭）。内容：名称、当前档名（品质色）、desc、Lv、每秒灵石产出（复用列表里现有的单级产出算法乘以 lv）、联动说明（聚灵石阵：“灵气 +X%”；灵泉眼：“离线上限 Yh”）、下一级花费 GameState.getDongfuCost(item)、下一档门槛（“Lv25 进阶玄品”或“Lv100 进阶仙品”，已仙品则显示“已至仙品”）。按钮：升级×1、×10、最大，分别调用 GameState.buyDongfu(id, 1/10/Infinity)，买不起时置灰。升级后刷新抽屉、renderUpgradeLists()、updateHeaderAndMeditationUI()、StageUI.render()。未解锁也能打开，但按钮禁用并显示解锁境界。抽屉打开时如果灵石变化，按钮状态要跟着刷新（可在现有的周期性 UI 更新里顺带更新，抽屉关闭时不做）。
+4. 进阶提示：在场景内新增 #home-reveal，样式仿照 .peach-reveal（居中浮现约 2 秒后淡出，white-space:nowrap，文字用品质色，仙档加 q-xian-text），文本为 “洞府进阶：{建筑名}·{档名}” 或 “洞府进阶：洞天{档名}”，同时 addLog 一条 success 日志。首次加载存档时不弹，只同步 maxTier。
+5. 功法卡保持不变，放在场景下方。原“洞府建设”列表卡改为可折叠：标题行可点击，默认折叠，带 ▸/▾，折叠状态只存内存。
+
+四、index.html
+1. 底部导航 data-tab="tab-upgrades" 按钮文字由“功法”改为“洞府”，tab id 不变（“去功法”按钮依然能用）。
+2. 在 #tab-upgrades 最前面插入：
+   <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=1"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-title" class="home-title"></div><div id="home-reveal" class="home-reveal"></div></div></div>
+   并在 body 末尾（script 之前）加入 #home-sheet 抽屉结构。
+3. 缓存版本号：style.css v=42→43，config.js v=38→39，state.js v=23→24，game.js v=30→31，stage-ui.js v=24→25，其他不变。
+
+五、style.css（移动端优先，必须兼容 iPhone Safari）
+- .home-card 的内边距设为 0，overflow:hidden；.home-scene { position:relative; width:100%; aspect-ratio:1080/1935; overflow:hidden; }，并为不支持 aspect-ratio 的旧 Safari 加 padding-top:179.17% 的回退（用 @supports not (aspect-ratio:1/1)）。.home-bg 绝对定位铺满，宽高 100%，不要 object-fit 裁切（坐标按整图算）。可以给 .home-card 加 max-width:480px; margin:0 auto。
+- .home-patch、.home-hot、.home-fog 都是 position:absolute，用百分比。.home-hot 透明、无边框、无内边距，-webkit-tap-highlight-color:transparent，:active 时出现很淡的白色圆角高光（不要缩放，避免和底图错位）。不要只靠 hover 交互。
+- .home-fog：background: radial-gradient(ellipse at center, rgba(236,241,246,.94) 40%, rgba(236,241,246,.75) 58%, rgba(236,241,246,0) 75%)；pointer-events:none；可以加很慢的轻微漂移动画（8s，幅度 1–2%），prefers-reduced-motion 下关闭。
+- .home-badge：11px，半透明深色底，圆角，1px 品质色边框，white-space:nowrap，pointer-events:none。
+- .home-glow：pointer-events:none，铺满场景上部，背景档 0 不显示；档 1 用淡青色 radial-gradient（从顶部中间，透明度约 .18）；档 2 用淡金色（约 .22）。用 data-tier 属性切换。
+- .home-title：右上角小字，半透明深色底圆角。
+- #home-sheet：position:fixed 贴底，padding-bottom: calc(16px + env(safe-area-inset-bottom))，带上滑动画；遮罩 rgba(0,0,0,.5)；按钮最小高度 44px。
+- 整体风格干净，沿用现有 gufeng-card 和品质色变量，不要加大特效。
+
+六、验收
+- 旧存档（包括带有旧版 state.home 的存档）能正常加载；转世后建筑 Lv 归零但外观保持最高档；贴片位置和底图严丝合缝；离线上限与灵气加成生效；控制台无报错；没有新增 404。

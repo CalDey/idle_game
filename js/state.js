@@ -10,8 +10,10 @@
     });
 
     const dongfuLevels = {};
+    const homeMaxTier = {};
     window.GameConfig.DONGFU_LIST.forEach((d, idx) => {
       dongfuLevels[d.id] = idx === 0 ? 1 : 0;
+      homeMaxTier[d.id] = 0;
     });
 
     const talentLevels = {};
@@ -29,6 +31,7 @@
       pityBonus: 0, // 当前小境界渡劫失败累积的额外成功率
       gongfa: gongfaLevels,
       dongfu: dongfuLevels,
+      home: { maxTier: homeMaxTier, bgMaxTier: 0 },
       reincarnationCount: 0,
       daoGuo: 0, // 可用道果点
       totalDaoGuo: 0, // 历史累计获得道果点（提供永久基础倍率）
@@ -86,7 +89,16 @@
     const qiPct = window.Equip.subSum(state.equip, 'qi');
     const chapters = chapterBonus(state.stage && state.stage.best);
     const titleFactor = window.Titles ? window.Titles.qiFactor(state) : 1;
-    return rawQi * stage.multiplier * getDaoGuoQiMultiplier() * (1 + qiPct) * (1 + 0.02 * chapters) * titleFactor;
+    const julingshiLv = (state.dongfu && state.dongfu.julingshi) || 0;
+    return (
+      rawQi *
+      stage.multiplier *
+      getDaoGuoQiMultiplier() *
+      (1 + qiPct) *
+      (1 + 0.02 * chapters) *
+      titleFactor *
+      (1 + 0.01 * Math.floor(julingshiLv / 10))
+    );
   }
 
   function getStonePerSec() {
@@ -176,6 +188,46 @@
   function getDongfuCost(item) {
     const lv = (state.dongfu && state.dongfu[item.id]) || 0;
     return Math.floor(item.baseCost * Math.pow(item.costScale, lv));
+  }
+
+  function getHomeDisplayTier(id) {
+    const lv = (state.dongfu && state.dongfu[id]) || 0;
+    const curTier = window.GameConfig.homeBuildingTier(lv);
+    const maxTier = (state.home && state.home.maxTier && Number(state.home.maxTier[id])) || 0;
+    return Math.max(curTier, maxTier);
+  }
+
+  function getHomeBgDisplayTier() {
+    let totalLv = 0;
+    window.GameConfig.DONGFU_LIST.forEach((d) => {
+      totalLv += (state.dongfu && state.dongfu[d.id]) || 0;
+    });
+    const curTier = window.GameConfig.homeBgTier(totalLv);
+    const bgMaxTier = (state.home && Number(state.home.bgMaxTier)) || 0;
+    return Math.max(curTier, bgMaxTier);
+  }
+
+  function getOfflineCapSeconds() {
+    const base = window.GameConfig.OFFLINE_CAP_SECONDS || 12 * 3600;
+    const lingquanLv = (state.dongfu && state.dongfu.lingquan) || 0;
+    const bonus = Math.floor(lingquanLv / 20) * 1800;
+    return Math.min(15 * 3600, base + bonus);
+  }
+
+  function buyDongfu(id, n) {
+    const item = window.GameConfig.DONGFU_LIST.find((d) => d.id === id);
+    if (!item) return 0;
+    if ((state.realmIndex || 0) < item.unlockRealmIndex) return 0;
+    const limit = n === Infinity ? Infinity : Math.max(0, Math.floor(n || 0));
+    let bought = 0;
+    while (bought < limit) {
+      const cost = getDongfuCost(item);
+      if (state.stones < cost) break;
+      state.stones -= cost;
+      state.dongfu[id] = (state.dongfu[id] || 0) + 1;
+      bought += 1;
+    }
+    return bought;
   }
 
   function getTalentCost(talent) {
@@ -268,6 +320,14 @@
       heroId: (saved && typeof saved.heroId === 'string' && saved.heroId) ? saved.heroId : 'lanyi',
       gongfa: { ...def.gongfa, ...(saved.gongfa || {}) },
       dongfu: { ...def.dongfu, ...(saved.dongfu || {}) },
+      home: {
+        ...def.home,
+        ...(saved.home || {}),
+        maxTier: {
+          ...def.home.maxTier,
+          ...((saved.home && saved.home.maxTier) || {})
+        }
+      },
       talents: { ...def.talents, ...(saved.talents || {}) },
       tree: { ...def.tree, ...(saved.tree || {}) },
       equip,
@@ -331,13 +391,13 @@
       let offlineReport = null;
 
       if (elapsedSec >= 3) {
-        const cappedSec = Math.min(elapsedSec, window.GameConfig.OFFLINE_CAP_SECONDS);
+        const cappedSec = Math.min(elapsedSec, getOfflineCapSeconds());
         const qiGain = getQiPerSec() * cappedSec;
         const stoneGain = getStonePerSec() * cappedSec;
         state.qi += qiGain;
         state.lifetimeQi = (state.lifetimeQi || 0) + qiGain;
         state.playTimeMs = (state.playTimeMs || 0) + cappedSec * 1000;
-        if (elapsedSec > window.GameConfig.OFFLINE_CAP_SECONDS) state.flags.offlineCap = true;
+        if (elapsedSec > getOfflineCapSeconds()) state.flags.offlineCap = true;
         state.stones += stoneGain;
         const windowEnd = savedTime + cappedSec * 1000;
         let treeDone = false;
@@ -354,7 +414,7 @@
         offlineReport = {
           rawSeconds: elapsedSec,
           effectiveSeconds: cappedSec,
-          capped: elapsedSec > window.GameConfig.OFFLINE_CAP_SECONDS,
+          capped: elapsedSec > getOfflineCapSeconds(),
           qiGain,
           stoneGain,
           peachGain: peachGain + idle.peaches,
@@ -414,8 +474,14 @@
     const keepLife = Math.max(state.lifeBestStage || 0, (state.stage && state.stage.best) || 0);
     const keepSeq = state.seq || 0;
     const keepPeaches = (state.tree && state.tree.peaches) || 0;
+    const keepHome = JSON.parse(JSON.stringify(state.home || {}));
 
     const fresh = createDefaultState();
+    fresh.home = {
+      ...fresh.home,
+      ...keepHome,
+      maxTier: { ...fresh.home.maxTier, ...((keepHome && keepHome.maxTier) || {}) }
+    };
     fresh.heroId = state.heroId || 'lanyi';
     fresh.reincarnationCount = keepReincarnations;
     fresh.daoGuo = keepDaoGuo;
@@ -482,6 +548,10 @@
     getTapQiGain,
     getGongfaCost,
     getDongfuCost,
+    getHomeDisplayTier,
+    getHomeBgDisplayTier,
+    getOfflineCapSeconds,
+    buyDongfu,
     getTalentCost,
     getBreakthroughSuccessRate,
     getPendingDaoGuo,

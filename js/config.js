@@ -474,6 +474,71 @@
     return parts.join('');
   }
 
+  // 洞府场景与品阶配置
+  const HOME_TIERS = [
+    { key: 'fan', q: 0, name: '凡品' },
+    { key: 'xuan', q: 2, name: '玄品' },
+    { key: 'xian', q: 5, name: '仙品' }
+  ];
+
+  const HOME_BUILDING_TIER_LV = [0, 25, 100];
+  const HOME_BG_TIER_TOTAL = [0, 150, 600];
+
+  const HOME_SCENE = {
+    short: {
+      julingshi: '聚灵',
+      lingquan: '灵泉',
+      yaoyuan: '药园',
+      lingmai: '灵脉',
+      dongtian_fudi: '洞天',
+      xiantian_zuqiao: '祖窍'
+    },
+    island: {
+      dongtian_fudi: [0.65, 12.72, 40.36, 31.61],
+      xiantian_zuqiao: [41.67, 19.99, 28.65, 14.9],
+      lingmai: [63.8, 36.34, 32.55, 18.9],
+      yaoyuan: [23.44, 49.78, 31.9, 15.62],
+      lingquan: [67.71, 63.59, 27.99, 14.53],
+      julingshi: [9.11, 70.86, 31.25, 16.72]
+    },
+    badge: {
+      dongtian_fudi: [21.7, 31],
+      xiantian_zuqiao: [55.6, 29.5],
+      lingmai: [80, 48.4],
+      yaoyuan: [39.6, 58.6],
+      lingquan: [81.6, 71.2],
+      julingshi: [24.3, 80.4]
+    },
+    patch: {
+      dongtian_fudi_xuan: [0, 6.613, 51.953, 38.808],
+      dongtian_fudi_xian: [0, 6.613, 51.953, 38.844],
+      xiantian_zuqiao_xuan: [41.536, 19.985, 29.622, 15.116],
+      xiantian_zuqiao_xian: [39.844, 16.061, 36.263, 19.004],
+      lingmai_xuan: [64.062, 36.41, 34.375, 24.855],
+      lingmai_xian: [59.44, 35.792, 38.867, 20.203],
+      yaoyuan_xuan: [23.698, 50.218, 32.812, 15.843],
+      yaoyuan_xian: [18.49, 43.677, 45.052, 22.311],
+      lingquan_xuan: [67.578, 58.067, 32.422, 21.584],
+      lingquan_xian: [64.974, 60.392, 32.878, 21.039],
+      julingshi_xuan: [8.464, 70.385, 32.617, 23.292],
+      julingshi_xian: [0, 65.334, 51.302, 28.343]
+    }
+  };
+
+  function homeBuildingTier(lv) {
+    const level = lv || 0;
+    if (level >= HOME_BUILDING_TIER_LV[2]) return 2;
+    if (level >= HOME_BUILDING_TIER_LV[1]) return 1;
+    return 0;
+  }
+
+  function homeBgTier(totalLv) {
+    const total = totalLv || 0;
+    if (total >= HOME_BG_TIER_TOTAL[2]) return 2;
+    if (total >= HOME_BG_TIER_TOTAL[1]) return 1;
+    return 0;
+  }
+
   window.GameConfig = {
     SUB_LEVEL_NAMES,
     MAJOR_REALMS,
@@ -481,6 +546,12 @@
     GONGFA_LIST,
     DONGFU_LIST,
     DAOGUO_TALENTS,
+    HOME_TIERS,
+    HOME_BUILDING_TIER_LV,
+    HOME_BG_TIER_TOTAL,
+    HOME_SCENE,
+    homeBuildingTier,
+    homeBgTier,
     OFFLINE_CAP_SECONDS: 12 * 3600, // 12小时上限
     REINCARNATION_MIN_STAGE: 27, // 元婴一层 (index 27)
     ENABLE_STAGE_GATES: true,
