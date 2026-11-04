@@ -14,7 +14,7 @@
 
   function gearIconSrc(slotId, item) {
     if (item) {
-      return `assets/icons/gear/${slotId}_${window.GameConfig.QUALITIES[item.q].id}.webp?v=1`;
+      return `assets/icons/gear/${slotId}_${window.GameConfig.QUALITIES[item.q].id}.webp?v=2`;
     }
     return `assets/icons/slot_${slotId}.webp?v=18`;
   }
