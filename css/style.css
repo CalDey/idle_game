@@ -1517,6 +1517,29 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   overflow: hidden;
 }
 
+.gufeng-card.peach-card.q-xian {
+  border-color: transparent;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 220, 0.05), transparent 30%) padding-box,
+    linear-gradient(165deg, rgba(46, 40, 68, 0.94), rgba(18, 16, 38, 0.96)) padding-box,
+    linear-gradient(120deg, #f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5, #f4a3a3) border-box;
+  background-size: 100% 100%, 100% 100%, 240% 240%;
+  box-shadow:
+    var(--shadow-soft),
+    0 0 10px rgba(198, 168, 245, 0.16),
+    0 0 14px rgba(159, 216, 239, 0.1);
+  animation: xianCardBorderFlow 10s linear infinite;
+}
+
+@keyframes xianCardBorderFlow {
+  0% {
+    background-position: 0 0, 0 0, 0% 50%;
+  }
+  100% {
+    background-position: 0 0, 0 0, 200% 50%;
+  }
+}
+
 .peach-head,
 .tree-row {
   display: flex;
@@ -1573,6 +1596,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 2px;
+  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   text-shadow: 0 0 12px currentColor;

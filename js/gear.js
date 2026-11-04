@@ -106,6 +106,36 @@
     lastGridSig = sig;
   }
 
+  let lastTreeLv = -1;
+  let lastStageQ = -1;
+
+  function formatRatesHtml(lv) {
+    const weights = window.Equip.qualityWeights(lv);
+    const total = weights.reduce((a, b) => a + b, 0) || 1;
+    const parts = [];
+    weights.forEach((w, idx) => {
+      if (w <= 0) return;
+      const pct = (w / total) * 100;
+      const pctStr = pct < 1 ? pct.toFixed(1).replace(/\.0$/, '') : String(Math.round(pct));
+      const q = window.GameConfig.QUALITIES[idx];
+      const shortName = q.name.replace(/品$/, '');
+      const nameHtml =
+        q.id === 'xian'
+          ? `<span class="q-xian-text">${shortName}</span>`
+          : `<span style="color:${q.color}">${shortName}</span>`;
+      parts.push(`${nameHtml} ${pctStr}%`);
+    });
+    return '出货率：' + parts.join(' · ');
+  }
+
+  function nextStageHint(lv) {
+    if (lv >= window.GameConfig.TREE_MAX_LEVEL) return '';
+    const stages = window.GameConfig.TREE_STAGES;
+    const next = stages.find((st) => st.minLv > lv);
+    if (next) return `Lv${next.minLv} 进阶${next.name}`;
+    return '已达最高阶段';
+  }
+
   function renderTree() {
     const s = window.GameState.state;
     const tree = s.tree;
@@ -130,7 +160,51 @@
       tree.peaches >= cap ? '仙桃已满' : `下一枚 ${window.GameConfig.formatDuration(Math.ceil(remain / 1000))}`;
     const cost = window.GameConfig.treeUpgradeCost(tree.lv);
     const secs = Math.round(window.GameConfig.treeUpgradeMs(tree.lv) / 1000);
-    $('tree-lv-label').textContent = `树 Lv${tree.lv}`;
+    const stage = window.GameConfig.treeStage(tree.lv);
+    const sq = window.GameConfig.QUALITIES[stage.q];
+    const isStageXian = sq.id === 'xian';
+    if (tree.lv !== lastTreeLv) {
+      const stageSpan = isStageXian
+        ? `<span class="q-xian-text">${stage.name}</span>`
+        : `<span style="color:${sq.color}">${stage.name}</span>`;
+      $('tree-lv-label').innerHTML = `树 Lv${tree.lv} · ${stageSpan}`;
+      const ratesEl = $('tree-rates');
+      if (ratesEl) ratesEl.innerHTML = formatRatesHtml(tree.lv);
+      const nextStageEl = $('tree-next-stage');
+      if (nextStageEl) {
+        const hint = nextStageHint(tree.lv);
+        nextStageEl.textContent = hint;
+        nextStageEl.style.display = hint ? '' : 'none';
+      }
+      lastTreeLv = tree.lv;
+    }
+    if (stage.q !== lastStageQ) {
+      const artWrap = $('peach-tree-art');
+      const artImg = artWrap ? artWrap.querySelector('img') : null;
+      if (artImg) {
+        const nextSrc = `assets/icons/tree/tree_${sq.id}.webp?v=1`;
+        const nextSrcset = `assets/icons/tree/tree_${sq.id}@128.webp?v=1 128w, assets/icons/tree/tree_${sq.id}.webp?v=1 256w`;
+        if (artImg.getAttribute('src') !== nextSrc) {
+          artImg.src = nextSrc;
+          artImg.srcset = nextSrcset;
+        }
+      }
+      if (artWrap) {
+        artWrap.style.filter = `drop-shadow(0 0 10px color-mix(in srgb, ${sq.color} 32%, transparent))`;
+        const peachCard = artWrap.closest('.gufeng-card');
+        if (peachCard) {
+          peachCard.classList.toggle('q-xian', isStageXian);
+          if (isStageXian) {
+            peachCard.style.borderColor = '';
+            peachCard.style.boxShadow = '';
+          } else {
+            peachCard.style.borderColor = sq.color;
+            peachCard.style.boxShadow = `var(--shadow-soft), 0 0 10px color-mix(in srgb, ${sq.color} 18%, transparent)`;
+          }
+        }
+      }
+      lastStageQ = stage.q;
+    }
     if (tree.upEnd && tree.upEnd > Date.now()) {
       const left = Math.ceil((tree.upEnd - Date.now()) / 1000);
       $('tree-cost-label').textContent = `升级中 ${window.GameConfig.formatDuration(left)}`;
@@ -158,14 +232,14 @@
     renderGrid();
   }
 
-  function showReveal(item) {
+  function showReveal(item, customText) {
     const el = $('peach-reveal');
     if (!el) return;
     const q = window.GameConfig.QUALITIES[item.q];
     const isXian = q.id === 'xian';
     el.classList.toggle('q-xian-text', isXian);
     el.style.color = isXian ? '' : q.color;
-    el.textContent = q.name;
+    el.textContent = customText || q.name;
     el.classList.remove('show');
     void el.offsetWidth;
     el.classList.add('show');
@@ -339,8 +413,18 @@
   let lastPaint = 0;
 
   function tick() {
+    const s = window.GameState.state;
+    const prevStage = window.GameConfig.treeStage(s.tree && s.tree.lv);
     const changed = window.GameState.tickTimers(Date.now());
-    if (changed.leveled) log('仙桃树升级完成。', 'gold');
+    if (changed.leveled) {
+      const nextStage = window.GameConfig.treeStage(s.tree && s.tree.lv);
+      if (nextStage.q > prevStage.q) {
+        log(`仙桃树进阶：【${nextStage.name}】！`, 'gold');
+        showReveal({ q: nextStage.q }, `仙桃树进阶：${nextStage.name}`);
+      } else {
+        log('仙桃树升级完成。', 'gold');
+      }
+    }
     const now = Date.now();
     if (changed.leveled || changed.peaches || now - lastPaint > 400) {
       lastPaint = now;

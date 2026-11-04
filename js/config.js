@@ -135,6 +135,27 @@
     { lv: 25, w: [0, 15, 30, 32, 19, 4] }
   ];
 
+  // 仙桃树品质阶段（外观随等级变化）
+  const TREE_STAGES = [
+    { q: 0, minLv: 1, name: '凡品桃树' },
+    { q: 1, minLv: 5, name: '灵品桃树' },
+    { q: 2, minLv: 9, name: '玄品桃树' },
+    { q: 3, minLv: 13, name: '地品仙桃树' },
+    { q: 4, minLv: 17, name: '天品仙桃树' },
+    { q: 5, minLv: 21, name: '仙品蟠桃树' }
+  ];
+
+  function treeStage(lv) {
+    const level = lv || 1;
+    let cur = TREE_STAGES[0];
+    for (let i = 0; i < TREE_STAGES.length; i++) {
+      if (TREE_STAGES[i].minLv <= level) {
+        cur = TREE_STAGES[i];
+      }
+    }
+    return cur;
+  }
+
   const SUBSTATS = [
     { key: 'atkPct', name: '攻击', min: 0.02, max: 0.04, pct: true },
     { key: 'hpPct', name: '生命', min: 0.02, max: 0.04, pct: true },
@@ -467,6 +488,8 @@
     EQUIP_SLOTS,
     QUALITIES,
     TREE_WEIGHT_ANCHORS,
+    TREE_STAGES,
+    treeStage,
     SUBSTATS,
     TRIBULATION_GATES,
     BATTLE,
