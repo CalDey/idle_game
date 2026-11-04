@@ -273,7 +273,7 @@
     const st = ensureStageState();
     const best = st.best || 0;
     const now = Date.now();
-    const capSec = (window.GameState.getOfflineCapSeconds && window.GameState.getOfflineCapSeconds()) || window.GameConfig.OFFLINE_CAP_SECONDS || 12 * 3600;
+    const capSec = window.GameConfig.OFFLINE_CAP_SECONDS || 12 * 3600;
     const rawSec = best > 0 ? Math.max(0, Math.floor((now - (st.idleAt || now)) / 1000)) : 0;
     const cappedSec = Math.min(rawSec, capSec);
     const hours = best > 0 ? cappedSec / 3600 : 0;
@@ -586,7 +586,7 @@
     if (best <= 0) return;
 
     const now = Date.now();
-    const capSec = (window.GameState.getOfflineCapSeconds && window.GameState.getOfflineCapSeconds()) || window.GameConfig.OFFLINE_CAP_SECONDS || 12 * 3600;
+    const capSec = window.GameConfig.OFFLINE_CAP_SECONDS || 12 * 3600;
     const rawSec = Math.max(0, Math.floor((now - (st.idleAt || now)) / 1000));
     const cappedSec = Math.min(rawSec, capSec);
     if (cappedSec < 60) return;

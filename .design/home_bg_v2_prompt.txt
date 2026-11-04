@@ -1,6 +1,0 @@
-【洞府背景图更新缓存版本号】只做下面的修改，不要改其他内容，不要运行终端命令，不要 git 操作。
-
-背景图 assets/home/bg_fan.webp、bg_xuan.webp、bg_xian.webp 已经换成新图（去掉了石台），需要更新缓存版本号让手机加载新图：
-1. js/game.js 里 `assets/home/bg_${bgTierInfo.key}.webp?v=1` 改为 `?v=2`。
-2. index.html 里 #home-bg 的 src `assets/home/bg_fan.webp?v=1` 改为 `?v=2`。
-3. index.html 里 game.js 的版本号 v=33 改为 v=34。

@@ -409,39 +409,6 @@
     }
   ];
 
-  // 洞府/家园配置（第一期）
-  const HOME_TIERS = [
-    { key: 'fan', q: 0, name: '凡品' },
-    { key: 'xuan', q: 2, name: '玄品' },
-    { key: 'xian', q: 5, name: '仙品' }
-  ];
-
-  const HOME_BUILDING_TIER_LV = [0, 25, 100];
-  const HOME_BG_TIER_TOTAL = [0, 150, 600];
-
-  const HOME_SLOTS = {
-    julingshi: { x: 37.5, y: 76.8, w: 24 },
-    lingquan: { x: 80.5, y: 66.4, w: 22 },
-    yaoyuan: { x: 23, y: 62.1, w: 21 },
-    lingmai: { x: 25.7, y: 50.1, w: 22 },
-    dongtian_fudi: { x: 25, y: 40.4, w: 19 },
-    xiantian_zuqiao: { x: 41.5, y: 33.4, w: 22 }
-  };
-
-  function homeBuildingTier(lv) {
-    const level = lv || 0;
-    if (level >= HOME_BUILDING_TIER_LV[2]) return 2;
-    if (level >= HOME_BUILDING_TIER_LV[1]) return 1;
-    return 0;
-  }
-
-  function homeBgTier(totalLv) {
-    const total = totalLv || 0;
-    if (total >= HOME_BG_TIER_TOTAL[2]) return 2;
-    if (total >= HOME_BG_TIER_TOTAL[1]) return 1;
-    return 0;
-  }
-
   // 轮回转世：道果秘术升级 (消耗道果点，永久保留)
   const DAOGUO_TALENTS = [
     {
@@ -513,12 +480,6 @@
     REALM_STAGES,
     GONGFA_LIST,
     DONGFU_LIST,
-    HOME_TIERS,
-    HOME_BUILDING_TIER_LV,
-    HOME_BG_TIER_TOTAL,
-    HOME_SLOTS,
-    homeBuildingTier,
-    homeBgTier,
     DAOGUO_TALENTS,
     OFFLINE_CAP_SECONDS: 12 * 3600, // 12小时上限
     REINCARNATION_MIN_STAGE: 27, // 元婴一层 (index 27)

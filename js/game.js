@@ -4,11 +4,6 @@
     REALM_STAGES,
     GONGFA_LIST,
     DONGFU_LIST,
-    HOME_TIERS,
-    HOME_SLOTS,
-    QUALITIES,
-    homeBuildingTier,
-    homeBgTier,
     DAOGUO_TALENTS,
     REINCARNATION_MIN_STAGE,
     formatNumber,
@@ -58,30 +53,6 @@
     els.btnCloseRole = document.getElementById('btn-close-role');
     els.gongfaList = document.getElementById('gongfa-list');
     els.dongfuList = document.getElementById('dongfu-list');
-    els.dongfuCard = document.getElementById('dongfu-card');
-    els.dongfuCardHeader = document.getElementById('dongfu-card-header');
-    els.dongfuFoldArrow = document.getElementById('dongfu-fold-arrow');
-
-    els.homeScene = document.getElementById('home-scene');
-    els.homeBg = document.getElementById('home-bg');
-    els.homeBlds = document.getElementById('home-blds');
-    els.homeBadges = document.getElementById('home-badges');
-    els.homeTitle = document.getElementById('home-title');
-    els.homeReveal = document.getElementById('home-reveal');
-    els.homeSheet = document.getElementById('home-sheet');
-    els.homeSheetName = document.getElementById('home-sheet-name');
-    els.homeSheetTier = document.getElementById('home-sheet-tier');
-    els.homeSheetLv = document.getElementById('home-sheet-lv');
-    els.homeSheetDesc = document.getElementById('home-sheet-desc');
-    els.homeSheetOutput = document.getElementById('home-sheet-output');
-    els.homeSheetSynergy = document.getElementById('home-sheet-synergy');
-    els.homeSheetNextTier = document.getElementById('home-sheet-next-tier');
-    els.homeSheetCost = document.getElementById('home-sheet-cost');
-    els.homeSheetLockHint = document.getElementById('home-sheet-lock-hint');
-    els.btnCloseHomeSheet = document.getElementById('btn-close-home-sheet');
-    els.btnHomeBuy1 = document.getElementById('btn-home-buy-1');
-    els.btnHomeBuy10 = document.getElementById('btn-home-buy-10');
-    els.btnHomeBuyMax = document.getElementById('btn-home-buy-max');
 
     els.reincarnateCount = document.getElementById('reincarnate-count');
     els.reincarnateMult = document.getElementById('reincarnate-mult');
@@ -382,271 +353,6 @@
       `;
       els.dongfuList.appendChild(row);
     });
-
-    renderHomeScene();
-    if (activeHomeSheetId) {
-      renderHomeSheet();
-    }
-  }
-
-  let homeTierInited = false;
-  let homeBldRefs = null;
-  let activeHomeSheetId = null;
-  let dongfuCollapsed = true;
-
-  function showHomeReveal(tierIdx, text) {
-    const el = els.homeReveal;
-    if (!el) return;
-    const tierInfo = HOME_TIERS[tierIdx] || HOME_TIERS[0];
-    const q = QUALITIES[tierInfo.q] || QUALITIES[0];
-    const isXian = q.id === 'xian';
-    el.classList.toggle('q-xian-text', isXian);
-    el.style.color = isXian ? '' : q.color;
-    el.textContent = text;
-    el.classList.remove('show');
-    void el.offsetWidth;
-    el.classList.add('show');
-  }
-
-  function renderHomeScene() {
-    if (!els.homeScene || !els.homeBlds) return;
-    const s = GameState.state;
-    if (!s.home) {
-      s.home = { maxTier: {}, bgMaxTier: 0 };
-    }
-    if (!s.home.maxTier) {
-      s.home.maxTier = {};
-    }
-
-    let totalLv = 0;
-    let revealInfo = null;
-
-    DONGFU_LIST.forEach((item) => {
-      const lv = (s.dongfu && s.dongfu[item.id]) || 0;
-      totalLv += lv;
-      const curTier = homeBuildingTier(lv);
-      const prevMax = s.home.maxTier[item.id] || 0;
-      if (curTier > prevMax) {
-        s.home.maxTier[item.id] = curTier;
-        if (homeTierInited) {
-          const tierObj = HOME_TIERS[curTier] || HOME_TIERS[0];
-          const msg = `洞府进阶：${item.name}·${tierObj.name}`;
-          addLog(msg, 'success');
-          revealInfo = { tier: curTier, text: msg };
-        }
-      }
-    });
-
-    const curBgTier = homeBgTier(totalLv);
-    const prevBgMax = s.home.bgMaxTier || 0;
-    if (curBgTier > prevBgMax) {
-      s.home.bgMaxTier = curBgTier;
-      if (homeTierInited) {
-        const bgTierObj = HOME_TIERS[curBgTier] || HOME_TIERS[0];
-        const msg = `洞府进阶：洞天${bgTierObj.name}`;
-        addLog(msg, 'success');
-        revealInfo = { tier: curBgTier, text: msg };
-      }
-    }
-
-    homeTierInited = true;
-
-    if (revealInfo) {
-      showHomeReveal(revealInfo.tier, revealInfo.text);
-    }
-
-    const bgDisplayTier = GameState.getHomeBgDisplayTier();
-    const bgTierInfo = HOME_TIERS[bgDisplayTier] || HOME_TIERS[0];
-    const nextBgSrc = `assets/home/bg_${bgTierInfo.key}.webp?v=2`;
-    if (els.homeBg && els.homeBg.getAttribute('src') !== nextBgSrc) {
-      els.homeBg.setAttribute('src', nextBgSrc);
-      els.homeBg.src = nextBgSrc;
-    }
-
-    if (els.homeTitle) {
-      els.homeTitle.textContent = `洞府 · ${bgTierInfo.name} · 总等级 ${totalLv}`;
-    }
-
-    if (!homeBldRefs || els.homeBlds.children.length !== DONGFU_LIST.length) {
-      els.homeBlds.innerHTML = '';
-      if (els.homeBadges) els.homeBadges.innerHTML = '';
-      homeBldRefs = {};
-      DONGFU_LIST.forEach((item) => {
-        const slot = HOME_SLOTS[item.id] || { x: 50, y: 50, w: 23 };
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'home-bld';
-        btn.setAttribute('data-bld-id', item.id);
-        btn.style.left = `${slot.x}%`;
-        btn.style.top = `${slot.y}%`;
-        btn.style.width = `${slot.w || 23}%`;
-        btn.style.zIndex = String(Math.round(slot.y));
-        btn.innerHTML = `
-          <img class="home-bld-img" src="assets/home/b_${item.id}_fan.webp?v=1" srcset="assets/home/b_${item.id}_fan@128.webp?v=1 128w, assets/home/b_${item.id}_fan.webp?v=1 256w" sizes="24vw" alt="${item.name}" loading="lazy" decoding="async">
-        `;
-        els.homeBlds.appendChild(btn);
-
-        const badge = document.createElement('span');
-        badge.className = 'home-bld-badge';
-        badge.style.left = `${slot.x}%`;
-        badge.style.top = `${slot.y + 2.5}%`;
-        if (els.homeBadges) {
-          els.homeBadges.appendChild(badge);
-        }
-
-        homeBldRefs[item.id] = {
-          btn,
-          img: btn.querySelector('.home-bld-img'),
-          badge
-        };
-      });
-    }
-
-    DONGFU_LIST.forEach((item) => {
-      const ref = homeBldRefs[item.id];
-      if (!ref) return;
-      const unlocked = s.realmIndex >= item.unlockRealmIndex;
-      const lv = (s.dongfu && s.dongfu[item.id]) || 0;
-      const displayTier = unlocked ? GameState.getHomeDisplayTier(item.id) : 0;
-      const tierInfo = HOME_TIERS[displayTier] || HOME_TIERS[0];
-      const q = QUALITIES[tierInfo.q] || QUALITIES[0];
-      const isXian = unlocked && q.id === 'xian';
-
-      const src = `assets/home/b_${item.id}_${tierInfo.key}.webp?v=1`;
-      const srcset = `assets/home/b_${item.id}_${tierInfo.key}@128.webp?v=1 128w, assets/home/b_${item.id}_${tierInfo.key}.webp?v=1 256w`;
-      if (ref.img.getAttribute('src') !== src) {
-        ref.img.setAttribute('src', src);
-        ref.img.src = src;
-        ref.img.setAttribute('srcset', srcset);
-        ref.img.srcset = srcset;
-      }
-
-      ref.btn.classList.toggle('locked', !unlocked);
-      ref.badge.classList.toggle('q-xian', isXian);
-
-      if (unlocked) {
-        ref.badge.textContent = `Lv.${lv}`;
-        ref.badge.style.borderColor = isXian ? '' : q.color;
-        ref.badge.style.color = isXian ? '' : q.color;
-      } else {
-        const reqStageName = REALM_STAGES[item.unlockRealmIndex].fullName;
-        ref.badge.textContent = `🔒 ${reqStageName}解锁`;
-        ref.badge.style.borderColor = '';
-        ref.badge.style.color = '';
-      }
-    });
-  }
-
-  function renderHomeSheet() {
-    if (!activeHomeSheetId || !els.homeSheet) return;
-    const item = DONGFU_LIST.find((d) => d.id === activeHomeSheetId);
-    if (!item) return;
-
-    const s = GameState.state;
-    const stage = GameState.getCurrentStage();
-    const unlocked = s.realmIndex >= item.unlockRealmIndex;
-    const lv = (s.dongfu && s.dongfu[item.id]) || 0;
-    const displayTier = GameState.getHomeDisplayTier(item.id);
-    const tierInfo = HOME_TIERS[displayTier] || HOME_TIERS[0];
-    const q = QUALITIES[tierInfo.q] || QUALITIES[0];
-    const isXian = q.id === 'xian';
-
-    if (els.homeSheetName) els.homeSheetName.textContent = item.name;
-    if (els.homeSheetTier) {
-      els.homeSheetTier.textContent = tierInfo.name;
-      els.homeSheetTier.classList.toggle('q-xian-text', isXian);
-      els.homeSheetTier.style.color = isXian ? '' : q.color;
-      els.homeSheetTier.style.borderColor = isXian ? 'rgba(245, 199, 106, 0.5)' : q.color;
-    }
-    if (els.homeSheetLv) els.homeSheetLv.textContent = `Lv.${lv}`;
-    if (els.homeSheetDesc) els.homeSheetDesc.textContent = item.desc;
-
-    const perLvEffect =
-      item.baseStonePerSec *
-      Math.pow(stage.multiplier, 0.65) *
-      GameState.getDaoGuoStoneMultiplier();
-    const totalOutput = perLvEffect * lv;
-    if (els.homeSheetOutput) {
-      els.homeSheetOutput.innerHTML = `当前产出：<strong>+${formatNumber(totalOutput)} 灵石/秒</strong>（单级 +${formatNumber(perLvEffect)}/秒）`;
-    }
-
-    if (els.homeSheetSynergy) {
-      if (item.id === 'julingshi') {
-        const bonusPct = Math.floor(lv / 10);
-        els.homeSheetSynergy.textContent = `洞天联动：灵气 +${bonusPct}%（每 10 级 +1%）`;
-        els.homeSheetSynergy.style.display = '';
-      } else if (item.id === 'lingquan') {
-        const capHours = (GameState.getOfflineCapSeconds() / 3600).toFixed(1).replace(/\.0$/, '');
-        els.homeSheetSynergy.textContent = `洞天联动：离线上限 ${capHours}h（每 20 级 +0.5h，最高 15h）`;
-        els.homeSheetSynergy.style.display = '';
-      } else {
-        els.homeSheetSynergy.textContent = '';
-        els.homeSheetSynergy.style.display = 'none';
-      }
-    }
-
-    if (els.homeSheetNextTier) {
-      if (lv < 25) {
-        els.homeSheetNextTier.textContent = '外观门槛：Lv25 进阶玄品 / Lv100 进阶仙品';
-      } else if (lv < 100) {
-        els.homeSheetNextTier.textContent = '外观门槛：Lv100 进阶仙品（已达玄品）';
-      } else {
-        els.homeSheetNextTier.textContent = '外观门槛：已臻仙品圆满（Lv25 进阶玄品 / Lv100 进阶仙品）';
-      }
-    }
-
-    const cost = GameState.getDongfuCost(item);
-    if (els.homeSheetCost) {
-      els.homeSheetCost.innerHTML = `下一级花费：<img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(cost)} 灵石</strong>`;
-    }
-
-    const reqStageName = REALM_STAGES[item.unlockRealmIndex].fullName;
-    if (els.homeSheetLockHint) {
-      if (!unlocked) {
-        els.homeSheetLockHint.textContent = `需突破至【${reqStageName}】解锁扩建`;
-        els.homeSheetLockHint.style.display = '';
-      } else {
-        els.homeSheetLockHint.textContent = '';
-        els.homeSheetLockHint.style.display = 'none';
-      }
-    }
-
-    const canAfford = unlocked && s.stones >= cost;
-    [els.btnHomeBuy1, els.btnHomeBuy10, els.btnHomeBuyMax].forEach((btn) => {
-      if (btn) {
-        btn.disabled = !canAfford;
-      }
-    });
-  }
-
-  function openHomeSheet(id) {
-    activeHomeSheetId = id;
-    renderHomeSheet();
-    if (els.homeSheet) {
-      els.homeSheet.classList.add('active');
-    }
-  }
-
-  function closeHomeSheet() {
-    activeHomeSheetId = null;
-    if (els.homeSheet) {
-      els.homeSheet.classList.remove('active');
-    }
-  }
-
-  function handleHomeBuy(n) {
-    if (!activeHomeSheetId) return;
-    const item = DONGFU_LIST.find((d) => d.id === activeHomeSheetId);
-    if (!item) return;
-    const bought = GameState.buyDongfu(activeHomeSheetId, n);
-    if (bought > 0) {
-      const newLv = (GameState.state.dongfu && GameState.state.dongfu[activeHomeSheetId]) || 0;
-      addLog(`消耗灵石扩建【${item.name}】至 Lv.${newLv}！`, 'success');
-      renderUpgradeLists();
-      renderHomeSheet();
-      updateHeaderAndMeditationUI();
-      if (window.StageUI) StageUI.render();
-    }
   }
 
   // 动态刷新功法与洞府按钮的可用状态，避免整表重建闪烁
@@ -683,18 +389,6 @@
     if (els.badgeUpgrade) {
       els.badgeUpgrade.classList.toggle('visible', anyAffordable);
     }
-
-    if (activeHomeSheetId && els.homeSheet && els.homeSheet.classList.contains('active')) {
-      const item = DONGFU_LIST.find((d) => d.id === activeHomeSheetId);
-      if (item) {
-        const unlocked = s.realmIndex >= item.unlockRealmIndex;
-        const cost = GameState.getDongfuCost(item);
-        const canAfford = unlocked && s.stones >= cost;
-        [els.btnHomeBuy1, els.btnHomeBuy10, els.btnHomeBuyMax].forEach((btn) => {
-          if (btn) btn.disabled = !canAfford;
-        });
-      }
-    }
   }
 
   function handleUpgradeClick(e) {
@@ -720,7 +414,10 @@
       const id = dongfuBtn.getAttribute('data-dongfu-id');
       const item = DONGFU_LIST.find((d) => d.id === id);
       if (!item) return;
-      if (GameState.buyDongfu(id, 1) > 0) {
+      const cost = GameState.getDongfuCost(item);
+      if (GameState.state.realmIndex >= item.unlockRealmIndex && GameState.state.stones >= cost) {
+        GameState.state.stones -= cost;
+        GameState.state.dongfu[id] = (GameState.state.dongfu[id] || 0) + 1;
         addLog(`消耗灵石扩建【${item.name}】至 Lv.${GameState.state.dongfu[id]}！`, 'success');
         renderUpgradeLists();
         updateHeaderAndMeditationUI();
@@ -922,7 +619,6 @@
     navBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === targetId));
     panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
     if (targetId === 'tab-cultivate') resumeHeroVideo();
-    if (targetId === 'tab-upgrades') renderHomeScene();
     if (window.StageUI) {
       if (targetId === 'tab-stage') window.StageUI.onShow();
       else window.StageUI.onHide();
@@ -1563,53 +1259,6 @@
     els.talentList.addEventListener('click', handleTalentClick);
     els.btnReincarnate.addEventListener('click', handleReincarnateButton);
 
-    if (els.dongfuCardHeader && els.dongfuCard) {
-      const toggleDongfuFold = () => {
-        dongfuCollapsed = !dongfuCollapsed;
-        els.dongfuCard.classList.toggle('is-collapsed', dongfuCollapsed);
-        els.dongfuCardHeader.setAttribute('aria-expanded', dongfuCollapsed ? 'false' : 'true');
-        if (els.dongfuFoldArrow) {
-          els.dongfuFoldArrow.textContent = dongfuCollapsed ? '▸' : '▾';
-        }
-      };
-      els.dongfuCardHeader.addEventListener('click', toggleDongfuFold);
-      els.dongfuCardHeader.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleDongfuFold();
-        }
-      });
-    }
-
-    if (els.homeBlds) {
-      els.homeBlds.addEventListener('click', (e) => {
-        const bld = e.target.closest('button[data-bld-id]');
-        if (bld) {
-          openHomeSheet(bld.getAttribute('data-bld-id'));
-        }
-      });
-    }
-
-    if (els.homeSheet) {
-      els.homeSheet.addEventListener('click', (e) => {
-        if (e.target === els.homeSheet) {
-          closeHomeSheet();
-        }
-      });
-    }
-    if (els.btnCloseHomeSheet) {
-      els.btnCloseHomeSheet.addEventListener('click', closeHomeSheet);
-    }
-    if (els.btnHomeBuy1) {
-      els.btnHomeBuy1.addEventListener('click', () => handleHomeBuy(1));
-    }
-    if (els.btnHomeBuy10) {
-      els.btnHomeBuy10.addEventListener('click', () => handleHomeBuy(10));
-    }
-    if (els.btnHomeBuyMax) {
-      els.btnHomeBuyMax.addEventListener('click', () => handleHomeBuy(Infinity));
-    }
-
     els.btnCloseOffline.addEventListener('click', () => {
       els.offlineModal.classList.remove('active');
     });
@@ -1658,8 +1307,6 @@
         '散功重修（重置存档）',
         '确定要彻底清空当前所有修仙进度、灵石、功法与道果吗？此操作不可撤销！',
         () => {
-          homeTierInited = false;
-          closeHomeSheet();
           GameState.resetGame();
           applyHeroAppearance(GameState.state.heroId);
           renderRoleList();
