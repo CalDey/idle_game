@@ -420,12 +420,12 @@
   const HOME_BG_TIER_TOTAL = [0, 150, 600];
 
   const HOME_SLOTS = {
-    julingshi: { x: 37, y: 77 },
-    lingquan: { x: 79, y: 67 },
-    yaoyuan: { x: 23, y: 62 },
-    lingmai: { x: 27, y: 51 },
-    dongtian_fudi: { x: 26, y: 40 },
-    xiantian_zuqiao: { x: 44, y: 34 }
+    julingshi: { x: 37, y: 77, w: 24 },
+    lingquan: { x: 79, y: 67, w: 22 },
+    yaoyuan: { x: 23, y: 62, w: 24 },
+    lingmai: { x: 26.5, y: 50.5, w: 23 },
+    dongtian_fudi: { x: 25.5, y: 40, w: 21 },
+    xiantian_zuqiao: { x: 43, y: 34, w: 22 }
   };
 
   function homeBuildingTier(lv) {

@@ -470,16 +470,17 @@
       els.homeBlds.innerHTML = '';
       homeBldRefs = {};
       DONGFU_LIST.forEach((item) => {
-        const slot = HOME_SLOTS[item.id] || { x: 50, y: 50 };
+        const slot = HOME_SLOTS[item.id] || { x: 50, y: 50, w: 23 };
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'home-bld';
         btn.setAttribute('data-bld-id', item.id);
         btn.style.left = `${slot.x}%`;
         btn.style.top = `${slot.y}%`;
+        btn.style.width = `${slot.w || 23}%`;
         btn.style.zIndex = String(Math.round(slot.y));
         btn.innerHTML = `
-          <img class="home-bld-img" src="assets/home/b_${item.id}_fan.webp?v=1" srcset="assets/home/b_${item.id}_fan@128.webp?v=1 128w, assets/home/b_${item.id}_fan.webp?v=1 256w" sizes="28vw" alt="${item.name}" loading="lazy" decoding="async">
+          <img class="home-bld-img" src="assets/home/b_${item.id}_fan.webp?v=1" srcset="assets/home/b_${item.id}_fan@128.webp?v=1 128w, assets/home/b_${item.id}_fan.webp?v=1 256w" sizes="24vw" alt="${item.name}" loading="lazy" decoding="async">
           <span class="home-bld-badge"></span>
         `;
         els.homeBlds.appendChild(btn);
