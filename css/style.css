@@ -2611,6 +2611,56 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   min-width: 0;
 }
 
+/* === 仙品（xian）柔和彩虹渐变 === */
+.q-xian {
+  border-color: transparent;
+  background:
+    linear-gradient(rgba(8, 6, 20, 0.45), rgba(8, 6, 20, 0.45)) padding-box,
+    linear-gradient(120deg, #f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5, #f4a3a3) border-box;
+  background-size: 100% 100%, 240% 240%;
+  box-shadow:
+    0 0 8px rgba(198, 168, 245, 0.16),
+    0 0 12px rgba(159, 216, 239, 0.1);
+  animation: xianBorderFlow 10s linear infinite;
+}
+
+.q-xian-text {
+  background: linear-gradient(90deg, #f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5, #f4a3a3);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: xianTextFlow 10s linear infinite;
+}
+
+.peach-reveal.q-xian-text {
+  text-shadow: none;
+  filter: drop-shadow(0 0 8px rgba(198, 168, 245, 0.45));
+}
+
+.peach-reveal.q-xian-text.show {
+  animation: peachPop 0.6s ease, xianTextFlow 10s linear infinite;
+}
+
+@keyframes xianBorderFlow {
+  0% {
+    background-position: 0 0, 0% 50%;
+  }
+  100% {
+    background-position: 0 0, 200% 50%;
+  }
+}
+
+@keyframes xianTextFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
 /* === 更换角色按钮与弹窗 === */
 #tab-cultivate .gufeng-card .card-header,
 .card-header:has(.role-switch-btn) {

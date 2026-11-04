@@ -14,7 +14,7 @@
 
   function gearIconSrc(slotId, item) {
     if (item) {
-      return `assets/icons/gear/${slotId}_${window.GameConfig.QUALITIES[item.q].id}.webp?v=2`;
+      return `assets/icons/gear/${slotId}_${window.GameConfig.QUALITIES[item.q].id}.webp?v=3`;
     }
     return `assets/icons/slot_${slotId}.webp?v=18`;
   }
@@ -28,14 +28,18 @@
       return `<div class="item-card empty"><div class="item-name">${title}</div><div class="item-sub">空</div></div>`;
     }
     const q = window.GameConfig.QUALITIES[item.q];
+    const isXian = q.id === 'xian';
     const glow = slotGlowCls(item);
     const subs = (item.sub || []).map((pair) => `<div>${window.Equip.formatSub(pair)}</div>`).join('');
-    return `<div class="item-card" style="border-color:${q.color};color:${q.color}">
+    const cardCls = 'item-card' + (isXian ? ' q-xian' : '');
+    const cardStyle = isXian ? '' : ` style="border-color:${q.color};color:${q.color}"`;
+    const textCls = isXian ? ' q-xian-text' : '';
+    return `<div class="${cardCls}"${cardStyle}>
       <div class="item-card-head">
         <img class="gi item-card-icon${glow}" src="${gearIconSrc(item.s, item)}" alt="" aria-hidden="true">
         <div class="item-card-meta">
-          <div class="item-name">${window.Equip.itemName(item)}</div>
-          <div class="item-lv">Lv.${item.lv}</div>
+          <div class="item-name${textCls}">${window.Equip.itemName(item)}</div>
+          <div class="item-lv${textCls}">Lv.${item.lv}</div>
         </div>
       </div>
       <div class="item-main">${window.Equip.formatMain(item)}</div>
@@ -84,17 +88,19 @@
       const ref = slotRefs[slot.id];
       const item = equip[slot.id];
       const q = item ? window.GameConfig.QUALITIES[item.q] : null;
+      const isXian = !!(q && q.id === 'xian');
       const glow = !item ? ' gi-glow' : '';
       const src = gearIconSrc(slot.id, item);
       if (ref.imgEl.getAttribute('src') !== src) {
         ref.imgEl.src = src;
       }
-      ref.btn.className = 'equip-slot' + (item ? ' filled' : '');
-      ref.btn.style.borderColor = q ? q.color : 'rgba(230,201,138,0.35)';
+      ref.btn.className = 'equip-slot' + (item ? ' filled' : '') + (isXian ? ' q-xian' : '');
+      ref.btn.style.borderColor = isXian ? '' : q ? q.color : 'rgba(230,201,138,0.35)';
       ref.lvEl.textContent = item ? 'Lv' + item.lv : '';
       ref.imgEl.className = 'gi slot-icon' + glow;
       ref.nameEl.textContent = slot.name;
       ref.itemEl.textContent = q ? q.name : '空';
+      ref.itemEl.classList.toggle('q-xian-text', isXian);
     });
 
     lastGridSig = sig;
@@ -156,7 +162,9 @@
     const el = $('peach-reveal');
     if (!el) return;
     const q = window.GameConfig.QUALITIES[item.q];
-    el.style.color = q.color;
+    const isXian = q.id === 'xian';
+    el.classList.toggle('q-xian-text', isXian);
+    el.style.color = isXian ? '' : q.color;
     el.textContent = q.name;
     el.classList.remove('show');
     void el.offsetWidth;
@@ -283,9 +291,13 @@
   function openItem(slotId) {
     const item = window.GameState.state.equip[slotId];
     const slot = window.Equip.slotDef(slotId);
+    const q = item ? window.GameConfig.QUALITIES[item.q] : null;
+    const isXian = !!(q && q.id === 'xian');
     const glow = slotGlowCls(item);
     const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="${gearIconSrc(slotId, item)}" alt="" aria-hidden="true"></div>`;
-    $('item-modal-title').textContent = item ? window.Equip.itemName(item) : slot.name;
+    const titleEl = $('item-modal-title');
+    titleEl.textContent = item ? window.Equip.itemName(item) : slot.name;
+    titleEl.classList.toggle('q-xian-text', isXian);
     $('item-modal-body').innerHTML =
       iconHtml +
       (item
