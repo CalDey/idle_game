@@ -12,8 +12,15 @@
     return window.GameState.state.realmIndex >= window.GameConfig.PEACH.UNLOCK_REALM;
   }
 
-  function slotGlowCls(slotId) {
-    return slotId === 'robe' || slotId === 'boots' ? ' gi-glow' : '';
+  function gearIconSrc(slotId, item) {
+    if (item) {
+      return `assets/icons/gear/${slotId}_${window.GameConfig.QUALITIES[item.q].id}.webp?v=1`;
+    }
+    return `assets/icons/slot_${slotId}.webp?v=18`;
+  }
+
+  function slotGlowCls(item) {
+    return !item ? ' gi-glow' : '';
   }
 
   function cardHtml(item, title) {
@@ -21,11 +28,11 @@
       return `<div class="item-card empty"><div class="item-name">${title}</div><div class="item-sub">空</div></div>`;
     }
     const q = window.GameConfig.QUALITIES[item.q];
-    const glow = slotGlowCls(item.s);
+    const glow = slotGlowCls(item);
     const subs = (item.sub || []).map((pair) => `<div>${window.Equip.formatSub(pair)}</div>`).join('');
     return `<div class="item-card" style="border-color:${q.color};color:${q.color}">
       <div class="item-card-head">
-        <img class="gi item-card-icon${glow}" src="assets/icons/slot_${item.s}.webp?v=18" alt="" aria-hidden="true">
+        <img class="gi item-card-icon${glow}" src="${gearIconSrc(item.s, item)}" alt="" aria-hidden="true">
         <div class="item-card-meta">
           <div class="item-name">${window.Equip.itemName(item)}</div>
           <div class="item-lv">Lv.${item.lv}</div>
@@ -77,7 +84,11 @@
       const ref = slotRefs[slot.id];
       const item = equip[slot.id];
       const q = item ? window.GameConfig.QUALITIES[item.q] : null;
-      const glow = !item || slot.id === 'robe' || slot.id === 'boots' ? ' gi-glow' : '';
+      const glow = !item ? ' gi-glow' : '';
+      const src = gearIconSrc(slot.id, item);
+      if (ref.imgEl.getAttribute('src') !== src) {
+        ref.imgEl.src = src;
+      }
       ref.btn.className = 'equip-slot' + (item ? ' filled' : '');
       ref.btn.style.borderColor = q ? q.color : 'rgba(230,201,138,0.35)';
       ref.lvEl.textContent = item ? 'Lv' + item.lv : '';
@@ -272,8 +283,8 @@
   function openItem(slotId) {
     const item = window.GameState.state.equip[slotId];
     const slot = window.Equip.slotDef(slotId);
-    const glow = slotGlowCls(slotId);
-    const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="assets/icons/slot_${slotId}.webp?v=18" alt="" aria-hidden="true"></div>`;
+    const glow = slotGlowCls(item);
+    const iconHtml = `<div class="item-modal-icon-wrap"><img class="gi item-modal-icon${glow}" src="${gearIconSrc(slotId, item)}" alt="" aria-hidden="true"></div>`;
     $('item-modal-title').textContent = item ? window.Equip.itemName(item) : slot.name;
     $('item-modal-body').innerHTML =
       iconHtml +

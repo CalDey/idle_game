@@ -2591,8 +2591,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .item-modal-icon {
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
 }
 
 .item-card-head {
