@@ -1,0 +1,60 @@
+【任务】为本项目（纯原生 JS/CSS/HTML 放置修仙 H5，部署在 GitHub Pages，无构建步骤）实现“洞府/家园”第一期。只改下列文件，不要新增依赖，不要动无关系统。
+【重要】不要运行任何终端命令，也不要执行任何 git 操作。只编辑文件。
+
+需要修改的文件：index.html、css/style.css、js/config.js、js/state.js、js/game.js、js/stage-ui.js（只改离线上限那两处）。
+美术资源已就位（不要生成或改动图片）：
+- 背景：assets/home/bg_fan.webp、assets/home/bg_xuan.webp、assets/home/bg_xian.webp（都是 720×1290，宽高比 720/1290）
+- 建筑：assets/home/b_{id}_{tier}.webp（256px 透明）和 assets/home/b_{id}_{tier}@128.webp，其中 id ∈ julingshi, lingquan, yaoyuan, lingmai, dongtian_fudi, xiantian_zuqiao；tier ∈ fan, xuan, xian
+- 图片 URL 一律带 ?v=1
+
+一、config.js（在 window.GameConfig 中导出）
+1. HOME_TIERS = [{key:'fan', q:0, name:'凡品'}, {key:'xuan', q:2, name:'玄品'}, {key:'xian', q:5, name:'仙品'}]（q 对应现有 QUALITIES 的下标，用于颜色）。
+2. HOME_BUILDING_TIER_LV = [0, 25, 100]：建筑 Lv<25 为凡（0），25–99 为玄（1），≥100 为仙（2）。
+3. HOME_BG_TIER_TOTAL = [0, 150, 600]：6 栋建筑等级之和 <150 用凡背景，≥150 用玄，≥600 用仙。
+4. HOME_SLOTS：每栋建筑在场景中的锚点（百分比，相对背景图宽高；x 为建筑中心，y 为石台中心）：
+   julingshi       {x:37, y:77}
+   lingquan        {x:79, y:67}
+   yaoyuan         {x:23, y:62}
+   lingmai         {x:27, y:51}
+   dongtian_fudi   {x:26, y:40}
+   xiantian_zuqiao {x:44, y:34}
+   建筑精灵宽度 = 场景宽度的 28%（正方形），定位：left:x%; top:y%; transform: translate(-50%, -62%)。z-index 按 y 递增（越靠下越前），可以用 Math.round(y)。
+5. 导出函数 homeBuildingTier(lv) 和 homeBgTier(totalLv)，返回 0/1/2。
+
+二、state.js 存档
+1. createDefaultState() 新增 home: { maxTier: {julingshi:0, lingquan:0, yaoyuan:0, lingmai:0, dongtian_fudi:0, xiantian_zuqiao:0}, bgMaxTier: 0 }（maxTier 的键由 DONGFU_LIST 生成）。
+2. mergeSave(def, saved) 中合并：home: { ...def.home, ...(saved.home||{}), maxTier: { ...def.home.maxTier, ...((saved.home && saved.home.maxTier)||{}) } }。旧存档没有 home 时也要正常运行，不要改 version。
+3. performReincarnation()：在 fresh = createDefaultState() 之前保存 keepHome = 深拷贝 state.home，之后令 fresh.home = keepHome。建筑等级 dongfu 照旧重置，外观档位不重置。
+4. 新增并导出 getHomeDisplayTier(id)：返回 max(homeBuildingTier(当前 lv), state.home.maxTier[id])；getHomeBgDisplayTier()：返回 max(homeBgTier(总等级), state.home.bgMaxTier)。
+5. 新增并导出 getOfflineCapSeconds()：基础 GameConfig.OFFLINE_CAP_SECONDS（12h），加上 floor(灵泉眼 lv / 20) × 0.5h，上限 15h。把 state.js 的 loadGame 里三处 window.GameConfig.OFFLINE_CAP_SECONDS（约 334、340、357 行）都换成 getOfflineCapSeconds()。stage-ui.js 中两处 `window.GameConfig.OFFLINE_CAP_SECONDS || 12*3600`（约 276、589 行）改成优先 window.GameState.getOfflineCapSeconds()。
+6. getQiPerSec()：在 return 的乘积里加一项 (1 + 0.01 * Math.floor(聚灵石阵 lv / 10))。
+7. 抽一个公共的升级函数并导出：buyDongfu(id, n)，n 为 1、10 或 Infinity（最大）。逐级循环调用现有 getDongfuCost(item)，在灵石足够且已解锁（realmIndex >= unlockRealmIndex）时扣灵石、lv+1，返回实际升级数。
+
+三、game.js
+1. 现有 handleUpgradeClick 中 data-dongfu-id 分支改为调用 GameState.buyDongfu(id, 1)，日志等保持原样。
+2. 新增 renderHomeScene()，在 renderUpgradeLists() 末尾调用，切到 tab-upgrades 时也调用：
+   - 背景 <img> 的 src 换成当前显示档的 bg_{key}.webp?v=1；只加载当前档（不要预加载其它档）。
+   - 6 个建筑精灵是 <button class="home-bld">，内含 <img>（srcset 用 @128 128w 和 256 256w，sizes="28vw"，loading="lazy"，decoding="async"）和其下的等级徽章 “Lv.X”（徽章边框颜色用该档 QUALITIES 的颜色；仙档的徽章加现有类 q-xian）。
+   - 未解锁（realmIndex < unlockRealmIndex）：精灵用凡档图，加 .locked（filter: grayscale(1) brightness(.45)），徽章显示 🔒 和 “{REALM_STAGES[unlockRealmIndex].fullName}解锁”。
+   - 每次渲染时更新 state.home.maxTier[id] 和 bgMaxTier（取较大值）；如果某值比上次大，就提示进阶（见第 4 条）。
+   - 场景右上角显示 “洞府 · {背景档名} · 总等级 N”。
+3. 点击建筑弹出底部抽屉 #home-sheet（遮罩加面板，点遮罩或关闭按钮关闭）：显示名称、当前档名（带品质色）、desc、Lv、本建筑每秒灵石产出（复用列表里现有的单级产出计算方式乘以 lv）、联动说明（聚灵石阵：“灵气 +X%”；灵泉眼：“离线上限 Yh”），以及下一级花费 GameState.getDongfuCost(item)，下一档门槛 “Lv25 进阶玄品 / Lv100 进阶仙品”。按钮：升级×1 / ×10 / 最大，分别调用 GameState.buyDongfu(id, 1/10/Infinity)，买不起时按钮置灰；升级后刷新抽屉、renderUpgradeLists()、updateHeaderAndMeditationUI()、StageUI.render()。未解锁的建筑也能打开，但按钮禁用并显示解锁境界。
+4. 进阶提示：不要依赖 gear.js 的 showReveal（它的 #peach-reveal 在修炼页，洞府页看不到）。在场景内新增 #home-reveal，样式仿照 .peach-reveal（居中浮现约 2 秒后淡出，white-space: nowrap，文字颜色用品质色，仙档加 q-xian-text），文本为 “洞府进阶：{建筑名}·{档名}” 或 “洞府进阶：洞天{档名}”，同时 addLog 一条 success 日志。首次加载存档时不弹（只同步 maxTier）。
+5. 原来的功法和洞府建设列表保留在场景下方。“洞府建设”卡片改成可折叠：标题行可点击，默认折叠，带 ▸/▾ 指示，折叠状态只存在内存中即可。功法卡保持不变。
+
+四、index.html
+1. 底部导航中 data-tab="tab-upgrades" 按钮的文字由“功法”改为“洞府”，tab id 不变（stage-ui.js 里有 switchTab('tab-upgrades')，“去功法”按钮依然能用）。
+2. 在 #tab-upgrades 最前面插入：
+   <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><img id="home-bg" class="home-bg" alt="" src="assets/home/bg_fan.webp?v=1"><div id="home-blds"></div><div id="home-title" class="home-title"></div><div id="home-reveal" class="home-reveal"></div></div></div>
+   并在 body 末尾（script 之前）加入 #home-sheet 抽屉结构。
+3. 缓存版本号：style.css v=42→43，config.js v=38→39，state.js v=23→24，game.js v=30→31，stage-ui.js v=24→25；其它不变。
+
+五、style.css（移动端优先，必须兼容 iPhone Safari）
+- .home-scene { position:relative; width:100%; aspect-ratio:720/1290; max-height:none; overflow:hidden; border-radius:inherit; }，.home-bg 宽高 100%、object-fit:cover。如果觉得太高，可以给 .home-card 加 max-width:480px; margin:0 auto，但不要裁掉背景（坐标是按整图定的）。
+- .home-bld：position:absolute; width:28%; 背景透明、无边框、无内边距；-webkit-tap-highlight-color:transparent；:active 时 scale(.96)。不要用只靠 hover 的交互。可加轻微的上下浮动动画（3–4s，幅度 2px），并在 prefers-reduced-motion 下关闭。
+- 等级徽章：小号（11px）、半透明深色底、圆角，位于图片下方居中。
+- #home-sheet：position:fixed，贴底，padding-bottom: calc(16px + env(safe-area-inset-bottom))，带上滑动画；遮罩 rgba(0,0,0,.5)。按钮最小高度 44px。
+- 整体风格干净，沿用现有 gufeng-card 和品质色变量，不要加大特效。
+
+六、验收
+- 旧存档能正常加载；转世后建筑 Lv 归零，但外观保持已达到的最高档；背景按总等级切换；离线上限与灵气加成生效；控制台无报错；没有新增 404。

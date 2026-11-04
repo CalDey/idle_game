@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=42" />
+  <link rel="stylesheet" href="css/style.css?v=43" />
 </head>
 
 <body>
@@ -284,6 +284,7 @@
 
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
+        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><img id="home-bg" class="home-bg" alt="" src="assets/home/bg_fan.webp?v=1"><div id="home-blds"></div><div id="home-title" class="home-title"></div><div id="home-reveal" class="home-reveal"></div></div></div>
         <div class="gufeng-card">
           <div class="card-header">
             <span class="card-title"><img class="gi" src="assets/icons/nav_upgrades@64.webp?v=18" alt=""
@@ -293,11 +294,11 @@
           <div id="gongfa-list" class="upgrade-list"></div>
         </div>
 
-        <div class="gufeng-card">
-          <div class="card-header">
+        <div id="dongfu-card" class="gufeng-card is-collapsed">
+          <div id="dongfu-card-header" class="card-header is-collapsible" role="button" tabindex="0" aria-expanded="false">
             <span class="card-title"><img class="gi" src="assets/icons/df_dongtian_fudi@64.webp?v=18" alt=""
                 aria-hidden="true">洞府建设</span>
-            <span class="card-subtitle">消耗灵石扩建洞天，提升每秒灵石</span>
+            <span class="card-subtitle">消耗灵石扩建洞天，提升每秒灵石 <span id="dongfu-fold-arrow" class="fold-arrow">▸</span></span>
           </div>
           <div id="dongfu-list" class="upgrade-list"></div>
         </div>
@@ -446,7 +447,7 @@
         <span id="badge-upgrade" class="nav-badge"></span>
         <span class="nav-icon"><img class="gi" src="assets/icons/nav_upgrades@64.webp?v=18" alt=""
             aria-hidden="true"></span>
-        <span class="nav-text">功法</span>
+        <span class="nav-text">洞府</span>
       </button>
       <button class="nav-btn" data-tab="tab-reincarnate">
         <span id="badge-reincarnate" class="nav-badge"></span>
@@ -543,15 +544,41 @@
     </div>
   </div>
 
+  <div id="home-sheet" class="home-sheet-backdrop">
+    <div class="home-sheet-panel">
+      <div class="home-sheet-header">
+        <div class="home-sheet-title-wrap">
+          <span id="home-sheet-name" class="home-sheet-name"></span>
+          <span id="home-sheet-tier" class="home-sheet-tier"></span>
+          <span id="home-sheet-lv" class="upgrade-lv"></span>
+        </div>
+        <button id="btn-close-home-sheet" class="home-sheet-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <div id="home-sheet-desc" class="home-sheet-desc"></div>
+      <div class="home-sheet-stats">
+        <div id="home-sheet-output" class="home-sheet-stat"></div>
+        <div id="home-sheet-synergy" class="home-sheet-stat"></div>
+        <div id="home-sheet-next-tier" class="home-sheet-stat"></div>
+        <div id="home-sheet-cost" class="home-sheet-stat"></div>
+      </div>
+      <div id="home-sheet-lock-hint" class="home-sheet-lock-hint"></div>
+      <div class="home-sheet-actions">
+        <button id="btn-home-buy-1" class="btn btn-primary" type="button" data-buy-n="1">升级 ×1</button>
+        <button id="btn-home-buy-10" class="btn" type="button" data-buy-n="10">升级 ×10</button>
+        <button id="btn-home-buy-max" class="btn" type="button" data-buy-n="max">最大</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/no-zoom.js?v=22"></script>
-  <script src="js/config.js?v=38"></script>
+  <script src="js/config.js?v=39"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=23"></script>
+  <script src="js/state.js?v=24"></script>
   <script src="js/titles.js?v=22"></script>
   <script src="js/battle.js?v=22"></script>
   <script src="js/gear.js?v=30"></script>
-  <script src="js/stage-ui.js?v=24"></script>
-  <script src="js/game.js?v=30"></script>
+  <script src="js/stage-ui.js?v=25"></script>
+  <script src="js/game.js?v=31"></script>
 </body>
 
 </html>
