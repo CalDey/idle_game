@@ -62,26 +62,20 @@
     els.dongfuCardHeader = document.getElementById('dongfu-card-header');
     els.dongfuToggleArrow = document.getElementById('dongfu-toggle-arrow');
 
+    els.tabUpgrades = document.getElementById('tab-upgrades');
+    els.homeCard = document.querySelector('#tab-upgrades .home-card');
     els.homeScene = document.getElementById('home-scene');
+    els.homeStage = document.getElementById('home-stage');
     els.homeGlow = document.getElementById('home-glow');
     els.homeLayer = document.getElementById('home-layer');
     els.homeTitle = document.getElementById('home-title');
     els.homeReveal = document.getElementById('home-reveal');
+    els.btnHomeUpgrade = document.getElementById('btn-home-upgrade');
+    els.badgeHomeUpgrade = document.getElementById('badge-home-upgrade');
 
-    els.homeSheet = document.getElementById('home-sheet');
-    els.homeSheetName = document.getElementById('home-sheet-name');
-    els.homeSheetTier = document.getElementById('home-sheet-tier');
-    els.homeSheetLv = document.getElementById('home-sheet-lv');
-    els.homeSheetClose = document.getElementById('home-sheet-close');
-    els.homeSheetDesc = document.getElementById('home-sheet-desc');
-    els.homeSheetOutput = document.getElementById('home-sheet-output');
-    els.homeSheetLink = document.getElementById('home-sheet-link');
-    els.homeSheetCost = document.getElementById('home-sheet-cost');
-    els.homeSheetNext = document.getElementById('home-sheet-next');
-    els.homeSheetLock = document.getElementById('home-sheet-lock');
-    els.homeBuy1 = document.getElementById('home-buy-1');
-    els.homeBuy10 = document.getElementById('home-buy-10');
-    els.homeBuyMax = document.getElementById('home-buy-max');
+    els.homeUpgradeModal = document.getElementById('home-upgrade-modal');
+    els.homeUpgradeList = document.getElementById('home-upgrade-list');
+    els.btnCloseHomeUpgrade = document.getElementById('btn-close-home-upgrade');
 
     els.reincarnateCount = document.getElementById('reincarnate-count');
     els.reincarnateMult = document.getElementById('reincarnate-mult');
@@ -388,9 +382,54 @@
 
   let homeRefs = null;
   let homeSyncedOnce = false;
-  let activeHomeSheetId = null;
   let dongfuCollapsed = true;
   let homeRevealTimer = null;
+  let homeFlashTimer = null;
+  const HOME_STAGE_RATIO = 1080 / 1935;
+
+  function layoutHomeStage() {
+    if (!els.tabUpgrades || !els.homeScene || !els.homeStage) return;
+    if (!els.tabUpgrades.classList.contains('active')) return;
+
+    const cs = window.getComputedStyle(els.tabUpgrades);
+    const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const paneH = Math.max(0, els.tabUpgrades.clientHeight - padY);
+    if (paneH > 0) {
+      els.tabUpgrades.style.setProperty('--home-h', `${paneH}px`);
+    }
+
+    const W = els.homeScene.clientWidth;
+    const H = els.homeScene.clientHeight;
+    if (W <= 0 || H <= 0) return;
+
+    const coverScale = Math.max(W / 1080, H / 1935);
+    const scale = Math.min(coverScale, W / (1080 * 0.88), H / (1935 * 0.8));
+    const stageW = 1080 * scale;
+    const stageH = 1935 * scale;
+    const left = (W - stageW) / 2;
+    const top = (H - stageH) / 2;
+
+    els.homeStage.style.width = `${stageW}px`;
+    els.homeStage.style.height = `${stageH}px`;
+    els.homeStage.style.left = `${left}px`;
+    els.homeStage.style.top = `${top}px`;
+  }
+
+  function initHomeStageResize() {
+    const onResize = () => {
+      layoutHomeStage();
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(layoutHomeStage, 60);
+    });
+    if (typeof ResizeObserver === 'function' && els.tabUpgrades) {
+      const ro = new ResizeObserver(() => {
+        layoutHomeStage();
+      });
+      ro.observe(els.tabUpgrades);
+    }
+  }
 
   function showHomeReveal(tierIdx, text) {
     if (!els.homeReveal) return;
@@ -565,133 +604,224 @@
     }
 
     homeSyncedOnce = true;
+    layoutHomeStage();
 
-    if (activeHomeSheetId) {
-      renderHomeSheet();
+    if (els.homeUpgradeModal && els.homeUpgradeModal.classList.contains('active')) {
+      renderHomeUpgradeModal();
     }
   }
 
-  function openHomeSheet(id) {
-    if (!els.homeSheet) return;
-    activeHomeSheetId = id;
-    renderHomeSheet();
-    els.homeSheet.classList.add('active');
-    els.homeSheet.setAttribute('aria-hidden', 'false');
+  function isHomeUpgradeModalOpen() {
+    return Boolean(els.homeUpgradeModal && els.homeUpgradeModal.classList.contains('active'));
   }
 
-  function closeHomeSheet() {
-    if (!els.homeSheet) return;
-    activeHomeSheetId = null;
-    els.homeSheet.classList.remove('active');
-    els.homeSheet.setAttribute('aria-hidden', 'true');
+  function openHomeUpgradeModal(focusBuildingId) {
+    if (!els.homeUpgradeModal) return;
+    renderHomeUpgradeModal();
+    els.homeUpgradeModal.classList.add('active');
+    els.homeUpgradeModal.setAttribute('aria-hidden', 'false');
+
+    if (focusBuildingId && els.homeUpgradeList) {
+      requestAnimationFrame(() => {
+        if (!els.homeUpgradeList) return;
+        const row = els.homeUpgradeList.querySelector(`.home-up-row[data-building-id="${focusBuildingId}"]`);
+        if (!row) return;
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        els.homeUpgradeList.querySelectorAll('.home-up-row.is-flash').forEach((el) => {
+          el.classList.remove('is-flash');
+        });
+        void row.offsetWidth;
+        row.classList.add('is-flash');
+        if (homeFlashTimer) clearTimeout(homeFlashTimer);
+        homeFlashTimer = setTimeout(() => {
+          row.classList.remove('is-flash');
+          homeFlashTimer = null;
+        }, 1050);
+      });
+    }
   }
 
-  function renderHomeSheet() {
-    if (!activeHomeSheetId || !els.homeSheet) return;
-    const item = DONGFU_LIST.find((d) => d.id === activeHomeSheetId);
-    if (!item) return;
+  function closeHomeUpgradeModal() {
+    if (!els.homeUpgradeModal) return;
+    els.homeUpgradeModal.classList.remove('active');
+    els.homeUpgradeModal.setAttribute('aria-hidden', 'true');
+    if (homeFlashTimer) {
+      clearTimeout(homeFlashTimer);
+      homeFlashTimer = null;
+    }
+  }
 
+  function renderHomeUpgradeModal() {
+    if (!els.homeUpgradeList) return;
     const s = GameState.state;
     const stage = GameState.getCurrentStage();
-    const unlocked = s.realmIndex >= item.unlockRealmIndex;
-    const lv = (s.dongfu && s.dongfu[item.id]) || 0;
-    const displayTier = GameState.getHomeDisplayTier(item.id);
-    const tierCfg = HOME_TIERS[displayTier] || HOME_TIERS[0];
-    const q = QUALITIES[tierCfg.q] || QUALITIES[0];
-    const isXian = q.id === 'xian';
+    const stoneMult = Math.pow(stage.multiplier, 0.65) * GameState.getDaoGuoStoneMultiplier();
 
-    if (els.homeSheetName) els.homeSheetName.textContent = item.name;
-    if (els.homeSheetTier) {
-      els.homeSheetTier.textContent = tierCfg.name;
-      els.homeSheetTier.classList.toggle('q-xian-text', isXian);
-      els.homeSheetTier.style.color = isXian ? '' : q.color;
-    }
-    if (els.homeSheetLv) {
-      els.homeSheetLv.textContent = `Lv.${lv}`;
-    }
-    if (els.homeSheetDesc) {
-      els.homeSheetDesc.textContent = item.desc;
+    let rowsBuilt = els.homeUpgradeList.querySelectorAll('.home-up-row').length === DONGFU_LIST.length;
+    if (!rowsBuilt) {
+      els.homeUpgradeList.innerHTML = '';
+      DONGFU_LIST.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'home-up-row';
+        row.dataset.buildingId = item.id;
+        row.innerHTML = `
+          <div class="home-up-head">
+            <div class="home-up-title">
+              <span class="home-up-name">${item.name}</span>
+              <span class="home-up-tier"></span>
+              <span class="upgrade-lv home-up-lv"></span>
+            </div>
+          </div>
+          <div class="home-up-output"></div>
+          <div class="home-up-link" hidden></div>
+          <div class="home-up-meta-row">
+            <span class="home-up-cost"></span>
+            <span class="home-up-next"></span>
+          </div>
+          <div class="home-up-lock" hidden></div>
+          <div class="home-up-actions">
+            <button class="btn btn-primary" type="button" data-home-buy="1" data-home-id="${item.id}">×1</button>
+            <button class="btn" type="button" data-home-buy="10" data-home-id="${item.id}">×10</button>
+            <button class="btn" type="button" data-home-buy="max" data-home-id="${item.id}">最大</button>
+          </div>
+        `;
+        els.homeUpgradeList.appendChild(row);
+      });
     }
 
-    const perLvEffect =
-      item.baseStonePerSec *
-      Math.pow(stage.multiplier, 0.65) *
-      GameState.getDaoGuoStoneMultiplier();
-    const curOutput = perLvEffect * lv;
-    if (els.homeSheetOutput) {
-      els.homeSheetOutput.innerHTML = `每秒灵石产出：<strong>+${formatNumber(curOutput)}/秒</strong>（单级 +${formatNumber(perLvEffect)}/秒）`;
-    }
+    DONGFU_LIST.forEach((item) => {
+      const row = els.homeUpgradeList.querySelector(`.home-up-row[data-building-id="${item.id}"]`);
+      if (!row) return;
+      const unlocked = s.realmIndex >= item.unlockRealmIndex;
+      const lv = (s.dongfu && s.dongfu[item.id]) || 0;
+      const displayTier = GameState.getHomeDisplayTier(item.id);
+      const tierCfg = HOME_TIERS[displayTier] || HOME_TIERS[0];
+      const q = QUALITIES[tierCfg.q] || QUALITIES[0];
+      const isXian = q.id === 'xian';
 
-    if (els.homeSheetLink) {
-      if (item.id === 'julingshi') {
-        const bonusPct = Math.floor(lv / 10);
-        els.homeSheetLink.textContent = `联动加成：灵气 +${bonusPct}%（每 10 级 +1%）`;
-        els.homeSheetLink.style.display = '';
-      } else if (item.id === 'lingquan') {
-        const capHours = (GameState.getOfflineCapSeconds() / 3600).toFixed(1).replace(/\.0$/, '');
-        els.homeSheetLink.textContent = `联动加成：离线上限 ${capHours}h（每 20 级 +0.5h，最高 15h）`;
-        els.homeSheetLink.style.display = '';
-      } else {
-        els.homeSheetLink.textContent = '';
-        els.homeSheetLink.style.display = 'none';
+      row.classList.toggle('is-locked', !unlocked);
+
+      const tierEl = row.querySelector('.home-up-tier');
+      if (tierEl) {
+        tierEl.textContent = tierCfg.name;
+        tierEl.classList.toggle('q-xian-text', isXian);
+        tierEl.style.color = isXian ? '' : q.color;
       }
-    }
 
-    const nextCost = GameState.getDongfuCost(item);
-    if (els.homeSheetCost) {
-      els.homeSheetCost.innerHTML = `下一级花费：<img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)} 灵石</strong>`;
-    }
-
-    if (els.homeSheetNext) {
-      if (displayTier >= 2 || lv >= 100) {
-        els.homeSheetNext.textContent = '品阶门槛：已至仙品';
-      } else if (displayTier === 1 || lv >= 25) {
-        els.homeSheetNext.textContent = '下一档门槛：Lv100 进阶仙品';
-      } else {
-        els.homeSheetNext.textContent = '下一档门槛：Lv25 进阶玄品';
+      const lvEl = row.querySelector('.home-up-lv');
+      if (lvEl) {
+        lvEl.textContent = `Lv.${lv}`;
       }
-    }
 
-    if (els.homeSheetLock) {
-      if (unlocked) {
-        els.homeSheetLock.hidden = true;
-      } else {
+      const perLvEffect = item.baseStonePerSec * stoneMult;
+      const curOutput = perLvEffect * lv;
+      const outEl = row.querySelector('.home-up-output');
+      if (outEl) {
+        outEl.innerHTML = `每秒灵石产出：<strong>+${formatNumber(curOutput)}/秒</strong>（单级 +${formatNumber(perLvEffect)}/秒）`;
+      }
+
+      const linkEl = row.querySelector('.home-up-link');
+      if (linkEl) {
+        if (item.id === 'julingshi') {
+          const bonusPct = Math.floor(lv / 10);
+          linkEl.textContent = `联动加成：灵气 +${bonusPct}%（每 10 级 +1%）`;
+          linkEl.hidden = false;
+        } else if (item.id === 'lingquan') {
+          const capHours = (GameState.getOfflineCapSeconds() / 3600).toFixed(1).replace(/\.0$/, '');
+          linkEl.textContent = `联动加成：离线上限 ${capHours}h（每 20 级 +0.5h，最高 15h）`;
+          linkEl.hidden = false;
+        } else {
+          linkEl.textContent = '';
+          linkEl.hidden = true;
+        }
+      }
+
+      const metaRow = row.querySelector('.home-up-meta-row');
+      const lockEl = row.querySelector('.home-up-lock');
+      const actionsEl = row.querySelector('.home-up-actions');
+
+      if (!unlocked) {
         const reqName = REALM_STAGES[item.unlockRealmIndex].fullName;
-        els.homeSheetLock.hidden = false;
-        els.homeSheetLock.textContent = `需突破至【${reqName}】解锁扩建`;
+        if (metaRow) {
+          metaRow.hidden = true;
+          metaRow.style.display = 'none';
+        }
+        if (actionsEl) {
+          actionsEl.hidden = true;
+          actionsEl.style.display = 'none';
+        }
+        if (lockEl) {
+          lockEl.hidden = false;
+          lockEl.style.display = '';
+          lockEl.textContent = `需突破至【${reqName}】解锁`;
+        }
+      } else {
+        if (metaRow) {
+          metaRow.hidden = false;
+          metaRow.style.display = '';
+        }
+        if (actionsEl) {
+          actionsEl.hidden = false;
+          actionsEl.style.display = '';
+        }
+        if (lockEl) {
+          lockEl.hidden = true;
+          lockEl.style.display = 'none';
+        }
+
+        const nextCost = GameState.getDongfuCost(item);
+        const costEl = row.querySelector('.home-up-cost');
+        if (costEl) {
+          costEl.innerHTML = `下一级：<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)}</strong>`;
+        }
+
+        const nextEl = row.querySelector('.home-up-next');
+        if (nextEl) {
+          if (displayTier >= 2 || lv >= 100) {
+            nextEl.textContent = '已至仙品';
+          } else if (displayTier === 1 || lv >= 25) {
+            nextEl.textContent = '下一档：Lv100 仙品';
+          } else {
+            nextEl.textContent = '下一档：Lv25 玄品';
+          }
+        }
+
+        const canAfford = s.stones >= nextCost;
+        row.querySelectorAll('button[data-home-buy]').forEach((btn) => {
+          btn.disabled = !canAfford;
+        });
       }
-    }
-
-    updateHomeSheetButtons();
+    });
   }
 
-  function updateHomeSheetButtons() {
-    if (!activeHomeSheetId || !els.homeSheet || !els.homeSheet.classList.contains('active')) return;
-    const item = DONGFU_LIST.find((d) => d.id === activeHomeSheetId);
-    if (!item) return;
+  function updateHomeUpgradeButtons() {
+    if (!isHomeUpgradeModalOpen() || !els.homeUpgradeList) return;
     const s = GameState.state;
-    const unlocked = s.realmIndex >= item.unlockRealmIndex;
-    const nextCost = GameState.getDongfuCost(item);
-    const canAfford = unlocked && s.stones >= nextCost;
-
-    if (els.homeSheetCost) {
-      els.homeSheetCost.innerHTML = `下一级花费：<img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)} 灵石</strong>`;
-    }
-    if (els.homeBuy1) els.homeBuy1.disabled = !canAfford;
-    if (els.homeBuy10) els.homeBuy10.disabled = !canAfford;
-    if (els.homeBuyMax) els.homeBuyMax.disabled = !canAfford;
+    DONGFU_LIST.forEach((item) => {
+      const unlocked = s.realmIndex >= item.unlockRealmIndex;
+      if (!unlocked) return;
+      const row = els.homeUpgradeList.querySelector(`.home-up-row[data-building-id="${item.id}"]`);
+      if (!row) return;
+      const nextCost = GameState.getDongfuCost(item);
+      const canAfford = s.stones >= nextCost;
+      const costEl = row.querySelector('.home-up-cost');
+      if (costEl) {
+        costEl.innerHTML = `下一级：<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)}</strong>`;
+      }
+      row.querySelectorAll('button[data-home-buy]').forEach((btn) => {
+        btn.disabled = !canAfford;
+      });
+    });
   }
 
-  function handleHomeSheetBuy(n) {
-    if (!activeHomeSheetId) return;
-    const id = activeHomeSheetId;
+  function handleHomeModalBuy(id, n) {
     const item = DONGFU_LIST.find((d) => d.id === id);
     if (!item) return;
     const bought = GameState.buyDongfu(id, n);
     if (bought > 0) {
       addLog(`消耗灵石扩建【${item.name}】至 Lv.${GameState.state.dongfu[id]}！`, 'success');
       renderUpgradeLists();
-      renderHomeSheet();
+      renderHomeUpgradeModal();
       updateHeaderAndMeditationUI();
       if (window.StageUI) StageUI.render();
     }
@@ -715,11 +845,15 @@
       }
     });
 
+    let anyDongfuAffordable = false;
     DONGFU_LIST.forEach((item) => {
       const unlocked = s.realmIndex >= item.unlockRealmIndex;
       const cost = GameState.getDongfuCost(item);
       const canAfford = unlocked && s.stones >= cost;
-      if (canAfford) anyAffordable = true;
+      if (canAfford) {
+        anyAffordable = true;
+        anyDongfuAffordable = true;
+      }
 
       const btn = els.dongfuList.querySelector(`button[data-dongfu-id="${item.id}"]`);
       if (btn) {
@@ -731,8 +865,11 @@
     if (els.badgeUpgrade) {
       els.badgeUpgrade.classList.toggle('visible', anyAffordable);
     }
+    if (els.badgeHomeUpgrade) {
+      els.badgeHomeUpgrade.classList.toggle('visible', anyDongfuAffordable);
+    }
 
-    updateHomeSheetButtons();
+    updateHomeUpgradeButtons();
   }
 
   function handleUpgradeClick(e) {
@@ -960,7 +1097,10 @@
     navBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === targetId));
     panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
     if (targetId === 'tab-cultivate') resumeHeroVideo();
-    if (targetId === 'tab-upgrades') renderHomeScene();
+    if (targetId === 'tab-upgrades') {
+      renderHomeScene();
+      layoutHomeStage();
+    }
     if (window.StageUI) {
       if (targetId === 'tab-stage') window.StageUI.onShow();
       else window.StageUI.onHide();
@@ -1570,6 +1710,7 @@
   function init() {
     cacheElements();
     initTabs();
+    initHomeStageResize();
     initHeroVideo();
     initBattleHeroVideo();
     initQiMotes();
@@ -1605,29 +1746,36 @@
       els.homeLayer.addEventListener('click', (e) => {
         const hot = e.target.closest('.home-hot[data-home-id]');
         if (hot) {
-          openHomeSheet(hot.dataset.homeId);
+          openHomeUpgradeModal(hot.dataset.homeId);
         }
       });
     }
 
-    if (els.homeSheet) {
-      els.homeSheet.addEventListener('click', (e) => {
-        if (e.target === els.homeSheet) {
-          closeHomeSheet();
+    if (els.btnHomeUpgrade) {
+      els.btnHomeUpgrade.addEventListener('click', () => {
+        openHomeUpgradeModal();
+      });
+    }
+
+    if (els.homeUpgradeModal) {
+      els.homeUpgradeModal.addEventListener('click', (e) => {
+        if (e.target === els.homeUpgradeModal) {
+          closeHomeUpgradeModal();
         }
       });
     }
-    if (els.homeSheetClose) {
-      els.homeSheetClose.addEventListener('click', closeHomeSheet);
+    if (els.btnCloseHomeUpgrade) {
+      els.btnCloseHomeUpgrade.addEventListener('click', closeHomeUpgradeModal);
     }
-    if (els.homeBuy1) {
-      els.homeBuy1.addEventListener('click', () => handleHomeSheetBuy(1));
-    }
-    if (els.homeBuy10) {
-      els.homeBuy10.addEventListener('click', () => handleHomeSheetBuy(10));
-    }
-    if (els.homeBuyMax) {
-      els.homeBuyMax.addEventListener('click', () => handleHomeSheetBuy(Infinity));
+    if (els.homeUpgradeList) {
+      els.homeUpgradeList.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-home-buy][data-home-id]');
+        if (!btn || btn.disabled) return;
+        const id = btn.dataset.homeId;
+        const buyRaw = btn.dataset.homeBuy;
+        const n = buyRaw === 'max' ? Infinity : Number(buyRaw) || 1;
+        handleHomeModalBuy(id, n);
+      });
     }
 
     if (els.dongfuCardHeader && els.dongfuCard) {
@@ -1696,7 +1844,7 @@
         '散功重修（重置存档）',
         '确定要彻底清空当前所有修仙进度、灵石、功法与道果吗？此操作不可撤销！',
         () => {
-          closeHomeSheet();
+          closeHomeUpgradeModal();
           homeSyncedOnce = false;
           if (homeRefs) {
             Object.values(homeRefs).forEach((r) => {

@@ -2915,29 +2915,45 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: block;
 }
 
-/* === 洞府新版场景与底部抽屉 === */
+/* === 洞府新版场景与升级弹窗 === */
 .home-card {
+  flex: 0 0 auto;
   flex-shrink: 0;
   padding: 0;
   overflow: hidden;
   max-width: 480px;
   width: 100%;
+  height: var(--home-h, calc(100vh - 166px));
+  height: var(--home-h, calc(100dvh - 166px));
   margin: 0 auto;
 }
 
 .home-scene {
   position: relative;
   width: 100%;
-  aspect-ratio: 1080 / 1935;
+  height: 100%;
   overflow: hidden;
   background: var(--bg-stage);
 }
 
-@supports not (aspect-ratio: 1 / 1) {
-  .home-scene {
-    height: 0;
-    padding-top: 179.17%;
-  }
+.home-scene::before {
+  content: "";
+  position: absolute;
+  inset: -24px;
+  background: url("../assets/home/scene_base.webp?v=1") center / cover no-repeat;
+  filter: blur(16px) brightness(0.7);
+  -webkit-filter: blur(16px) brightness(0.7);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
 .home-bg {
@@ -3075,18 +3091,76 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 .home-title {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   z-index: 5;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.25;
-  padding: 3px 9px;
-  background: rgba(10, 8, 24, 0.72);
-  border: 1px solid rgba(230, 201, 138, 0.32);
+  padding: 5px 10px;
+  background: rgba(10, 8, 24, 0.76);
+  border: 1px solid rgba(230, 201, 138, 0.36);
   border-radius: 999px;
   color: var(--text-main);
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.home-upgrade-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 5;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-gold);
+  background: linear-gradient(180deg, rgba(58, 52, 84, 0.94) 0%, rgba(28, 24, 48, 0.96) 100%);
+  color: var(--accent-gold-bright);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 200, 0.18),
+    0 3px 10px rgba(0, 0, 0, 0.55);
+  transition: transform 0.08s ease, filter 0.12s ease, border-color 0.12s ease;
+}
+
+.home-upgrade-btn:hover {
+  border-color: var(--accent-gold-bright);
+  filter: brightness(1.08);
+}
+
+.home-upgrade-btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.home-upgrade-btn .gi {
+  margin-right: 1px;
+}
+
+.home-upgrade-badge {
+  position: absolute;
+  top: -2px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f07167;
+  box-shadow: 0 0 6px #f07167;
+  display: none;
+  pointer-events: none;
+}
+
+.home-upgrade-badge.visible {
+  display: block;
 }
 
 .home-reveal {
@@ -3163,86 +3237,25 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: none;
 }
 
-/* 洞府底部抽屉 #home-sheet */
-#home-sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-  background: rgba(0, 0, 0, 0.5);
-  display: none;
-  align-items: flex-end;
-  justify-content: center;
-  overscroll-behavior: contain;
-}
-
-#home-sheet.active {
+/* 洞府升级居中弹窗 #home-upgrade-modal */
+.home-upgrade-dialog {
+  max-width: 400px;
+  max-height: 80vh;
+  max-height: 80dvh;
+  padding: 14px 14px 12px;
   display: flex;
-  animation: homeBackdropFade 0.2s ease;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-@keyframes homeBackdropFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.home-sheet-panel {
-  width: 100%;
-  max-width: 480px;
-  border-radius: 16px 16px 0 0;
-  border-bottom: none;
-  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
-  box-shadow: 0 -10px 32px rgba(0, 0, 0, 0.65);
-  animation: homeSheetSlideUp 0.24s cubic-bezier(0.22, 0.8, 0.28, 1);
-}
-
-@keyframes homeSheetSlideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.home-sheet-head {
-  display: flex;
+.home-upgrade-header {
+  flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-bottom: 8px;
   margin-bottom: 8px;
-  border-bottom: 1px dashed rgba(230, 201, 138, 0.25);
+  padding-bottom: 8px;
 }
 
-.home-sheet-title-wrap {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 0;
-}
-
-.home-sheet-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--accent-gold-bright);
-  letter-spacing: 1px;
-}
-
-.home-sheet-tier {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(10, 8, 24, 0.55);
-  border: 1px solid rgba(230, 201, 138, 0.25);
-}
-
-.home-sheet-close {
+.home-modal-close {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -3256,49 +3269,151 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   align-items: center;
   justify-content: center;
   flex: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.home-sheet-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.45;
-  margin-bottom: 8px;
-}
-
-.home-sheet-meta {
-  background: rgba(10, 8, 24, 0.48);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-
-.home-sheet-row {
-  font-size: 12px;
-  color: var(--text-main);
-  line-height: 1.4;
-}
-
-.home-sheet-row strong {
+.home-modal-close:hover {
+  border-color: var(--accent-gold);
   color: var(--accent-gold-bright);
 }
 
-.home-sheet-lock {
+.home-upgrade-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 2px 4px;
+}
+
+.home-up-row {
+  background: rgba(10, 8, 24, 0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-up-row.is-locked {
+  opacity: 0.52;
+  filter: grayscale(0.45);
+}
+
+.home-up-row.is-flash {
+  animation: homeRowGoldFlash 1s ease;
+}
+
+@keyframes homeRowGoldFlash {
+  0%,
+  100% {
+    border-color: var(--border-subtle);
+    box-shadow: none;
+  }
+  25%,
+  65% {
+    border-color: var(--accent-gold-bright);
+    box-shadow:
+      0 0 0 1px rgba(255, 231, 176, 0.5),
+      0 0 14px rgba(245, 199, 106, 0.65),
+      inset 0 0 10px rgba(245, 199, 106, 0.22);
+  }
+}
+
+.home-up-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.home-up-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.home-up-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.home-up-tier {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(10, 8, 24, 0.6);
+  border: 1px solid rgba(230, 201, 138, 0.25);
+}
+
+.home-up-output,
+.home-up-link {
+  font-size: 11px;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+
+.home-up-output strong {
+  color: var(--accent-jade);
+}
+
+.home-up-link {
+  color: var(--accent-gold);
+}
+
+.home-up-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.home-up-cost strong {
+  color: var(--accent-gold-bright);
+}
+
+.home-up-next {
+  color: var(--text-muted);
+}
+
+.home-up-lock {
   font-size: 12px;
   color: #f0a07a;
-  text-align: center;
-  margin-bottom: 8px;
+  padding-top: 2px;
 }
 
-.home-sheet-actions {
+.home-up-meta-row[hidden],
+.home-up-lock[hidden],
+.home-up-link[hidden],
+.home-up-actions[hidden],
+.home-up-row.is-locked .home-up-meta-row,
+.home-up-row.is-locked .home-up-actions {
+  display: none !important;
+}
+
+.home-up-actions {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 3px;
 }
 
-.home-sheet-actions .btn {
-  min-height: 44px;
+.home-up-actions .btn {
+  min-height: 36px;
+  padding: 5px 8px;
+  font-size: 12px;
 }

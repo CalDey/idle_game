@@ -1,0 +1,36 @@
+【洞府页修改需求：地图高度适配屏幕 + 升级改为右上角按钮弹窗】
+项目是纯 JS/CSS 的 H5 修仙放置游戏（index.html、css/style.css、js/game.js、js/config.js）。只改代码，不要运行终端命令，不要 git 操作。必须兼容 iPhone Safari。
+
+一、地图高度适配屏幕
+现状：#tab-upgrades 里的 .home-card > #home-scene 用 aspect-ratio:1080/1935 撑满宽度，手机屏幕稍矮（如 375×667，或 iPhone Safari 带地址栏）时地图底部超出可视区。
+目标：洞府页打开时，地图卡片高度正好等于 #tab-upgrades 这个滚动区域的可见高度（顶部资源栏下方、底部导航栏上方），一屏完整看到地图，不需要滚动；功法研修等卡片放在地图下方，向下滚动可见。
+实现要求：
+1. .home-card 高度 = 页签可视高度（扣掉 pane 的 padding）。优先 CSS 实现；不可靠时用 JS（ResizeObserver 或 resize/orientationchange，以及切到洞府页签时）测量 #tab-upgrades 的 clientHeight，写入 CSS 变量 --home-h。
+2. #home-scene 改为填满卡片的容器（width:100%; height:100%; position:relative; overflow:hidden），新增内层元素 #home-stage（position:absolute），把 #home-bg、#home-glow、#home-layer、#home-reveal 都移到 #home-stage 里面，保证热区、徽章、云雾、贴片的百分比坐标仍然相对于整张图，完全对齐。
+3. #home-stage 的尺寸按以下规则用 JS 计算（容器宽 W、高 H，图比例 r=1080/1935）：
+   - stageH = min(W / r, H / 0.8)；stageW = stageH * r。
+   - 若 stageW < W（容器比图更宽）：stageW 取 W，stageH = W / r，此时纵向居中，上下各裁掉一部分，但每边最多裁掉 stageH 的 10%（上述 H/0.8 规则已保证）；若仍不够宽，则左右居中并留边。
+   - 简单说：优先铺满；纵向允许每边最多裁 10%；超过就改为完整显示，两侧留出的空白用同一张底图做模糊放大背景（#home-scene 的 background 或伪元素，filter: blur(16px) brightness(0.7)，cover）填充，不要出现纯色黑边。
+   - stage 用 left/top 居中定位（可为负值）。
+4. 窗口尺寸变化、切换到洞府页签时重新计算。
+5. 原来左上/右上的标题 #home-title（“洞府 · 凡品 · 总等级 N”）放在 #home-scene 容器的左上角（不在 stage 内，不随裁剪移动）。
+
+二、升级改为“地图右上角升级按钮 + 弹窗”
+1. 在 #home-scene 容器右上角新增按钮 #btn-home-upgrade，文字“升级”，带一个小图标（可用 assets/icons/res_stone@64.webp），风格与游戏现有 gufeng 金色描边按钮一致，尺寸适合拇指点击（高度≥36px），位于标题同一行右侧，不遮挡岛屿。若有任意建筑当前灵石足够升级，按钮右上角显示一个小红点。
+2. 点击按钮打开居中弹窗 #home-upgrade-modal（复用游戏已有的 .modal-backdrop / 弹窗样式，与“日志”“角色”弹窗风格一致），标题“洞府升级”，右上角关闭按钮 ✕，点击遮罩也可关闭。
+3. 弹窗内是 6 座建筑的列表（顺序与 config 中建筑顺序一致），每一行显示：
+   - 建筑名 + 当前品阶（凡/玄/仙，用已有品阶颜色，仙品沿用 q-xian-text 效果）+ Lv
+   - 效果简述：每秒灵石产出；灵泉、聚灵行再加联动加成那一行（逻辑照搬原 renderHomeSheet）
+   - 下一级花费（灵石图标 + 数字）和下一档门槛提示（Lv25 玄品 / Lv100 仙品 / 已至仙品）
+   - 三个按钮：×1、×10、最大（逻辑照搬原 handleHomeSheetBuy，灵石不足时禁用）
+   - 未解锁建筑：整行置灰，显示“需突破至【xx】解锁”，不显示按钮
+   列表区域可滚动，弹窗最大高度 80vh（同时考虑 dvh），在 375×667 上也能完整操作。
+4. 弹窗打开期间资源变化时要实时刷新按钮可用状态和花费（沿用原 updateHomeSheetButtons 的刷新时机）。购买后刷新地图场景（贴片进阶、徽章等级、进阶动画照旧）。
+5. 点击地图上的岛屿热区：同样打开这个弹窗，并把对应建筑那一行滚动到可见位置并短暂高亮（金色描边闪一下约 1 秒）。
+6. 删除旧的底部抽屉 #home-sheet（HTML、CSS、JS 引用全部清理干净，不能留下报错）。
+
+三、其他
+- 不要改动任何游戏数值和存档结构。
+- 保持 #home-reveal 进阶动画、云雾、徽章功能不变。
+- 更新 index.html 里 css/style.css 和 js/game.js 的 ?v= 缓存版本号（各 +1）。
+- 改完请自查：控制台无报错；切换页签、旋转屏幕后地图对齐正确。

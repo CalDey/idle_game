@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=44" />
+  <link rel="stylesheet" href="css/style.css?v=46" />
 </head>
 
 <body>
@@ -284,7 +284,7 @@
 
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
-        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=1"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-title" class="home-title"></div><div id="home-reveal" class="home-reveal"></div></div></div>
+        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=1"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button></div></div>
 
         <div class="gufeng-card">
           <div class="card-header">
@@ -545,29 +545,13 @@
     </div>
   </div>
 
-  <div id="home-sheet" class="home-sheet-backdrop" aria-hidden="true">
-    <div class="home-sheet-panel gufeng-card" role="dialog" aria-modal="true" aria-labelledby="home-sheet-name">
-      <div class="home-sheet-head">
-        <div class="home-sheet-title-wrap">
-          <span id="home-sheet-name" class="home-sheet-name"></span>
-          <span id="home-sheet-tier" class="home-sheet-tier"></span>
-          <span id="home-sheet-lv" class="upgrade-lv"></span>
-        </div>
-        <button id="home-sheet-close" class="home-sheet-close" type="button" aria-label="关闭">✕</button>
+  <div id="home-upgrade-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog home-upgrade-dialog" role="dialog" aria-modal="true" aria-labelledby="home-upgrade-modal-title">
+      <div class="card-header home-upgrade-header">
+        <span id="home-upgrade-modal-title" class="card-title"><img class="gi" src="assets/icons/df_dongtian_fudi@64.webp?v=18" alt="" aria-hidden="true">洞府升级</span>
+        <button id="btn-close-home-upgrade" class="home-modal-close" type="button" aria-label="关闭">✕</button>
       </div>
-      <div id="home-sheet-desc" class="home-sheet-desc"></div>
-      <div class="home-sheet-meta">
-        <div id="home-sheet-output" class="home-sheet-row"></div>
-        <div id="home-sheet-link" class="home-sheet-row"></div>
-        <div id="home-sheet-cost" class="home-sheet-row"></div>
-        <div id="home-sheet-next" class="home-sheet-row"></div>
-      </div>
-      <div id="home-sheet-lock" class="home-sheet-lock" hidden></div>
-      <div class="home-sheet-actions">
-        <button id="home-buy-1" class="btn btn-primary" type="button" data-buy="1">升级×1</button>
-        <button id="home-buy-10" class="btn" type="button" data-buy="10">×10</button>
-        <button id="home-buy-max" class="btn" type="button" data-buy="max">最大</button>
-      </div>
+      <div id="home-upgrade-list" class="home-upgrade-list"></div>
     </div>
   </div>
 
@@ -579,7 +563,7 @@
   <script src="js/battle.js?v=22"></script>
   <script src="js/gear.js?v=30"></script>
   <script src="js/stage-ui.js?v=25"></script>
-  <script src="js/game.js?v=32"></script>
+  <script src="js/game.js?v=34"></script>
 </body>
 
 </html>
