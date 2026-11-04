@@ -2949,6 +2949,13 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   inset: 0;
 }
 
+.home-badges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 150;
+}
+
 .home-bld {
   position: absolute;
   aspect-ratio: 1 / 1;
@@ -2957,7 +2964,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   padding: 0;
   margin: 0;
   cursor: pointer;
-  transform: translate(-50%, -56%);
+  transform: translate(-50%, -70%);
   -webkit-tap-highlight-color: transparent;
   display: flex;
   flex-direction: column;
@@ -2967,7 +2974,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-bld:active {
-  transform: translate(-50%, -56%) scale(0.96);
+  transform: translate(-50%, -70%) scale(0.96);
 }
 
 .home-bld-img {
@@ -3010,9 +3017,6 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .home-bld-badge {
   position: absolute;
-  top: auto;
-  bottom: 4%;
-  left: 50%;
   transform: translate(-50%, 0);
   z-index: 200;
   font-size: 11px;
@@ -3035,7 +3039,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 85;
+  z-index: 165;
   font-size: 12px;
   font-weight: 700;
   color: var(--accent-gold-bright);
@@ -3053,7 +3057,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   left: 50%;
   top: 46%;
   transform: translate(-50%, -50%);
-  z-index: 90;
+  z-index: 170;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 2px;

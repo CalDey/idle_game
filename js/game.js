@@ -65,6 +65,7 @@
     els.homeScene = document.getElementById('home-scene');
     els.homeBg = document.getElementById('home-bg');
     els.homeBlds = document.getElementById('home-blds');
+    els.homeBadges = document.getElementById('home-badges');
     els.homeTitle = document.getElementById('home-title');
     els.homeReveal = document.getElementById('home-reveal');
     els.homeSheet = document.getElementById('home-sheet');
@@ -468,6 +469,7 @@
 
     if (!homeBldRefs || els.homeBlds.children.length !== DONGFU_LIST.length) {
       els.homeBlds.innerHTML = '';
+      if (els.homeBadges) els.homeBadges.innerHTML = '';
       homeBldRefs = {};
       DONGFU_LIST.forEach((item) => {
         const slot = HOME_SLOTS[item.id] || { x: 50, y: 50, w: 23 };
@@ -481,13 +483,21 @@
         btn.style.zIndex = String(Math.round(slot.y));
         btn.innerHTML = `
           <img class="home-bld-img" src="assets/home/b_${item.id}_fan.webp?v=1" srcset="assets/home/b_${item.id}_fan@128.webp?v=1 128w, assets/home/b_${item.id}_fan.webp?v=1 256w" sizes="24vw" alt="${item.name}" loading="lazy" decoding="async">
-          <span class="home-bld-badge"></span>
         `;
         els.homeBlds.appendChild(btn);
+
+        const badge = document.createElement('span');
+        badge.className = 'home-bld-badge';
+        badge.style.left = `${slot.x}%`;
+        badge.style.top = `${slot.y + 2.5}%`;
+        if (els.homeBadges) {
+          els.homeBadges.appendChild(badge);
+        }
+
         homeBldRefs[item.id] = {
           btn,
           img: btn.querySelector('.home-bld-img'),
-          badge: btn.querySelector('.home-bld-badge')
+          badge
         };
       });
     }
