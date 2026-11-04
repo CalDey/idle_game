@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=46" />
+  <link rel="stylesheet" href="css/style.css?v=47" />
 </head>
 
 <body>
@@ -285,24 +285,6 @@
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
         <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=1"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button></div></div>
-
-        <div class="gufeng-card">
-          <div class="card-header">
-            <span class="card-title"><img class="gi" src="assets/icons/nav_upgrades@64.webp?v=18" alt=""
-                aria-hidden="true">功法研修</span>
-            <span class="card-subtitle">消耗灵石参悟功法，提升每秒灵气</span>
-          </div>
-          <div id="gongfa-list" class="upgrade-list"></div>
-        </div>
-
-        <div id="dongfu-card" class="gufeng-card dongfu-list-card is-collapsed">
-          <div id="dongfu-card-header" class="card-header card-header-toggle" role="button" tabindex="0" aria-expanded="false">
-            <span class="card-title"><img class="gi" src="assets/icons/df_dongtian_fudi@64.webp?v=18" alt=""
-                aria-hidden="true"><span id="dongfu-toggle-arrow" class="collapse-arrow">▸</span> 洞府建设</span>
-            <span class="card-subtitle">消耗灵石扩建洞天，提升每秒灵石</span>
-          </div>
-          <div id="dongfu-list" class="upgrade-list"></div>
-        </div>
       </section>
 
       <!-- 页签3：轮回转世 -->
@@ -551,7 +533,25 @@
         <span id="home-upgrade-modal-title" class="card-title"><img class="gi" src="assets/icons/df_dongtian_fudi@64.webp?v=18" alt="" aria-hidden="true">洞府升级</span>
         <button id="btn-close-home-upgrade" class="home-modal-close" type="button" aria-label="关闭">✕</button>
       </div>
-      <div id="home-upgrade-list" class="home-upgrade-list"></div>
+      <div class="home-modal-tabs" role="tablist" aria-label="升级分类">
+        <button id="home-tab-btn-dongfu" class="home-modal-tab is-active" type="button" role="tab" aria-selected="true" data-home-tab="dongfu">
+          <span>洞府</span>
+          <span id="badge-home-tab-dongfu" class="home-tab-badge" aria-hidden="true"></span>
+        </button>
+        <button id="home-tab-btn-gongfa" class="home-modal-tab" type="button" role="tab" aria-selected="false" data-home-tab="gongfa">
+          <span>功法</span>
+          <span id="badge-home-tab-gongfa" class="home-tab-badge" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div id="home-modal-scroll" class="home-modal-scroll">
+        <div id="home-modal-pane-dongfu" class="home-modal-pane" data-home-pane="dongfu">
+          <div id="home-upgrade-list" class="home-upgrade-list"></div>
+        </div>
+        <div id="home-modal-pane-gongfa" class="home-modal-pane" data-home-pane="gongfa" hidden>
+          <div class="home-gongfa-hint">消耗灵石参悟功法，提升每秒灵气</div>
+          <div id="gongfa-list" class="upgrade-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -563,7 +563,7 @@
   <script src="js/battle.js?v=22"></script>
   <script src="js/gear.js?v=30"></script>
   <script src="js/stage-ui.js?v=25"></script>
-  <script src="js/game.js?v=34"></script>
+  <script src="js/game.js?v=35"></script>
 </body>
 
 </html>

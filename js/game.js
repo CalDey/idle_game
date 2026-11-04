@@ -57,10 +57,6 @@
     els.btnOpenRole = document.getElementById('btn-open-role');
     els.btnCloseRole = document.getElementById('btn-close-role');
     els.gongfaList = document.getElementById('gongfa-list');
-    els.dongfuList = document.getElementById('dongfu-list');
-    els.dongfuCard = document.getElementById('dongfu-card');
-    els.dongfuCardHeader = document.getElementById('dongfu-card-header');
-    els.dongfuToggleArrow = document.getElementById('dongfu-toggle-arrow');
 
     els.tabUpgrades = document.getElementById('tab-upgrades');
     els.homeCard = document.querySelector('#tab-upgrades .home-card');
@@ -76,6 +72,13 @@
     els.homeUpgradeModal = document.getElementById('home-upgrade-modal');
     els.homeUpgradeList = document.getElementById('home-upgrade-list');
     els.btnCloseHomeUpgrade = document.getElementById('btn-close-home-upgrade');
+    els.homeModalScroll = document.getElementById('home-modal-scroll');
+    els.homeTabBtnDongfu = document.getElementById('home-tab-btn-dongfu');
+    els.homeTabBtnGongfa = document.getElementById('home-tab-btn-gongfa');
+    els.homeModalPaneDongfu = document.getElementById('home-modal-pane-dongfu');
+    els.homeModalPaneGongfa = document.getElementById('home-modal-pane-gongfa');
+    els.badgeHomeTabDongfu = document.getElementById('badge-home-tab-dongfu');
+    els.badgeHomeTabGongfa = document.getElementById('badge-home-tab-gongfa');
 
     els.reincarnateCount = document.getElementById('reincarnate-count');
     els.reincarnateMult = document.getElementById('reincarnate-mult');
@@ -300,89 +303,53 @@
     updateHeaderAndMeditationUI();
   }
 
-  // 构建功法与洞府列表 DOM
+  // 构建功法列表与洞府场景
   function renderUpgradeLists() {
     const s = GameState.state;
     const stage = GameState.getCurrentStage();
 
     // 功法列表
-    els.gongfaList.innerHTML = '';
-    GONGFA_LIST.forEach((item) => {
-      const unlocked = s.realmIndex >= item.unlockRealmIndex;
-      const lv = (s.gongfa && s.gongfa[item.id]) || 0;
-      const cost = GameState.getGongfaCost(item);
-      const canAfford = unlocked && s.stones >= cost;
-      const reqStageName = REALM_STAGES[item.unlockRealmIndex].fullName;
-      const perLvEffect = item.baseQiPerSec * stage.multiplier * GameState.getDaoGuoQiMultiplier();
+    if (els.gongfaList) {
+      els.gongfaList.innerHTML = '';
+      GONGFA_LIST.forEach((item) => {
+        const unlocked = s.realmIndex >= item.unlockRealmIndex;
+        const lv = (s.gongfa && s.gongfa[item.id]) || 0;
+        const cost = GameState.getGongfaCost(item);
+        const canAfford = unlocked && s.stones >= cost;
+        const reqStageName = REALM_STAGES[item.unlockRealmIndex].fullName;
+        const perLvEffect = item.baseQiPerSec * stage.multiplier * GameState.getDaoGuoQiMultiplier();
 
-      const row = document.createElement('div');
-      row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
-      row.innerHTML = `
-        <div class="upgrade-icon-wrap">
-          <img class="gi upgrade-icon" src="assets/icons/gf_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
-        </div>
-        <div class="upgrade-meta">
-          <div class="upgrade-name-row">
-            <span class="upgrade-name">${item.name}</span>
-            <span class="upgrade-lv">${unlocked ? `第 ${lv} 层` : `需 ${reqStageName}`}</span>
+        const row = document.createElement('div');
+        row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
+        row.innerHTML = `
+          <div class="upgrade-icon-wrap">
+            <img class="gi upgrade-icon" src="assets/icons/gf_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
           </div>
-          <div class="upgrade-desc">${item.desc}</div>
-          <div class="upgrade-effect">每层效果：+${formatNumber(perLvEffect)} 灵气/秒</div>
-        </div>
-        <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-gongfa-id="${item.id}" ${
-        canAfford ? '' : 'disabled'
-      }>
-          <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
-          <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
-        </button>
-      `;
-      els.gongfaList.appendChild(row);
-    });
-
-    // 洞府列表
-    els.dongfuList.innerHTML = '';
-    DONGFU_LIST.forEach((item) => {
-      const unlocked = s.realmIndex >= item.unlockRealmIndex;
-      const lv = (s.dongfu && s.dongfu[item.id]) || 0;
-      const cost = GameState.getDongfuCost(item);
-      const canAfford = unlocked && s.stones >= cost;
-      const reqStageName = REALM_STAGES[item.unlockRealmIndex].fullName;
-      const perLvEffect =
-        item.baseStonePerSec *
-        Math.pow(stage.multiplier, 0.65) *
-        GameState.getDaoGuoStoneMultiplier();
-      const glow = item.id === 'lingmai' ? ' gi-glow' : '';
-
-      const row = document.createElement('div');
-      row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
-      row.innerHTML = `
-        <div class="upgrade-icon-wrap">
-          <img class="gi upgrade-icon${glow}" src="assets/icons/df_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
-        </div>
-        <div class="upgrade-meta">
-          <div class="upgrade-name-row">
-            <span class="upgrade-name">${item.name}</span>
-            <span class="upgrade-lv">${unlocked ? `Lv.${lv}` : `需 ${reqStageName}`}</span>
+          <div class="upgrade-meta">
+            <div class="upgrade-name-row">
+              <span class="upgrade-name">${item.name}</span>
+              <span class="upgrade-lv">${unlocked ? `第 ${lv} 层` : `需 ${reqStageName}`}</span>
+            </div>
+            <div class="upgrade-desc">${item.desc}</div>
+            <div class="upgrade-effect">每层效果：+${formatNumber(perLvEffect)} 灵气/秒</div>
           </div>
-          <div class="upgrade-desc">${item.desc}</div>
-          <div class="upgrade-effect">每级产出：+${formatNumber(perLvEffect)} 灵石/秒</div>
-        </div>
-        <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-dongfu-id="${item.id}" ${
-        canAfford ? '' : 'disabled'
-      }>
-          <span class="btn-action">${unlocked ? '扩建' : '锁定'}</span>
-          <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
-        </button>
-      `;
-      els.dongfuList.appendChild(row);
-    });
+          <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-gongfa-id="${item.id}" ${
+          canAfford ? '' : 'disabled'
+        }>
+            <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
+            <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
+          </button>
+        `;
+        els.gongfaList.appendChild(row);
+      });
+    }
 
     renderHomeScene();
   }
 
   let homeRefs = null;
   let homeSyncedOnce = false;
-  let dongfuCollapsed = true;
+  let lastHomeModalTab = 'dongfu';
   let homeRevealTimer = null;
   let homeFlashTimer = null;
   const HOME_STAGE_RATIO = 1080 / 1935;
@@ -615,9 +582,35 @@
     return Boolean(els.homeUpgradeModal && els.homeUpgradeModal.classList.contains('active'));
   }
 
-  function openHomeUpgradeModal(focusBuildingId) {
+  function switchHomeModalTab(tabKey, resetScroll = true) {
+    const nextTab = tabKey === 'gongfa' ? 'gongfa' : 'dongfu';
+    lastHomeModalTab = nextTab;
+    const isGongfa = nextTab === 'gongfa';
+
+    if (els.homeTabBtnDongfu) {
+      els.homeTabBtnDongfu.classList.toggle('is-active', !isGongfa);
+      els.homeTabBtnDongfu.setAttribute('aria-selected', !isGongfa ? 'true' : 'false');
+    }
+    if (els.homeTabBtnGongfa) {
+      els.homeTabBtnGongfa.classList.toggle('is-active', isGongfa);
+      els.homeTabBtnGongfa.setAttribute('aria-selected', isGongfa ? 'true' : 'false');
+    }
+    if (els.homeModalPaneDongfu) {
+      els.homeModalPaneDongfu.hidden = isGongfa;
+    }
+    if (els.homeModalPaneGongfa) {
+      els.homeModalPaneGongfa.hidden = !isGongfa;
+    }
+    if (resetScroll && els.homeModalScroll) {
+      els.homeModalScroll.scrollTop = 0;
+    }
+  }
+
+  function openHomeUpgradeModal(focusBuildingId, tabKey) {
     if (!els.homeUpgradeModal) return;
     renderHomeUpgradeModal();
+    const targetTab = focusBuildingId ? 'dongfu' : (tabKey || lastHomeModalTab || 'dongfu');
+    switchHomeModalTab(targetTab, !focusBuildingId);
     els.homeUpgradeModal.classList.add('active');
     els.homeUpgradeModal.setAttribute('aria-hidden', 'false');
 
@@ -638,6 +631,8 @@
           homeFlashTimer = null;
         }, 1050);
       });
+    } else if (els.homeModalScroll) {
+      els.homeModalScroll.scrollTop = 0;
     }
   }
 
@@ -830,18 +825,20 @@
   // 动态刷新功法与洞府按钮的可用状态，避免整表重建闪烁
   function updateUpgradeButtonsState() {
     const s = GameState.state;
-    let anyAffordable = false;
+    let anyGongfaAffordable = false;
 
     GONGFA_LIST.forEach((item) => {
       const unlocked = s.realmIndex >= item.unlockRealmIndex;
       const cost = GameState.getGongfaCost(item);
       const canAfford = unlocked && s.stones >= cost;
-      if (canAfford) anyAffordable = true;
+      if (canAfford) anyGongfaAffordable = true;
 
-      const btn = els.gongfaList.querySelector(`button[data-gongfa-id="${item.id}"]`);
-      if (btn) {
-        btn.disabled = !canAfford;
-        btn.classList.toggle('btn-primary', canAfford);
+      if (els.gongfaList) {
+        const btn = els.gongfaList.querySelector(`button[data-gongfa-id="${item.id}"]`);
+        if (btn) {
+          btn.disabled = !canAfford;
+          btn.classList.toggle('btn-primary', canAfford);
+        }
       }
     });
 
@@ -851,22 +848,23 @@
       const cost = GameState.getDongfuCost(item);
       const canAfford = unlocked && s.stones >= cost;
       if (canAfford) {
-        anyAffordable = true;
         anyDongfuAffordable = true;
       }
-
-      const btn = els.dongfuList.querySelector(`button[data-dongfu-id="${item.id}"]`);
-      if (btn) {
-        btn.disabled = !canAfford;
-        btn.classList.toggle('btn-primary', canAfford);
-      }
     });
+
+    const anyAffordable = anyGongfaAffordable || anyDongfuAffordable;
 
     if (els.badgeUpgrade) {
       els.badgeUpgrade.classList.toggle('visible', anyAffordable);
     }
     if (els.badgeHomeUpgrade) {
-      els.badgeHomeUpgrade.classList.toggle('visible', anyDongfuAffordable);
+      els.badgeHomeUpgrade.classList.toggle('visible', anyAffordable);
+    }
+    if (els.badgeHomeTabDongfu) {
+      els.badgeHomeTabDongfu.classList.toggle('visible', anyDongfuAffordable);
+    }
+    if (els.badgeHomeTabGongfa) {
+      els.badgeHomeTabGongfa.classList.toggle('visible', anyGongfaAffordable);
     }
 
     updateHomeUpgradeButtons();
@@ -883,20 +881,6 @@
         GameState.state.stones -= cost;
         GameState.state.gongfa[id] = (GameState.state.gongfa[id] || 0) + 1;
         addLog(`潜心参悟${item.name}至第 ${GameState.state.gongfa[id]} 层，吐纳大进！`, 'success');
-        renderUpgradeLists();
-        updateHeaderAndMeditationUI();
-        if (window.StageUI) StageUI.render();
-      }
-      return;
-    }
-
-    const dongfuBtn = e.target.closest('button[data-dongfu-id]');
-    if (dongfuBtn) {
-      const id = dongfuBtn.getAttribute('data-dongfu-id');
-      const item = DONGFU_LIST.find((d) => d.id === id);
-      if (!item) return;
-      if (GameState.buyDongfu(id, 1) > 0) {
-        addLog(`消耗灵石扩建【${item.name}】至 Lv.${GameState.state.dongfu[id]}！`, 'success');
         renderUpgradeLists();
         updateHeaderAndMeditationUI();
         if (window.StageUI) StageUI.render();
@@ -1737,10 +1721,18 @@
     // 绑定事件
     els.meditationZone.addEventListener('pointerdown', handleMeditationTap);
     els.btnBreakthrough.addEventListener('click', attemptBreakthrough);
-    els.gongfaList.addEventListener('click', handleUpgradeClick);
-    els.dongfuList.addEventListener('click', handleUpgradeClick);
+    if (els.gongfaList) {
+      els.gongfaList.addEventListener('click', handleUpgradeClick);
+    }
     els.talentList.addEventListener('click', handleTalentClick);
     els.btnReincarnate.addEventListener('click', handleReincarnateButton);
+
+    const btnGotoGongfa = document.getElementById('btn-goto-gongfa');
+    if (btnGotoGongfa) {
+      btnGotoGongfa.addEventListener('click', () => {
+        openHomeUpgradeModal(null, 'gongfa');
+      });
+    }
 
     if (els.homeLayer) {
       els.homeLayer.addEventListener('click', (e) => {
@@ -1754,6 +1746,17 @@
     if (els.btnHomeUpgrade) {
       els.btnHomeUpgrade.addEventListener('click', () => {
         openHomeUpgradeModal();
+      });
+    }
+
+    if (els.homeTabBtnDongfu) {
+      els.homeTabBtnDongfu.addEventListener('click', () => {
+        switchHomeModalTab('dongfu', true);
+      });
+    }
+    if (els.homeTabBtnGongfa) {
+      els.homeTabBtnGongfa.addEventListener('click', () => {
+        switchHomeModalTab('gongfa', true);
       });
     }
 
@@ -1775,24 +1778,6 @@
         const buyRaw = btn.dataset.homeBuy;
         const n = buyRaw === 'max' ? Infinity : Number(buyRaw) || 1;
         handleHomeModalBuy(id, n);
-      });
-    }
-
-    if (els.dongfuCardHeader && els.dongfuCard) {
-      const toggleDongfuCollapse = () => {
-        dongfuCollapsed = !dongfuCollapsed;
-        els.dongfuCard.classList.toggle('is-collapsed', dongfuCollapsed);
-        els.dongfuCardHeader.setAttribute('aria-expanded', dongfuCollapsed ? 'false' : 'true');
-        if (els.dongfuToggleArrow) {
-          els.dongfuToggleArrow.textContent = dongfuCollapsed ? '▸' : '▾';
-        }
-      };
-      els.dongfuCardHeader.addEventListener('click', toggleDongfuCollapse);
-      els.dongfuCardHeader.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleDongfuCollapse();
-        }
       });
     }
 
