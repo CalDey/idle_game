@@ -457,7 +457,7 @@
 
     const bgDisplayTier = GameState.getHomeBgDisplayTier();
     const bgTierInfo = HOME_TIERS[bgDisplayTier] || HOME_TIERS[0];
-    const nextBgSrc = `assets/home/bg_${bgTierInfo.key}.webp?v=1`;
+    const nextBgSrc = `assets/home/bg_${bgTierInfo.key}.webp?v=2`;
     if (els.homeBg && els.homeBg.getAttribute('src') !== nextBgSrc) {
       els.homeBg.setAttribute('src', nextBgSrc);
       els.homeBg.src = nextBgSrc;
