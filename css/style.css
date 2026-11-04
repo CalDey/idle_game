@@ -2964,7 +2964,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   padding: 0;
   margin: 0;
   cursor: pointer;
-  transform: translate(-50%, -70%);
+  transform: translate(-50%, -50%);
   -webkit-tap-highlight-color: transparent;
   display: flex;
   flex-direction: column;
@@ -2974,7 +2974,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-bld:active {
-  transform: translate(-50%, -70%) scale(0.96);
+  transform: translate(-50%, -50%) scale(0.96);
 }
 
 .home-bld-img {

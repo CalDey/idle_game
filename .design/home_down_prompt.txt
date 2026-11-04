@@ -1,0 +1,5 @@
+【洞府建筑整体下移】只做下面的修改，不要改其他内容，不要运行终端命令，不要 git 操作。
+
+背景去掉石台后建筑显得悬空，需要往下挪：
+1. css/style.css 里 .home-bld 的 transform 从 translate(-50%, -70%) 改为 translate(-50%, -50%)；.home-bld:active 同步改为 translate(-50%, -50%) scale(0.96)。
+2. index.html 里 style.css 版本号 v=45 改为 v=46。
