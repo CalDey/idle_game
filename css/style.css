@@ -2094,6 +2094,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
   transition:
     left 0.16s cubic-bezier(0.22, 0.8, 0.28, 1),
     top 0.16s cubic-bezier(0.22, 0.8, 0.28, 1),
@@ -2141,6 +2142,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   align-items: center;
   justify-content: center;
   gap: 0;
+  overflow: visible;
   pointer-events: none;
   transition: transform 0.11s ease;
 }
@@ -2161,6 +2163,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
 }
 
 /* Boss 头像圆 1.15 倍，允许略溢出格子 */
@@ -2217,14 +2220,14 @@ body:has(.modal-backdrop.active) .tab-pane.active {
     0 2px 6px rgba(0, 0, 0, 0.65);
 }
 
-/* 角色头像清晰放大到脸部，避免二次缩放与滤镜模糊 */
+/* 我方角色预裁方形头像填满圆框内部，无额外缩放 */
 .unit-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 0%;
-  transform-origin: 50% 20%;
-  transform: scale(2.6);
+  object-position: 50% 50%;
+  border-radius: 50%;
+  transform: none;
   image-rendering: auto;
   filter: none;
   display: block;
@@ -2353,10 +2356,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   transform: translateX(-50%) scale(1);
 }
 
-/* 细血条与金色怒气条，紧贴在头像下方，与头像底部略重叠但不挡住脸 */
+/* 细血条与金色怒气条，紧贴在头像正下方，让整个圆环完整留在格内不溢出 */
 .unit-bars {
-  position: relative;
-  margin-top: -4px;
+  position: absolute;
+  bottom: 0.5px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 82%;
   max-width: 46px;
   display: flex;
@@ -2366,7 +2371,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .board-unit.is-boss .unit-bars {
-  margin-top: -5px;
+  bottom: -1px;
   width: 90%;
   max-width: 52px;
 }

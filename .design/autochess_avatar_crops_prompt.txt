@@ -1,0 +1,13 @@
+【任务】自走棋棋子头像改用预裁好的方形头像图，保证头部在圆框正中。
+
+背景：现在 js/config.js 的 HEROES 里每个英雄有 avatarScale / avatarPos，棋子头像靠 CSS transform（translate + scale + transform-origin）把原立绘放大定位，结果头部偏下、偏左右，圆框顶部还被裁掉。现在已经准备好了以头部为正中心的 512×512 头像：
+assets/battle/avatars/lanyi.webp, cloak.webp, saintess.webp, miko.webp, shuanghua.webp, sweetmaid.webp（文件名就是英雄 id）。
+
+要求：
+1. 在 js/config.js 的 HEROES 每个英雄加字段 avatar: 'assets/battle/avatars/<id>.webp'（6 个都有）。
+2. 自走棋棋子（js/stage-ui.js 里渲染棋子头像的地方）优先使用 hero.avatar；没有 avatar 时才回退到原来的 img。
+3. 使用 avatar 时，头像 img 不要任何 transform / transform-origin / 额外缩放，直接 width:100%; height:100%; object-fit:cover; object-position:50% 50%; border-radius:50%，填满圆框内部。删掉或停用对 avatarScale / avatarPos 的使用（字段可以留着不用）。
+4. 圆形品质边框（仙品 .q-xian 彩虹渐变边框）必须完整显示，顶部不能被裁切：检查棋子容器、格子、棋盘的 overflow 和尺寸，保证整个圆环（含边框）都在可见区域内。头像框尺寸保持现在的大小（尽可能大），血条/怒气条仍在头像下方。
+5. 小怪、Boss 头像逻辑不变。
+6. 更新 index.html 里 css/style.css、js/config.js、js/stage-ui.js 的 ?v= 版本号各 +1。
+7. 不要运行终端命令、不要 git 操作。

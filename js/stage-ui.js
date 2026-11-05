@@ -241,7 +241,9 @@
     el.style.top = cellTopPct(u.r);
     el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
 
-    const imgUrl = u.side === 'player' ? u.img : resolveEnemyImgUrl(u);
+    const heroCfg = u.side === 'player' ? getHeroCfg(u) : null;
+    const heroAvatar = u.side === 'player' ? (u.avatar || (heroCfg && heroCfg.avatar) || '') : '';
+    const imgUrl = u.side === 'player' ? (heroAvatar || u.img || (heroCfg && heroCfg.img) || '') : resolveEnemyImgUrl(u);
     const shortChar = (u.name || '?').slice(0, 1);
 
     let avatarQualityCls = '';
@@ -249,25 +251,13 @@
     let imgStyle = '';
 
     if (u.side === 'player') {
-      const heroCfg = getHeroCfg(u);
       const qInfo = resolveQualityInfo(u.quality || (heroCfg && heroCfg.quality) || 'xian');
       const isXian = qInfo.id === 'xian';
       avatarQualityCls = isXian ? ' q-xian' : ` q-${qInfo.id}`;
       if (!isXian && qInfo.color) {
         avatarBorderStyle = ` style="border-color:${qInfo.color}"`;
       }
-      const avatarPos = u.avatarPos || (heroCfg && heroCfg.avatarPos) || '50% 16%';
-      const s = Number(u.avatarScale || (heroCfg && heroCfg.avatarScale) || 2.6);
-      const posParts = String(avatarPos).trim().split(/\s+/);
-      const fx = parseFloat(posParts[0]);
-      const fy = parseFloat(posParts[1]);
-      const safeFx = Number.isFinite(fx) ? fx : 50;
-      const safeFy = Number.isFinite(fy) ? fy : 16;
-      const fyb = (safeFy * 4) / 3;
-      const tx = 50 - safeFx;
-      const ty = Math.min(50 - fyb, (s - 1) * fyb);
-      const num = (v) => Number(v.toFixed(2));
-      imgStyle = ` style="object-fit:cover;object-position:50% 0%;transform-origin:${num(safeFx)}% ${num(fyb)}%;transform:translate(${num(tx)}%, ${num(ty)}%) scale(${num(s)})"`;
+      imgStyle = ' style="width:100%;height:100%;object-fit:cover;object-position:50% 50%;border-radius:50%"';
     }
 
     el.innerHTML = `
