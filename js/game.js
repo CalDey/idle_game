@@ -35,7 +35,9 @@
     els.daoguoVal = document.getElementById('res-daoguo-val');
     els.daoguoMult = document.getElementById('res-daoguo-mult');
 
+    els.tabCultivate = document.getElementById('tab-cultivate');
     els.meditationZone = document.getElementById('meditation-zone');
+    els.btnPortraitFocus = document.getElementById('btn-portrait-focus');
     els.titlePlateName = document.getElementById('title-plate-name');
     els.tapGainHint = document.getElementById('tap-gain-hint');
 
@@ -222,8 +224,40 @@
     }, 680);
   }
 
+  const PORTRAIT_FOCUS_KEY = 'xiuxian_portrait_focus';
+
+  function applyPortraitFocus(on) {
+    const active = Boolean(on);
+    const tab = els.tabCultivate || document.getElementById('tab-cultivate');
+    const btn = els.btnPortraitFocus || document.getElementById('btn-portrait-focus');
+    if (tab) {
+      tab.classList.toggle('is-portrait-focus', active);
+    }
+    if (btn) {
+      btn.textContent = active ? '显示突破' : '看立绘';
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      btn.setAttribute('aria-label', active ? '显示境界突破' : '隐藏境界突破，查看完整立绘');
+    }
+    try {
+      localStorage.setItem(PORTRAIT_FOCUS_KEY, active ? '1' : '0');
+    } catch (err) {}
+  }
+
+  function restorePortraitFocus() {
+    let on = false;
+    try {
+      on = localStorage.getItem(PORTRAIT_FOCUS_KEY) === '1';
+    } catch (err) {
+      on = false;
+    }
+    applyPortraitFocus(on);
+  }
+
   // 点击打坐区获取额外灵气
   function handleMeditationTap(e) {
+    if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('#btn-portrait-focus, #title-plate')) {
+      return;
+    }
     const gain = GameState.getTapQiGain();
     GameState.state.qi += gain;
     GameState.state.lifetimeQi = (GameState.state.lifetimeQi || 0) + gain;
@@ -1080,7 +1114,10 @@
     const panes = document.querySelectorAll('.tab-pane');
     navBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === targetId));
     panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
-    if (targetId === 'tab-cultivate') resumeHeroVideo();
+    if (targetId === 'tab-cultivate') {
+      restorePortraitFocus();
+      resumeHeroVideo();
+    }
     if (targetId === 'tab-upgrades') {
       renderHomeScene();
       layoutHomeStage();
@@ -1697,6 +1734,7 @@
 
   function init() {
     cacheElements();
+    restorePortraitFocus();
     initTabs();
     initHomeStageResize();
     initHeroVideo();
@@ -1724,6 +1762,17 @@
 
     // 绑定事件
     els.meditationZone.addEventListener('pointerdown', handleMeditationTap);
+    if (els.btnPortraitFocus) {
+      els.btnPortraitFocus.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+      });
+      els.btnPortraitFocus.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const tab = els.tabCultivate || document.getElementById('tab-cultivate');
+        applyPortraitFocus(!(tab && tab.classList.contains('is-portrait-focus')));
+      });
+    }
     els.btnBreakthrough.addEventListener('click', attemptBreakthrough);
     if (els.gongfaList) {
       els.gongfaList.addEventListener('click', handleUpgradeClick);

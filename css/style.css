@@ -600,6 +600,54 @@ body {
   letter-spacing: 0.5px;
 }
 
+.portrait-focus-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid var(--border-gold);
+  background: linear-gradient(180deg, rgba(46, 40, 68, 0.84) 0%, rgba(18, 16, 36, 0.9) 100%);
+  color: var(--accent-gold-bright);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  white-space: nowrap;
+  pointer-events: auto;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 200, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.52);
+  transition: transform 0.08s ease, filter 0.12s ease, border-color 0.12s ease;
+}
+
+.portrait-focus-btn:hover {
+  border-color: var(--accent-gold-bright);
+  filter: brightness(1.08);
+}
+
+.portrait-focus-btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+#tab-cultivate.is-portrait-focus > .gufeng-card {
+  display: none;
+}
+
+#tab-cultivate.is-portrait-focus .meditation-caption {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Tap feedback */
 .float-text {
   position: absolute;
