@@ -212,6 +212,15 @@
     return `${((r / ROWS) * 100).toFixed(4)}%`;
   }
 
+  function applyUnitPosition(el, c, r, isBoss, ultReady) {
+    const row = Math.max(0, Math.min(ROWS - 1, Math.round(Number(r) || 0)));
+    el.style.left = cellLeftPct(c);
+    el.style.top = cellTopPct(r);
+    el.style.setProperty('--unit-row', String(row));
+    const bonus = Math.min(1, (isBoss ? 1 : 0) + (ultReady ? 1 : 0));
+    el.style.zIndex = String(10 + 2 * row + bonus);
+  }
+
   function getHeroCfg(u) {
     if (!u || u.side !== 'player') return null;
     const heroes = (window.GameConfig && window.GameConfig.HEROES) || [];
@@ -319,8 +328,7 @@
     el.dataset.unitId = u.id;
     if (u.heroId) el.dataset.heroId = u.heroId;
     el.dataset.side = u.side;
-    el.style.left = cellLeftPct(u.c);
-    el.style.top = cellTopPct(u.r);
+    applyUnitPosition(el, u.c, u.r, u.isBoss, false);
     el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
 
     const stepVal = resolveUnitHpStep(u.maxHp, sideHpStep);
@@ -422,6 +430,7 @@
     }
     const ultReady = u.side === 'player' && u.alive && (u.rage || 0) >= (u.maxRage || 100);
     dom.el.classList.toggle('is-ult-ready', ultReady);
+    applyUnitPosition(dom.el, u.c, u.r, u.isBoss, ultReady);
     dom.el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
     if (!u.alive) {
       dom.el.classList.add('is-dead');
@@ -442,13 +451,7 @@
     if (!currentSession) return;
     const units = currentSession.units;
     for (let i = 0; i < units.length; i++) {
-      const u = units[i];
-      const dom = unitDomMap[u.id];
-      if (dom) {
-        dom.el.style.left = cellLeftPct(u.c);
-        dom.el.style.top = cellTopPct(u.r);
-      }
-      syncUnitBarsAndState(u);
+      syncUnitBarsAndState(units[i]);
     }
   }
 
@@ -683,6 +686,10 @@
     const casterDom = unitDomMap[ultEv.casterId];
     if (casterDom) {
       casterDom.el.classList.remove('is-ult-ready', 'is-ult-casting');
+      const casterUnit = currentSession && currentSession.unitMap[ultEv.casterId];
+      if (casterUnit) {
+        applyUnitPosition(casterDom.el, casterUnit.c, casterUnit.r, casterUnit.isBoss, false);
+      }
       void casterDom.el.offsetWidth;
       casterDom.el.classList.add('is-ult-casting');
       setTimeout(() => {
@@ -740,6 +747,7 @@
       const dom = unitDomMap[caster.id];
       if (dom) {
         dom.el.classList.remove('is-ult-ready');
+        applyUnitPosition(dom.el, caster.c, caster.r, caster.isBoss, false);
         if (dom.rageFill) dom.rageFill.style.width = '0%';
       }
     }
@@ -1132,8 +1140,10 @@
     if (mainEv.type === 'move') {
       const dom = unitDomMap[mainEv.unitId];
       if (dom) {
-        dom.el.style.left = cellLeftPct(mainEv.toC);
-        dom.el.style.top = cellTopPct(mainEv.toR);
+        const mvUnit = currentSession.unitMap[mainEv.unitId];
+        const mvUltReady =
+          mvUnit && mvUnit.side === 'player' && mvUnit.alive && (mvUnit.rage || 0) >= (mvUnit.maxRage || 100);
+        applyUnitPosition(dom.el, mainEv.toC, mainEv.toR, Boolean(mvUnit && mvUnit.isBoss), Boolean(mvUltReady));
       }
       if (logLine) {
         const readyHint =

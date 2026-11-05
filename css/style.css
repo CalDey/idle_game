@@ -2093,6 +2093,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 .board-unit {
   --unit-base-size: calc(min(var(--cell-w, var(--cell-size, 54px)), var(--cell-h, var(--cell-size, 54px))) - 14px);
   --avatar-size: var(--unit-base-size);
+  --unit-row: 0;
+  --unit-z-bonus: 0;
   position: absolute;
   width: calc(100% / 6);
   height: calc(100% / 8);
@@ -2106,7 +2108,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
     opacity 0.26s ease,
     transform 0.26s ease;
   touch-action: none;
-  z-index: 3;
+  z-index: calc(10 + 2 * var(--unit-row, 0) + var(--unit-z-bonus, 0));
 }
 
 .board-unit.is-player {
@@ -2118,19 +2120,19 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .board-unit.is-player.is-ult-ready {
+  --unit-z-bonus: 1;
   cursor: pointer;
-  z-index: 9;
 }
 
 .board-unit.is-dragging {
-  z-index: 20 !important;
+  z-index: 30 !important;
   transition: none !important;
   cursor: grabbing;
 }
 
 .board-unit.is-boss {
   --avatar-size: calc(var(--unit-base-size) + 10px);
-  z-index: 8;
+  --unit-z-bonus: 1;
 }
 
 .board-unit.is-dead {
@@ -2169,6 +2171,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .unit-avatar-wrap {
   position: relative;
+  z-index: 2;
   width: var(--avatar-size);
   height: var(--avatar-size);
   flex: none;
@@ -2183,7 +2186,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   width: var(--avatar-size);
   height: var(--avatar-size);
   margin-top: 0;
-  z-index: 4;
+  z-index: 2;
 }
 
 .unit-avatar {
