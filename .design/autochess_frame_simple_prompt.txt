@@ -1,0 +1,14 @@
+【任务】自走棋棋子的头像框改回简易品质边框，并让头像更大更清晰。只改 js/stage-ui.js、css/style.css（必要时 js/config.js），不要运行终端命令，不要 git 操作。改完把 index.html 里改动文件的 ?v= +1。
+
+1. 去掉 assets/battle/frame_*.webp 这些华丽头像框图（stage-ui.js 里 createUnitElement 的 unit-frame-img 及相关 CSS），不再使用。素材文件保留不删。
+2. 改成和游戏里装备/蟠桃一样的“按品质简易边框”：圆形头像 + 一圈细边框（约 2px），颜色按品质取自 GameConfig.QUALITIES。目前所有角色都是仙品，用现有 .q-xian 的柔和彩虹渐变流动边框样式（可复用 .q-xian 的 border-box 渐变写法，适配成圆形）。给 HEROES 加可选的 quality 字段（默认 'xian'），以后不同角色可以有不同品质。
+   - 当前主角（leader）同样是仙品边框，只在旁边或下方加一个很小的标记（如小金点或“主”字角标）区分，不要额外华丽装饰。
+   - 敌方小怪：简单的暗红色细边框；Boss：稍粗一点的红色边框加淡淡外发光 + 原来的 Boss 小标。
+   - 满怒发光效果保留（作用在边框外圈）。
+3. 头像尽可能大：头像圆直径约占格子宽度的 92%（Boss 可以 1.15 倍，允许略溢出格子），血条/怒气条紧贴在头像下方，可以与头像底部略重叠，但不能挡住脸。
+4. 头像清晰：现在头像直接用 hero.img（高清大图）缩得很小。请：
+   - 头像 <img> 用 object-fit: cover，并在 HEROES 里给每个角色加 avatarPos（object-position，如 '50% 18%'）和 avatarScale（如 1.8，用 transform: scale 放大到脸部），默认值尽量让脸部居中充满圆框。6 个角色先统一给一个合理默认值（脸大致在立绘上方 15%~25% 的位置）。
+   - 加 image-rendering: auto、will-change 去掉、避免 filter/模糊；确保 <img> 用 decoding="async" 且不被 CSS 缩放两次。
+   - 敌人头像同理用 object-fit: cover，脸部居中。
+
+【验收】无控制台报错；棋子是简洁的圆形仙品彩虹细边框，头像明显比之前大，脸部清晰居中；拖动布阵、大招点击等功能不受影响。

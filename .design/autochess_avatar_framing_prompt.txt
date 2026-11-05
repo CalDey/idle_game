@@ -1,0 +1,21 @@
+【任务】修正自走棋我方棋子的头像取景：现在 6 个角色的圆形头像都对准了胸口，脸被挤到圆的上三分之一。只改 js/stage-ui.js、css/style.css、js/config.js，不要运行终端命令，不要 git 操作。改完把 index.html 里改动文件的 ?v= +1。
+
+原因：缩放以圆心为原点，而脸大约在立绘高度的 11%~20%；只改 avatarPos、avatarScale 解决不了。
+
+做法（已在浏览器里验证可行）：
+- 把 HEROES 的 avatarPos 改为“脸部中心点”的含义：fx、fy 分别是脸在立绘宽、高上的百分比位置。头像 <img> 固定用 object-fit: cover; object-position: 50% 0%。
+- 设 s = avatarScale，fyb = fy*4/3（立绘是 3:4，cover 进圆形后纵向的换算）。设置：
+  transform-origin: fx% fyb%;
+  transform: translate((50-fx)%, min(50-fyb, (s-1)*fyb)%) scale(s);
+  其中 min() 用来防止圆的顶部露出空白，请用 JS 算好数值后写进 style。
+- 各角色取值（avatarScale 统一 2.6）：
+  lanyi 清冷剑仙 '47% 17%'
+  cloak 魔灵光 '55% 15%'
+  saintess 圣王女 '48% 12%'
+  miko 灼樱巫女 '57% 14%'
+  shuanghua 霜华玉仙 '52% 17%'
+  sweetmaid 甜心女仆 '64% 19%'
+- 主角的“主”字角标现在在右下角，会挡住下巴，请改小一点，并挪到左上角。
+- 大招立绘视频、修行页等其它地方用到的 hero 图不受影响。
+
+【验收】6 个角色的脸都居中，并占圆形头像约一半，清晰；无控制台报错。

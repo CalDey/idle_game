@@ -2140,7 +2140,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 0;
   pointer-events: none;
   transition: transform 0.11s ease;
 }
@@ -2155,83 +2155,94 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .unit-avatar-wrap {
   position: relative;
-  width: calc(var(--cell-size, 42px) * 0.84);
-  height: calc(var(--cell-size, 42px) * 0.84);
+  width: calc(var(--cell-size, 42px) * 0.92);
+  height: calc(var(--cell-size, 42px) * 0.92);
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Boss 框更大并允许角和尖刺溢出格子 */
+/* Boss 头像圆 1.15 倍，允许略溢出格子 */
 .board-unit.is-boss .unit-avatar-wrap {
-  width: calc(var(--cell-size, 42px) * 1.08);
-  height: calc(var(--cell-size, 42px) * 1.08);
+  width: calc(var(--cell-size, 42px) * 0.92 * 1.15);
+  height: calc(var(--cell-size, 42px) * 0.92 * 1.15);
   z-index: 4;
 }
 
 .unit-avatar {
   position: relative;
   z-index: 1;
-  width: 62.5%;
-  height: 62.5%;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
+  border: 2px solid var(--border-gold);
   overflow: hidden;
   background: radial-gradient(circle at 50% 35%, #2a2448 0%, #110e22 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: filter 0.1s ease, box-shadow 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-/* 按 256×256 框镂空直径 + 4px 设定头像圆比例：player 160/256=62.5%，leader 174/256=68%，enemy 161/256=62.9%，boss 155/256=60.5% */
-.board-unit.is-player .unit-avatar {
-  width: 62.5%;
-  height: 62.5%;
+/* 仙品圆形柔和彩虹渐变流动细边框（复用 .q-xian border-box 渐变写法） */
+.unit-avatar.q-xian {
+  border: 2px solid transparent;
+  background:
+    radial-gradient(circle at 50% 35%, #2a2448 0%, #110e22 100%) padding-box,
+    linear-gradient(120deg, #f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5, #f4a3a3) border-box;
+  background-size: 100% 100%, 240% 240%;
+  box-shadow:
+    0 0 6px rgba(198, 168, 245, 0.2),
+    0 0 10px rgba(159, 216, 239, 0.12),
+    0 2px 5px rgba(0, 0, 0, 0.55);
+  animation: xianBorderFlow 10s linear infinite;
 }
 
-.board-unit.is-player.is-leader .unit-avatar {
-  width: 68%;
-  height: 68%;
-}
-
+/* 敌方小怪：简单的暗红色细边框 */
 .board-unit.is-enemy .unit-avatar {
-  width: 62.9%;
-  height: 62.9%;
+  border: 1.5px solid #8e2f3a;
+  background: radial-gradient(circle at 50% 35%, #2a1822 0%, #120910 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
 }
 
+/* Boss：稍粗一点的红色边框加淡淡外发光 */
 .board-unit.is-enemy.is-boss .unit-avatar {
-  width: 60.5%;
-  height: 60.5%;
+  border: 2.5px solid #e04848;
+  background: radial-gradient(circle at 50% 35%, #341620 0%, #14080e 100%);
+  box-shadow:
+    0 0 8px rgba(224, 72, 72, 0.52),
+    0 0 14px rgba(180, 30, 40, 0.28),
+    0 2px 6px rgba(0, 0, 0, 0.65);
 }
 
-.unit-frame-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
-  z-index: 2;
-}
-
-/* 角色头像居中偏上 (50% 15%) */
+/* 角色头像清晰放大到脸部，避免二次缩放与滤镜模糊 */
 .unit-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 15%;
+  object-position: 50% 0%;
+  transform-origin: 50% 20%;
+  transform: scale(2.6);
+  image-rendering: auto;
+  filter: none;
   display: block;
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
 }
 
+/* 敌人头像居中放大到脸部 */
+.board-unit.is-enemy .unit-avatar-img {
+  object-position: 54% 28%;
+  transform-origin: 54% 18%;
+  transform: scale(1.45);
+}
+
 .unit-avatar-fallback {
   display: none;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--accent-gold-bright);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
@@ -2245,30 +2256,58 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: block;
 }
 
-/* 受击闪白 */
-.board-unit.is-hit .unit-avatar-wrap {
-  filter: brightness(2.2) contrast(0.85) drop-shadow(0 0 10px #ffffff);
+/* 受击闪白（作用在边框外圈，避免 filter 模糊头像） */
+.board-unit.is-hit .unit-avatar {
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 12px rgba(255, 255, 255, 0.95);
 }
 
-/* 怒气满发光闪烁 */
-.board-unit.is-ult-ready .unit-avatar-wrap {
+/* 怒气满发光闪烁（作用在边框外圈） */
+.board-unit.is-ult-ready .unit-avatar {
   animation: unitUltPulse 0.85s ease-in-out infinite alternate;
+}
+
+.board-unit.is-ult-ready .unit-avatar.q-xian {
+  animation:
+    xianBorderFlow 10s linear infinite,
+    unitUltPulse 0.85s ease-in-out infinite alternate;
 }
 
 @keyframes unitUltPulse {
   0% {
-    filter:
-      drop-shadow(0 0 5px #f5c76a)
-      drop-shadow(0 0 10px rgba(103, 232, 249, 0.75));
-    transform: scale(1);
+    box-shadow:
+      0 0 0 1px rgba(255, 241, 184, 0.8),
+      0 0 6px #f5c76a,
+      0 0 12px rgba(103, 232, 249, 0.75);
   }
   100% {
-    filter:
-      drop-shadow(0 0 9px #fff1b8)
-      drop-shadow(0 0 16px #f5c76a)
-      drop-shadow(0 0 22px rgba(103, 232, 249, 0.9));
-    transform: scale(1.08);
+    box-shadow:
+      0 0 0 2px #fff1b8,
+      0 0 10px #fff1b8,
+      0 0 18px #f5c76a,
+      0 0 24px rgba(103, 232, 249, 0.92);
   }
+}
+
+/* 主角微小角标（左上角小金标，不挡下巴与脸部） */
+.unit-leader-tag {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  z-index: 7;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffe7b0 0%, #d49b35 100%);
+  border: 1px solid #fff8dc;
+  color: #241604;
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 9px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
 }
 
 .unit-boss-tag {
@@ -2314,12 +2353,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   transform: translateX(-50%) scale(1);
 }
 
-/* 细血条与金色怒气条，置于框下方且不被挡住 */
+/* 细血条与金色怒气条，紧贴在头像下方，与头像底部略重叠但不挡住脸 */
 .unit-bars {
   position: relative;
-  margin-top: 1px;
-  width: 78%;
-  max-width: 42px;
+  margin-top: -4px;
+  width: 82%;
+  max-width: 46px;
   display: flex;
   flex-direction: column;
   gap: 1.5px;
@@ -2327,8 +2366,9 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .board-unit.is-boss .unit-bars {
-  margin-top: 1px;
-  width: 86%;
+  margin-top: -5px;
+  width: 90%;
+  max-width: 52px;
 }
 
 .unit-hp-bar,

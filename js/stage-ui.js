@@ -208,6 +208,26 @@
     return `${((r / ROWS) * 100).toFixed(4)}%`;
   }
 
+  function getHeroCfg(u) {
+    if (!u || u.side !== 'player') return null;
+    const heroes = (window.GameConfig && window.GameConfig.HEROES) || [];
+    if (u.heroId) {
+      for (let i = 0; i < heroes.length; i++) {
+        if (heroes[i] && heroes[i].id === u.heroId) return heroes[i];
+      }
+    }
+    return null;
+  }
+
+  function resolveQualityInfo(qualityId) {
+    const qId = qualityId || 'xian';
+    const list = (window.GameConfig && window.GameConfig.QUALITIES) || [];
+    for (let i = 0; i < list.length; i++) {
+      if (list[i] && list[i].id === qId) return list[i];
+    }
+    return { id: qId, name: '仙品', color: '#f07167' };
+  }
+
   function createUnitElement(u) {
     const el = document.createElement('div');
     const sideCls = u.side === 'player' ? 'is-player' : 'is-enemy';
@@ -222,23 +242,42 @@
     el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
 
     const imgUrl = u.side === 'player' ? u.img : resolveEnemyImgUrl(u);
-    const frameUrl = u.isBoss
-      ? 'assets/battle/frame_boss.webp?v=1'
-      : u.side !== 'player'
-        ? 'assets/battle/frame_enemy.webp?v=1'
-        : u.isLeader
-          ? 'assets/battle/frame_leader.webp?v=1'
-          : 'assets/battle/frame_player.webp?v=1';
     const shortChar = (u.name || '?').slice(0, 1);
+
+    let avatarQualityCls = '';
+    let avatarBorderStyle = '';
+    let imgStyle = '';
+
+    if (u.side === 'player') {
+      const heroCfg = getHeroCfg(u);
+      const qInfo = resolveQualityInfo(u.quality || (heroCfg && heroCfg.quality) || 'xian');
+      const isXian = qInfo.id === 'xian';
+      avatarQualityCls = isXian ? ' q-xian' : ` q-${qInfo.id}`;
+      if (!isXian && qInfo.color) {
+        avatarBorderStyle = ` style="border-color:${qInfo.color}"`;
+      }
+      const avatarPos = u.avatarPos || (heroCfg && heroCfg.avatarPos) || '50% 16%';
+      const s = Number(u.avatarScale || (heroCfg && heroCfg.avatarScale) || 2.6);
+      const posParts = String(avatarPos).trim().split(/\s+/);
+      const fx = parseFloat(posParts[0]);
+      const fy = parseFloat(posParts[1]);
+      const safeFx = Number.isFinite(fx) ? fx : 50;
+      const safeFy = Number.isFinite(fy) ? fy : 16;
+      const fyb = (safeFy * 4) / 3;
+      const tx = 50 - safeFx;
+      const ty = Math.min(50 - fyb, (s - 1) * fyb);
+      const num = (v) => Number(v.toFixed(2));
+      imgStyle = ` style="object-fit:cover;object-position:50% 0%;transform-origin:${num(safeFx)}% ${num(fyb)}%;transform:translate(${num(tx)}%, ${num(ty)}%) scale(${num(s)})"`;
+    }
 
     el.innerHTML = `
       <div class="unit-body">
         <div class="unit-avatar-wrap">
-          <div class="unit-avatar${imgUrl ? '' : ' is-img-fallback'}">
-            ${imgUrl ? `<img class="unit-avatar-img" src="${imgUrl}" alt="${u.name}" draggable="false" />` : ''}
+          <div class="unit-avatar${avatarQualityCls}${imgUrl ? '' : ' is-img-fallback'}"${avatarBorderStyle}>
+            ${imgUrl ? `<img class="unit-avatar-img" src="${imgUrl}" alt="${u.name}" decoding="async" draggable="false"${imgStyle} />` : ''}
             <span class="unit-avatar-fallback">${shortChar}</span>
           </div>
-          <img class="unit-frame-img" src="${frameUrl}" alt="" aria-hidden="true" draggable="false" />
+          ${u.isLeader ? '<span class="unit-leader-tag" aria-label="主角">主</span>' : ''}
           ${u.isBoss ? '<span class="unit-boss-tag">Boss</span>' : ''}
           ${u.side === 'player' ? '<span class="unit-ult-tag">大招</span>' : ''}
         </div>
