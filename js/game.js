@@ -110,10 +110,8 @@
     els.btnConfirmYes = document.getElementById('btn-confirm-yes');
     els.btnConfirmNo = document.getElementById('btn-confirm-no');
 
-    els.heroVideo = document.getElementById('hero-video');
     els.heroStill = document.getElementById('hero-still');
     els.heroFallback = document.getElementById('hero-fallback');
-    els.battleHeroVideo = document.querySelector('#fighter-player .fighter-hero-video');
     els.fighterPlayer = document.getElementById('fighter-player');
     els.tabStage = document.getElementById('tab-stage');
     els.heroFrame = document.querySelector('.hero-frame');
@@ -1114,7 +1112,6 @@
     panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
     if (targetId === 'tab-cultivate') {
       restorePortraitFocus();
-      resumeHeroVideo();
     }
     if (targetId === 'tab-upgrades') {
       renderHomeScene();
@@ -1124,8 +1121,6 @@
       if (targetId === 'tab-stage') window.StageUI.onShow();
       else window.StageUI.onHide();
     }
-    if (targetId === 'tab-stage') resumeBattleHeroVideo();
-    else pauseBattleHeroVideo();
   }
 
   function initTabs() {
@@ -1138,289 +1133,10 @@
     });
   }
 
-  // 立绘开关：true 播放练气视频，false 退回静图（静图才有呼吸/漂浮）。
-  const HERO_USE_VIDEO = true;
-  let tryPlayHero = function () {};
-
-  function resumeHeroVideo() {
-    tryPlayHero();
-  }
-
-  function initHeroVideo() {
-    const video = els.heroVideo;
+  function initHeroStage() {
     const stage = els.meditationZone;
-    if (!video || !stage) return;
-    video.defaultMuted = true;
-    video.muted = true;
-    video.loop = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.setAttribute('muted', '');
-    video.setAttribute('autoplay', '');
-    video.setAttribute('loop', '');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('webkit-playsinline', '');
-    video.preload = HERO_USE_VIDEO ? 'auto' : 'none';
-    if (!HERO_USE_VIDEO) {
-      stage.classList.add('is-still');
-      video.preload = 'none';
-      video.pause();
-      return;
-    }
-    stage.classList.remove('is-still', 'use-fallback');
-    const heroSrc = video.getAttribute('src') || 'assets/hero_v21_new_main.mp4?v=1';
-    while (video.firstChild) video.removeChild(video.firstChild);
-    video.src = heroSrc;
-
-    let retriesBound = false;
-    let playAttempt = null;
-    let confirmToken = 0;
-
-    function isActuallyPlaying() {
-      return !video.paused && !video.ended && video.readyState >= 2;
-    }
-
-    function unbindHeroRetries() {
-      if (!retriesBound) return;
-      retriesBound = false;
-      document.removeEventListener('pointerdown', tryPlayHero, true);
-      document.removeEventListener('touchstart', tryPlayHero, true);
-      document.removeEventListener('click', tryPlayHero, true);
-      document.removeEventListener('visibilitychange', onHeroVisible);
-      video.removeEventListener('canplay', tryPlayHero);
-      video.removeEventListener('loadeddata', tryPlayHero);
-    }
-
-    function showPoster() {
-      if (stage.classList.contains('use-fallback')) return;
-      stage.classList.remove('is-playing');
-      bindHeroRetries();
-    }
-
-    function markHeroPlaying() {
-      if (video.error || stage.classList.contains('use-fallback')) return;
-      const token = ++confirmToken;
-      // A play() promise can resolve or a 'playing' event can fire and then be
-      // aborted immediately. Only hide the poster once playback sticks.
-      setTimeout(function () {
-        if (token !== confirmToken) return;
-        if (video.error || stage.classList.contains('use-fallback')) return;
-        if (!isActuallyPlaying()) {
-          showPoster();
-          return;
-        }
-        stage.classList.add('is-playing');
-        stage.classList.remove('is-still');
-        unbindHeroRetries();
-      }, 60);
-    }
-
-    function onHeroVisible() {
-      if (document.visibilityState === 'visible') tryPlayHero();
-    }
-
-    function bindHeroRetries() {
-      if (retriesBound) return;
-      retriesBound = true;
-      document.addEventListener('pointerdown', tryPlayHero, true);
-      document.addEventListener('touchstart', tryPlayHero, true);
-      document.addEventListener('click', tryPlayHero, true);
-      document.addEventListener('visibilitychange', onHeroVisible);
-      video.addEventListener('canplay', tryPlayHero);
-      video.addEventListener('loadeddata', tryPlayHero);
-    }
-
-    tryPlayHero = function () {
-      if (!HERO_USE_VIDEO || !video || stage.classList.contains('use-fallback')) return;
-      if (isActuallyPlaying()) {
-        markHeroPlaying();
-        return;
-      }
-      if (playAttempt) return;
-      let pending = null;
-      try {
-        pending = video.play();
-      } catch (err) {
-        pending = Promise.reject(err);
-      }
-      playAttempt = pending;
-      if (pending && typeof pending.then === 'function') {
-        pending.then(function () {
-          if (playAttempt === pending) playAttempt = null;
-          markHeroPlaying();
-        }).catch(function () {
-          if (playAttempt === pending) playAttempt = null;
-          // NotAllowedError / AbortError: keep the poster and retry. Do not lock the still.
-          if (isActuallyPlaying()) markHeroPlaying();
-        });
-      } else {
-        playAttempt = null;
-        markHeroPlaying();
-      }
-    };
-
-    video.addEventListener('playing', markHeroPlaying);
-    video.addEventListener('pause', function () {
-      if (video.ended || stage.classList.contains('use-fallback')) return;
-      confirmToken += 1;
-      showPoster();
-    });
-    video.addEventListener('error', function () {
-      if (!video.error) return;
-      stage.classList.add('use-fallback', 'is-still');
-      stage.classList.remove('is-playing');
-      unbindHeroRetries();
-    });
-
-    bindHeroRetries();
-    video.load();
-    tryPlayHero();
-  }
-
-  let tryPlayBattleHero = function () {};
-  let pauseBattleHeroVideo = function () {};
-
-  function resumeBattleHeroVideo() {
-    tryPlayBattleHero();
-  }
-
-  function initBattleHeroVideo() {
-    const video = els.battleHeroVideo;
-    const box = els.fighterPlayer;
-    if (!video || !box) return;
-    video.defaultMuted = true;
-    video.muted = true;
-    video.loop = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.setAttribute('muted', '');
-    video.setAttribute('autoplay', '');
-    video.setAttribute('loop', '');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('webkit-playsinline', '');
-    video.preload = 'metadata';
-
-    let retriesBound = false;
-    let playAttempt = null;
-
-    function isStageVisible() {
-      return Boolean(
-        els.tabStage &&
-        els.tabStage.classList.contains('active') &&
-        document.visibilityState !== 'hidden'
-      );
-    }
-
-    function isActuallyPlaying() {
-      return !video.paused && !video.ended && video.readyState >= 2;
-    }
-
-    function unbindBattleRetries() {
-      if (!retriesBound) return;
-      retriesBound = false;
-      document.removeEventListener('pointerdown', tryPlayBattleHero, true);
-      document.removeEventListener('touchstart', tryPlayBattleHero, true);
-      document.removeEventListener('click', tryPlayBattleHero, true);
-      video.removeEventListener('canplay', tryPlayBattleHero);
-      video.removeEventListener('loadeddata', tryPlayBattleHero);
-    }
-
-    function bindBattleRetries() {
-      if (retriesBound) return;
-      retriesBound = true;
-      document.addEventListener('pointerdown', tryPlayBattleHero, true);
-      document.addEventListener('touchstart', tryPlayBattleHero, true);
-      document.addEventListener('click', tryPlayBattleHero, true);
-      video.addEventListener('canplay', tryPlayBattleHero);
-      video.addEventListener('loadeddata', tryPlayBattleHero);
-    }
-
-    function markBattleHeroPlaying() {
-      if (video.error) return;
-      box.classList.remove('use-fallback');
-      if (isActuallyPlaying()) {
-        unbindBattleRetries();
-      }
-    }
-
-    tryPlayBattleHero = function () {
-      if (!video || video.error || !isStageVisible()) return;
-      if (isActuallyPlaying()) {
-        markBattleHeroPlaying();
-        return;
-      }
-      if (playAttempt) return;
-      video.defaultMuted = true;
-      video.muted = true;
-      video.playsInline = true;
-      let pending = null;
-      try {
-        pending = video.play();
-      } catch (err) {
-        pending = Promise.reject(err);
-      }
-      playAttempt = pending;
-      if (pending && typeof pending.then === 'function') {
-        pending.then(function () {
-          if (playAttempt === pending) playAttempt = null;
-          if (!isStageVisible()) {
-            video.pause();
-            return;
-          }
-          markBattleHeroPlaying();
-        }).catch(function () {
-          if (playAttempt === pending) playAttempt = null;
-          if (isActuallyPlaying()) {
-            markBattleHeroPlaying();
-          } else {
-            box.classList.add('use-fallback');
-            bindBattleRetries();
-          }
-        });
-      } else {
-        playAttempt = null;
-        markBattleHeroPlaying();
-      }
-    };
-
-    pauseBattleHeroVideo = function () {
-      if (!video.paused) {
-        video.pause();
-      }
-    };
-
-    video.addEventListener('play', function () {
-      if (!isStageVisible()) {
-        video.pause();
-      }
-    });
-    video.addEventListener('playing', markBattleHeroPlaying);
-    video.addEventListener('pause', function () {
-      if (video.ended || video.error) return;
-      if (isStageVisible()) {
-        bindBattleRetries();
-      }
-    });
-    video.addEventListener('error', function () {
-      if (!video.error) return;
-      box.classList.add('use-fallback');
-      unbindBattleRetries();
-    });
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'hidden') {
-        pauseBattleHeroVideo();
-      } else if (isStageVisible()) {
-        tryPlayBattleHero();
-      }
-    });
-
-    if (isStageVisible()) {
-      bindBattleRetries();
-      tryPlayBattleHero();
-    } else {
-      pauseBattleHeroVideo();
-    }
+    if (!stage) return;
+    stage.classList.add('is-still');
   }
 
   function initQiMotes() {
@@ -1552,8 +1268,7 @@
         id: 'lanyi',
         name: '蓝衣剑修',
         img: 'assets/hero_v21_new_hd.jpg?v=1',
-        poster: 'assets/hero_v21_new_poster.jpg?v=1',
-        video: 'assets/hero_v21_new_main.mp4?v=1'
+        poster: 'assets/hero_v21_new_poster.jpg?v=1'
       };
     }
     return hero;
@@ -1567,8 +1282,6 @@
 
     const heroStill = els.heroStill || document.getElementById('hero-still');
     const heroFallback = els.heroFallback || document.getElementById('hero-fallback');
-    const heroVideo = els.heroVideo || document.getElementById('hero-video');
-    const videoPoster = hero.poster || hero.img;
 
     if (heroStill && hero.img) {
       heroStill.setAttribute('src', hero.img);
@@ -1578,26 +1291,6 @@
     if (heroFallback && hero.img) {
       heroFallback.setAttribute('src', hero.img);
       heroFallback.src = hero.img;
-    }
-    if (heroVideo) {
-      if (videoPoster) {
-        heroVideo.setAttribute('poster', videoPoster);
-        heroVideo.poster = videoPoster;
-      }
-      if (hero.video) {
-        const prevSrc = heroVideo.getAttribute('src');
-        heroVideo.setAttribute('src', hero.video);
-        if (prevSrc !== hero.video) {
-          if (els.meditationZone) {
-            els.meditationZone.classList.remove('use-fallback', 'is-playing');
-          }
-          heroVideo.src = hero.video;
-          try {
-            heroVideo.load();
-          } catch (err) {}
-          resumeHeroVideo();
-        }
-      }
     }
 
     const fighterPlayer = els.fighterPlayer || document.getElementById('fighter-player');
@@ -1609,23 +1302,6 @@
           node.setAttribute('src', hero.img);
           node.src = hero.img;
           if (hero.name) node.setAttribute('alt', hero.name);
-        } else if (tag === 'VIDEO') {
-          if (videoPoster) {
-            node.setAttribute('poster', videoPoster);
-            node.poster = videoPoster;
-          }
-          if (hero.video) {
-            const prevBattleSrc = node.getAttribute('src');
-            node.setAttribute('src', hero.video);
-            if (prevBattleSrc !== hero.video) {
-              fighterPlayer.classList.remove('use-fallback');
-              node.src = hero.video;
-              try {
-                node.load();
-              } catch (err) {}
-              resumeBattleHeroVideo();
-            }
-          }
         }
       });
     }
@@ -1735,8 +1411,7 @@
     restorePortraitFocus();
     initTabs();
     initHomeStageResize();
-    initHeroVideo();
-    initBattleHeroVideo();
+    initHeroStage();
     initQiMotes();
 
     const { isNew, offlineReport } = GameState.loadGame();

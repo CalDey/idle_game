@@ -156,8 +156,7 @@
         id: 'lanyi',
         name: '清冷剑仙',
         img: 'assets/hero_v21_new_hd.jpg?v=1',
-        poster: 'assets/hero_v21_new_poster.jpg?v=1',
-        video: 'assets/hero_v21_new_main.mp4?v=1'
+        poster: 'assets/hero_v21_new_poster.jpg?v=1'
       }
     ];
     const unlocked = rawList.filter((h) => h && !h.locked);
@@ -264,7 +263,6 @@
         name: h.name || '修士',
         img: h.img || '',
         poster: h.poster || h.img || '',
-        video: h.video || '',
         isBoss: false,
         isLeader: idx === 0,
         c: pos.c,
@@ -696,7 +694,6 @@
         casterName: caster.name,
         casterImg: caster.img,
         casterPoster: caster.poster,
-        casterVideo: caster.video,
         casterRage: 0,
         primaryTargetId: primary.id,
         primaryTargetName: primary.name,

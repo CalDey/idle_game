@@ -382,14 +382,11 @@ body {
 
 .hero-breathe {
   transform-origin: 50% 82%;
-}
-
-.hero-stage.is-still .hero-portrait {
-  animation: heroFloat 5.2s ease-in-out infinite;
-}
-
-.hero-stage.is-still .hero-breathe {
   animation: heroBreathe 4s ease-in-out infinite;
+}
+
+.hero-stage .hero-portrait {
+  animation: heroFloat 5.2s ease-in-out infinite;
 }
 
 @keyframes heroFloat {
@@ -416,7 +413,6 @@ body {
   }
 }
 
-.hero-video,
 .hero-still,
 .hero-fallback {
   position: absolute;
@@ -431,63 +427,14 @@ body {
   filter: none;
 }
 
-.hero-stage.is-playing .hero-portrait,
-.hero-stage.is-playing .hero-breathe {
-  animation: none;
-  transform: none;
-}
-
 .hero-still {
   z-index: 1;
-  opacity: 0;
-}
-
-.hero-stage.is-still .hero-still {
   opacity: 1;
-}
-
-.hero-stage.is-still .hero-video,
-.hero-stage.is-still .hero-fallback {
-  opacity: 0;
 }
 
 .hero-fallback {
   z-index: 0;
   opacity: 1;
-}
-
-.hero-video {
-  display: block;
-  z-index: 1;
-  /* Opacity only. iOS Safari will not start playback on display:none, visibility:hidden, or a 0×0 box. */
-  visibility: visible;
-  opacity: 0;
-  transition: opacity 0.45s ease;
-}
-
-.hero-stage.is-playing .hero-video {
-  opacity: 1;
-  visibility: visible;
-  z-index: 2;
-}
-
-.hero-stage.is-playing .hero-still,
-.hero-stage.is-playing .hero-fallback,
-.hero-stage.is-playing.is-still .hero-still,
-.hero-stage.is-playing.is-still .hero-fallback {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.hero-stage.use-fallback:not(.is-playing) .hero-video {
-  opacity: 0;
-}
-
-.hero-stage.use-fallback:not(.is-playing) .hero-fallback,
-.hero-stage.use-fallback:not(.is-playing) .hero-still {
-  opacity: 1;
-  visibility: visible;
-  z-index: 1;
 }
 
 .qi-motes {
@@ -1826,8 +1773,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 @media (prefers-reduced-motion: reduce) {
 
-  .hero-stage.is-still .hero-portrait,
-  .hero-stage.is-still .hero-breathe {
+  .hero-stage .hero-portrait,
+  .hero-stage .hero-breathe {
     animation: none;
   }
 }
@@ -2727,16 +2674,6 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .ult-hero-img {
   z-index: 1;
-}
-
-.ult-hero-video {
-  z-index: 2;
-  opacity: 0;
-  transition: opacity 0.18s ease;
-}
-
-.battle-ult-overlay.is-video-playing:not(.use-fallback) .ult-hero-video {
-  opacity: 1;
 }
 
 .ult-vignette {

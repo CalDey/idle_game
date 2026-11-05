@@ -481,24 +481,17 @@
     ultFadeTimer = 0;
     isUltPlaying = false;
     const overlay = $('battle-ult-overlay');
-    const video = $('ult-hero-video');
-    if (video) {
-      try {
-        video.pause();
-      } catch (e) {}
-    }
     if (overlay) {
-      overlay.classList.remove('is-active', 'is-fading', 'use-fallback', 'is-video-playing');
+      overlay.classList.remove('is-active', 'is-fading');
       overlay.hidden = true;
       overlay.setAttribute('aria-hidden', 'true');
     }
   }
 
-  // 播放大招全屏动态立绘演出（1x 约 1.35 秒，2x 缩短为 0.55 秒）
+  // 播放大招全屏静态立绘演出（1x 约 1.35 秒，2x 缩短为 0.55 秒）
   function playUltCutscene(ultEv, onComplete) {
     const overlay = $('battle-ult-overlay');
     const imgEl = $('ult-hero-img');
-    const videoEl = $('ult-hero-video');
     const nameEl = $('ult-hero-name');
     if (!overlay || !isPlaying) {
       onComplete();
@@ -521,7 +514,6 @@
       nameEl.textContent = ultEv.casterName || '绝技释放';
     }
     const staticSrc = ultEv.casterImg || ultEv.casterPoster || 'assets/hero_v21_new_hd.jpg?v=1';
-    const posterSrc = ultEv.casterPoster || staticSrc;
     if (imgEl) {
       imgEl.src = staticSrc;
       imgEl.alt = ultEv.casterName || '';
@@ -529,59 +521,9 @@
 
     overlay.hidden = false;
     overlay.setAttribute('aria-hidden', 'false');
-    overlay.classList.remove('is-fading', 'use-fallback', 'is-video-playing');
+    overlay.classList.remove('is-fading');
     void overlay.offsetWidth;
     overlay.classList.add('is-active');
-
-    if (videoEl && ultEv.casterVideo) {
-      videoEl.defaultMuted = true;
-      videoEl.muted = true;
-      videoEl.playsInline = true;
-      videoEl.setAttribute('muted', '');
-      videoEl.setAttribute('playsinline', '');
-      videoEl.setAttribute('webkit-playsinline', '');
-      videoEl.poster = posterSrc;
-      if (videoEl.getAttribute('src') !== ultEv.casterVideo) {
-        videoEl.setAttribute('src', ultEv.casterVideo);
-        videoEl.src = ultEv.casterVideo;
-      } else {
-        try {
-          videoEl.currentTime = 0;
-        } catch (e) {}
-      }
-
-      const onPlaying = () => {
-        if (!videoEl.error && isUltPlaying) {
-          overlay.classList.add('is-video-playing');
-        }
-      };
-      const onError = () => {
-        overlay.classList.add('use-fallback');
-        overlay.classList.remove('is-video-playing');
-      };
-      videoEl.addEventListener('playing', onPlaying, { once: true });
-      videoEl.addEventListener('error', onError, { once: true });
-
-      let playPromise = null;
-      try {
-        playPromise = videoEl.play();
-      } catch (err) {
-        onError();
-      }
-      if (playPromise && typeof playPromise.then === 'function') {
-        playPromise
-          .then(() => {
-            if (isUltPlaying && !videoEl.error) {
-              overlay.classList.add('is-video-playing');
-            }
-          })
-          .catch(() => {
-            onError();
-          });
-      }
-    } else {
-      overlay.classList.add('use-fallback');
-    }
 
     ultFadeTimer = setTimeout(() => {
       if (overlay && isUltPlaying) {
