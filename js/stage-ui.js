@@ -241,7 +241,7 @@
     return { id: qId, name: '仙品', color: '#f07167' };
   }
 
-  // 按单位最大生命值自动取 1/2/5×10^n 的“整数好看值”，使基准刻度数落在 3~8 之间；同阵营共用同一间隔，若单怪（如 Boss）超过 8 格则逐级放大间隔
+  // 先按 1/2/5×10^n 选参考 step，再将整格数 clamp 到整数（普通 3~8 格，Boss 3~10 格）；同阵营小怪/角色共用同一整数格数
   function computeNiceHpStep(refHp) {
     const hp = Math.max(1, Number(refHp) || 1);
     const exp = Math.floor(Math.log10(hp));
@@ -265,39 +265,31 @@
     return bestStep;
   }
 
-  function nextNiceHpStep(step) {
-    const s = Math.max(1e-9, Number(step) || 1);
-    const exp = Math.floor(Math.log10(s) + 1e-9);
-    const pow = Math.pow(10, exp);
-    const norm = s / pow;
-    if (norm < 1.5) return 2 * pow;
-    if (norm < 3.5) return 5 * pow;
-    return 10 * pow;
+  function clampHpSegments(rawSegments, isBoss) {
+    const maxSeg = isBoss ? 10 : 8;
+    const rounded = Math.round(Number(rawSegments) || 5);
+    return Math.max(3, Math.min(maxSeg, rounded));
   }
 
-  function prevNiceHpStep(step) {
-    const s = Math.max(1e-9, Number(step) || 1);
-    const exp = Math.floor(Math.log10(s) + 1e-9);
-    const pow = Math.pow(10, exp);
-    const norm = s / pow;
-    if (norm < 1.5) return 0.5 * pow;
-    if (norm < 3.5) return 1 * pow;
-    return 2 * pow;
-  }
+  function resolveUnitHpSegments(u, sideHpMeta) {
+    const hp = Math.max(1, Number(u && u.maxHp) || 1);
+    const isBoss = Boolean(u && u.isBoss);
+    const refStep =
+      sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.step > 0
+        ? sideHpMeta.step
+        : typeof sideHpMeta === 'number' && sideHpMeta > 0
+          ? sideHpMeta
+          : computeNiceHpStep(hp);
 
-  function resolveUnitHpStep(maxHp, sideHpStep) {
-    const hp = Math.max(1, Number(maxHp) || 1);
-    let step = sideHpStep && sideHpStep > 0 ? sideHpStep : computeNiceHpStep(hp);
-    let guard = 0;
-    while (hp / step > 8 && guard < 20) {
-      step = nextNiceHpStep(step);
-      guard++;
+    if (!isBoss && sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.segments >= 3) {
+      return { step: refStep, segments: sideHpMeta.segments };
     }
-    while (hp / step < 3 && guard < 40) {
-      step = prevNiceHpStep(step);
-      guard++;
+
+    let segments = clampHpSegments(hp / refStep, isBoss);
+    if (isBoss && sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.segments) {
+      segments = Math.max(sideHpMeta.segments, segments);
     }
-    return step;
+    return { step: refStep, segments };
   }
 
   function computeSideHpSteps(units) {
@@ -314,7 +306,10 @@
     const sides = Object.keys(sideMinHp);
     for (let i = 0; i < sides.length; i++) {
       const side = sides[i];
-      steps[side] = computeNiceHpStep(sideMinHp[side]);
+      const minHp = sideMinHp[side];
+      const step = computeNiceHpStep(minHp);
+      const segments = clampHpSegments(minHp / step, false);
+      steps[side] = { step, segments };
     }
     return steps;
   }
@@ -331,14 +326,15 @@
     applyUnitPosition(el, u.c, u.r, u.isBoss, false);
     el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
 
-    const stepVal = resolveUnitHpStep(u.maxHp, sideHpStep);
-    const segments = Math.max(1, (u.maxHp || 1) / stepVal);
+    const { step: stepVal, segments } = resolveUnitHpSegments(u, sideHpStep);
     const stepPct = 100 / segments;
     const majorPct = stepPct * 5;
+    const stepPctStr = `${stepPct.toFixed(4)}%`;
+    const majorPctStr = `${majorPct.toFixed(4)}%`;
     el.style.setProperty('--hp-step', String(stepVal));
-    el.style.setProperty('--hp-segments', segments.toFixed(2));
-    el.style.setProperty('--hp-step-pct', `${stepPct.toFixed(4)}%`);
-    el.style.setProperty('--hp-major-pct', `${majorPct.toFixed(4)}%`);
+    el.style.setProperty('--hp-segments', String(segments));
+    el.style.setProperty('--hp-step-pct', stepPctStr);
+    el.style.setProperty('--hp-major-pct', majorPctStr);
 
     const heroCfg = u.side === 'player' ? getHeroCfg(u) : null;
     const heroAvatar = u.side === 'player' ? (u.avatar || (heroCfg && heroCfg.avatar) || '') : '';
@@ -362,7 +358,7 @@
     el.innerHTML = `
       <div class="unit-body">
         <div class="unit-bars">
-          <div class="unit-hp-bar" style="--hp-step:${stepVal};--hp-segments:${segments.toFixed(2)};--hp-step-pct:${stepPct.toFixed(4)}%;--hp-major-pct:${majorPct.toFixed(4)}%"><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
+          <div class="unit-hp-bar" style="--hp-step:${stepVal};--hp-segments:${segments};--hp-step-pct:${stepPctStr};--hp-major-pct:${majorPctStr}"><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
           <div class="unit-rage-bar"><div class="unit-rage-fill" style="width:0%"></div></div>
         </div>
         <div class="unit-avatar-wrap">
