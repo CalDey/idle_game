@@ -184,7 +184,7 @@
     gridBuilt = true;
   }
 
-  // 按 #battle-board-wrap 可用宽高自适应缩放 6×8 棋盘，不出现滚动条
+  // 按 #battle-board-wrap 可用宽高自适应缩放 6×8 棋盘，宽高分开计算使棋盘横向铺满
   function layoutBoard() {
     const wrap = $('battle-board-wrap');
     const board = $('battle-board');
@@ -192,9 +192,13 @@
     const W = wrap.clientWidth;
     const H = wrap.clientHeight;
     if (W <= 0 || H <= 0) return;
-    const cell = Math.max(20, Math.floor(Math.min((W - 2) / COLS, (H - 2) / ROWS)));
-    const boardW = cell * COLS;
-    const boardH = cell * ROWS;
+    const cellW = Math.max(20, Math.floor((W - 2) / COLS));
+    const cellH = Math.max(20, Math.floor((H - 2) / ROWS));
+    const cell = Math.min(cellW, cellH);
+    const boardW = cellW * COLS;
+    const boardH = cellH * ROWS;
+    board.style.setProperty('--cell-w', `${cellW}px`);
+    board.style.setProperty('--cell-h', `${cellH}px`);
     board.style.setProperty('--cell-size', `${cell}px`);
     board.style.width = `${boardW}px`;
     board.style.height = `${boardH}px`;
@@ -228,7 +232,85 @@
     return { id: qId, name: '仙品', color: '#f07167' };
   }
 
-  function createUnitElement(u) {
+  // 按单位最大生命值自动取 1/2/5×10^n 的“整数好看值”，使基准刻度数落在 3~8 之间；同阵营共用同一间隔，若单怪（如 Boss）超过 8 格则逐级放大间隔
+  function computeNiceHpStep(refHp) {
+    const hp = Math.max(1, Number(refHp) || 1);
+    const exp = Math.floor(Math.log10(hp));
+    const bases = [1, 2, 5];
+    let bestStep = hp / 5;
+    let bestDiff = Infinity;
+    for (let e = exp - 2; e <= exp + 1; e++) {
+      const pow = Math.pow(10, e);
+      for (let i = 0; i < bases.length; i++) {
+        const step = bases[i] * pow;
+        const ticks = hp / step;
+        if (ticks >= 3 && ticks <= 8) {
+          const diff = Math.abs(ticks - 4.5);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestStep = step;
+          }
+        }
+      }
+    }
+    return bestStep;
+  }
+
+  function nextNiceHpStep(step) {
+    const s = Math.max(1e-9, Number(step) || 1);
+    const exp = Math.floor(Math.log10(s) + 1e-9);
+    const pow = Math.pow(10, exp);
+    const norm = s / pow;
+    if (norm < 1.5) return 2 * pow;
+    if (norm < 3.5) return 5 * pow;
+    return 10 * pow;
+  }
+
+  function prevNiceHpStep(step) {
+    const s = Math.max(1e-9, Number(step) || 1);
+    const exp = Math.floor(Math.log10(s) + 1e-9);
+    const pow = Math.pow(10, exp);
+    const norm = s / pow;
+    if (norm < 1.5) return 0.5 * pow;
+    if (norm < 3.5) return 1 * pow;
+    return 2 * pow;
+  }
+
+  function resolveUnitHpStep(maxHp, sideHpStep) {
+    const hp = Math.max(1, Number(maxHp) || 1);
+    let step = sideHpStep && sideHpStep > 0 ? sideHpStep : computeNiceHpStep(hp);
+    let guard = 0;
+    while (hp / step > 8 && guard < 20) {
+      step = nextNiceHpStep(step);
+      guard++;
+    }
+    while (hp / step < 3 && guard < 40) {
+      step = prevNiceHpStep(step);
+      guard++;
+    }
+    return step;
+  }
+
+  function computeSideHpSteps(units) {
+    const sideMinHp = {};
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (!u || !u.side) continue;
+      const hp = Math.max(1, Number(u.maxHp) || 1);
+      if (sideMinHp[u.side] === undefined || hp < sideMinHp[u.side]) {
+        sideMinHp[u.side] = hp;
+      }
+    }
+    const steps = {};
+    const sides = Object.keys(sideMinHp);
+    for (let i = 0; i < sides.length; i++) {
+      const side = sides[i];
+      steps[side] = computeNiceHpStep(sideMinHp[side]);
+    }
+    return steps;
+  }
+
+  function createUnitElement(u, sideHpStep) {
     const el = document.createElement('div');
     const sideCls = u.side === 'player' ? 'is-player' : 'is-enemy';
     const bossCls = u.isBoss ? ' is-boss' : '';
@@ -240,6 +322,15 @@
     el.style.left = cellLeftPct(u.c);
     el.style.top = cellTopPct(u.r);
     el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
+
+    const stepVal = resolveUnitHpStep(u.maxHp, sideHpStep);
+    const segments = Math.max(1, (u.maxHp || 1) / stepVal);
+    const stepPct = 100 / segments;
+    const majorPct = stepPct * 5;
+    el.style.setProperty('--hp-step', String(stepVal));
+    el.style.setProperty('--hp-segments', segments.toFixed(2));
+    el.style.setProperty('--hp-step-pct', `${stepPct.toFixed(4)}%`);
+    el.style.setProperty('--hp-major-pct', `${majorPct.toFixed(4)}%`);
 
     const heroCfg = u.side === 'player' ? getHeroCfg(u) : null;
     const heroAvatar = u.side === 'player' ? (u.avatar || (heroCfg && heroCfg.avatar) || '') : '';
@@ -262,6 +353,10 @@
 
     el.innerHTML = `
       <div class="unit-body">
+        <div class="unit-bars">
+          <div class="unit-hp-bar" style="--hp-step:${stepVal};--hp-segments:${segments.toFixed(2)};--hp-step-pct:${stepPct.toFixed(4)}%;--hp-major-pct:${majorPct.toFixed(4)}%"><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
+          <div class="unit-rage-bar"><div class="unit-rage-fill" style="width:0%"></div></div>
+        </div>
         <div class="unit-avatar-wrap">
           <div class="unit-avatar${avatarQualityCls}${imgUrl ? '' : ' is-img-fallback'}"${avatarBorderStyle}>
             ${imgUrl ? `<img class="unit-avatar-img" src="${imgUrl}" alt="${u.name}" decoding="async" draggable="false"${imgStyle} />` : ''}
@@ -270,10 +365,6 @@
           ${u.isLeader ? '<span class="unit-leader-tag" aria-label="主角">主</span>' : ''}
           ${u.isBoss ? '<span class="unit-boss-tag">Boss</span>' : ''}
           ${u.side === 'player' ? '<span class="unit-ult-tag">大招</span>' : ''}
-        </div>
-        <div class="unit-bars">
-          <div class="unit-hp-bar"><div class="unit-hp-fill" style="width:100%"></div></div>
-          ${u.side === 'player' || u.isBoss ? '<div class="unit-rage-bar"><div class="unit-rage-fill" style="width:0%"></div></div>' : ''}
         </div>
       </div>
     `;
@@ -293,6 +384,7 @@
       el,
       bodyEl: el.querySelector('.unit-body'),
       hpFill: el.querySelector('.unit-hp-fill'),
+      hpLag: el.querySelector('.unit-hp-lag'),
       rageFill: el.querySelector('.unit-rage-fill'),
       hitTimer: 0,
       atkTimer: 0
@@ -304,9 +396,10 @@
     if (!container) return;
     container.innerHTML = '';
     unitDomMap = {};
+    const sideSteps = computeSideHpSteps(units);
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
-      const dom = createUnitElement(u);
+      const dom = createUnitElement(u, sideSteps[u.side]);
       unitDomMap[u.id] = dom;
       container.appendChild(dom.el);
     }
@@ -316,8 +409,12 @@
     const dom = unitDomMap[u.id];
     if (!dom) return;
     const hpPct = u.maxHp > 0 ? Math.max(0, Math.min(100, (u.hp / u.maxHp) * 100)) : 0;
+    const hpWidth = `${hpPct.toFixed(1)}%`;
     if (dom.hpFill) {
-      dom.hpFill.style.width = `${hpPct.toFixed(1)}%`;
+      dom.hpFill.style.width = hpWidth;
+    }
+    if (dom.hpLag) {
+      dom.hpLag.style.width = hpWidth;
     }
     if (dom.rageFill) {
       const ragePct = u.maxRage > 0 ? Math.max(0, Math.min(100, ((u.rage || 0) / u.maxRage) * 100)) : 0;
@@ -355,7 +452,7 @@
     }
   }
 
-  // 在棋盘对应格生成飘字（受击伤害、暴击放大变红、大招伤害）
+  // 在棋盘对应格生成飘字（以被击单位头像圆环右上角为起点，向右上方轻微飘动 ≤12px 后淡出，不盖住任何棋子的脸）
   function spawnBoardFloat(c, r, dmg, crit, isUlt) {
     const layer = $('battle-float-layer');
     if (!layer) return;
@@ -363,15 +460,25 @@
     let cls = 'battle-float';
     if (crit) cls += ' crit';
     if (isUlt) cls += ' ult';
+    if (c >= COLS - 1) cls += ' at-right-edge';
+    if (currentSession && currentSession.units) {
+      for (let i = 0; i < currentSession.units.length; i++) {
+        const u = currentSession.units[i];
+        if (u.isBoss && u.c === c && u.r === r) {
+          cls += ' on-boss';
+          break;
+        }
+      }
+    }
     span.className = cls;
     span.style.left = `${(((c + 0.5) / COLS) * 100).toFixed(2)}%`;
-    span.style.top = `${(((r + 0.35) / ROWS) * 100).toFixed(2)}%`;
+    span.style.top = `${(((r + 0.5) / ROWS) * 100).toFixed(2)}%`;
     const prefix = crit ? '暴击 ' : isUlt ? '绝技 ' : '';
     span.textContent = `${prefix}-${dispNum(dmg)}`;
     layer.appendChild(span);
     setTimeout(() => {
       if (span.parentNode) span.parentNode.removeChild(span);
-    }, 700);
+    }, 600);
   }
 
   function spawnUltBoardFx(c, r, isEnemy) {

@@ -1814,7 +1814,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 /* === B2: 闯关页自走棋 (Stage Tab Autochess) === */
 #tab-stage {
-  gap: 6px;
+  gap: 4px;
 }
 
 .stage-locked {
@@ -1824,18 +1824,18 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 .stage-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 6px;
+  gap: 4px;
+  padding-top: 3px;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
 
-/* 1. 章节条 (46px) */
+/* 1. 章节条 (36px) */
 .stage-chapter-bar {
   flex: none;
-  height: 46px;
-  padding: 5px 12px;
+  height: 36px;
+  padding: 3px 10px;
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-sm);
   background: rgba(18, 16, 36, 0.88);
@@ -1848,10 +1848,10 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--accent-gold-bright);
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .chapter-step {
@@ -1862,7 +1862,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 .chapter-dots-row {
   display: flex;
   align-items: center;
-  height: 12px;
+  height: 10px;
 }
 
 .chapter-dots {
@@ -1895,26 +1895,26 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   height: 10px;
 }
 
-/* 2. 战斗区 (自适应充满剩余高度，内部 6×8 棋盘等比缩放无滚动条) */
+/* 2. 战斗区 (自适应充满剩余高度，内部 6×8 棋盘宽高自适应无滚动条) */
 .battle-stage {
   --hero-tint: #7fd8ff;
   --enemy-tint: #9da8b8;
   position: relative;
   flex: 1 1 auto;
   min-height: 180px;
-  width: calc(100% + 24px);
-  margin: 0 -12px;
-  padding: 5px 12px 4px;
+  width: 100%;
+  margin: 0;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
   background:
     radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--enemy-tint) 18%, rgba(34, 28, 64, 0.65)) 0%, var(--bg-stage) 82%);
-  border-top: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
   contain: layout size;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 3px;
+  gap: 2px;
 }
 
 .battle-stage[data-region="0"] {
@@ -1955,7 +1955,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .battle-top-bar {
   flex: none;
-  height: 16px;
+  height: 14px;
+  padding: 0 2px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1992,17 +1993,19 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .battle-board {
-  --cell-size: 42px;
+  --cell-w: 60px;
+  --cell-h: 54px;
+  --cell-size: 54px;
+  --unit-base-size: calc(min(var(--cell-w), var(--cell-h)) - 14px);
   position: relative;
-  width: calc(var(--cell-size) * 6);
-  height: calc(var(--cell-size) * 8);
+  width: calc(var(--cell-w) * 6);
+  height: calc(var(--cell-h) * 8);
   max-width: 100%;
   max-height: 100%;
-  aspect-ratio: 6 / 8;
   border-radius: 8px;
   border: 1px solid rgba(230, 201, 138, 0.35);
   background-color: #0c0a1c;
@@ -2082,12 +2085,14 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .battle-float-layer {
-  z-index: 9;
+  z-index: 12;
   pointer-events: none;
   overflow: visible;
 }
 
 .board-unit {
+  --unit-base-size: calc(min(var(--cell-w, var(--cell-size, 54px)), var(--cell-h, var(--cell-size, 54px))) - 14px);
+  --avatar-size: var(--unit-base-size);
   position: absolute;
   width: calc(100% / 6);
   height: calc(100% / 8);
@@ -2114,7 +2119,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .board-unit.is-player.is-ult-ready {
   cursor: pointer;
-  z-index: 7;
+  z-index: 9;
 }
 
 .board-unit.is-dragging {
@@ -2124,7 +2129,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .board-unit.is-boss {
-  z-index: 5;
+  --avatar-size: calc(var(--unit-base-size) + 10px);
+  z-index: 8;
 }
 
 .board-unit.is-dead {
@@ -2141,10 +2147,16 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  padding: 0;
+  gap: 2px;
   overflow: visible;
   pointer-events: none;
   transition: transform 0.11s ease;
+}
+
+.board-unit.is-boss .unit-body {
+  justify-content: center;
+  padding: 0;
 }
 
 .board-unit.is-attacking .unit-body {
@@ -2157,8 +2169,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .unit-avatar-wrap {
   position: relative;
-  width: calc(var(--cell-size, 42px) * 0.92);
-  height: calc(var(--cell-size, 42px) * 0.92);
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   flex: none;
   display: flex;
   align-items: center;
@@ -2166,10 +2178,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   overflow: visible;
 }
 
-/* Boss 头像圆 1.15 倍，允许略溢出格子 */
+/* Boss 头像圆为普通棋子的 1.35 倍，向上、向左右对称溢出，头顶血条位于 Boss 头像正上方 */
 .board-unit.is-boss .unit-avatar-wrap {
-  width: calc(var(--cell-size, 42px) * 0.92 * 1.15);
-  height: calc(var(--cell-size, 42px) * 0.92 * 1.15);
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  margin-top: 0;
   z-index: 4;
 }
 
@@ -2293,10 +2306,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   }
 }
 
-/* 主角微小角标（左上角小金标，不挡下巴与脸部） */
+/* 主角微小角标（头像左下角小金标，不与头顶血条重叠） */
 .unit-leader-tag {
   position: absolute;
-  top: -1px;
+  top: auto;
+  bottom: -1px;
   left: -1px;
   z-index: 7;
   width: 11px;
@@ -2315,27 +2329,31 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .unit-boss-tag {
   position: absolute;
-  top: -2px;
-  right: -4px;
-  z-index: 6;
-  font-size: 8px;
+  top: auto;
+  bottom: -1px;
+  left: -2px;
+  transform: none;
+  z-index: 7;
+  font-size: 7px;
   font-weight: 700;
-  line-height: 1.1;
-  padding: 1px 4px;
+  line-height: 1;
+  padding: 1px 3px;
   border-radius: 999px;
   background: linear-gradient(180deg, #c93b2b 0%, #6e1510 100%);
   border: 1px solid #ffb4a2;
   color: #fff6ee;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
   pointer-events: none;
 }
 
 .unit-ult-tag {
   position: absolute;
-  top: -3px;
+  top: auto;
+  bottom: -2px;
   left: 50%;
   transform: translateX(-50%) scale(0.8);
-  z-index: 6;
+  z-index: 8;
   font-size: 8px;
   font-weight: 700;
   line-height: 1.1;
@@ -2356,76 +2374,135 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   transform: translateX(-50%) scale(1);
 }
 
-/* 细血条与金色怒气条，紧贴在头像正下方，让整个圆环完整留在格内不溢出 */
+/* 头顶分段血条组：位于圆形头像正上方（底边距圆环顶部 2px），宽度 = 头像直径 + 4px，外描边不占高度 */
 .unit-bars {
-  position: absolute;
-  bottom: 0.5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 82%;
-  max-width: 46px;
+  position: relative;
+  width: calc(var(--avatar-size) + 4px);
+  flex: none;
   display: flex;
   flex-direction: column;
-  gap: 1.5px;
+  gap: 1px;
+  background: #0b0b0f;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px #000;
+  overflow: hidden;
   z-index: 6;
 }
 
 .board-unit.is-boss .unit-bars {
-  bottom: -1px;
-  width: 90%;
-  max-width: 52px;
+  width: calc(var(--avatar-size) + 4px);
 }
 
 .unit-hp-bar,
 .unit-rage-bar {
+  position: relative;
   width: 100%;
-  border-radius: 999px;
-  background: rgba(6, 5, 16, 0.9);
+  border-radius: 0;
+  background: #0b0b0f;
+  border: none;
   overflow: hidden;
 }
 
 .unit-hp-bar {
-  height: 3.5px;
-  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  height: 5px;
+  box-shadow: none;
 }
 
 .unit-rage-bar {
-  height: 2.5px;
-  border: 0.5px solid rgba(245, 199, 106, 0.35);
+  height: 3px;
+  box-shadow: 0 -1px 0 #000;
+}
+
+.unit-hp-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(var(--hp-major-pct, 100%) - 1.5px),
+      #000000 calc(var(--hp-major-pct, 100%) - 1.5px),
+      #000000 var(--hp-major-pct, 100%)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(var(--hp-step-pct, 20%) - 1px),
+      rgba(0, 0, 0, 0.9) calc(var(--hp-step-pct, 20%) - 1px),
+      rgba(0, 0, 0, 0.9) var(--hp-step-pct, 20%)
+    );
+  clip-path: inset(0 1.5px 0 0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.unit-rage-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.unit-hp-lag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.85);
+  transition: width 0.28s ease-out 0.4s;
 }
 
 .unit-hp-fill {
+  position: relative;
+  z-index: 2;
   height: 100%;
   width: 100%;
   transition: width 0.12s ease;
 }
 
 .board-unit.is-player .unit-hp-fill {
-  background: linear-gradient(90deg, #2d8a6e, #7ddec0);
+  background: linear-gradient(90deg, #4fd18b, #8ef0b0);
 }
 
 .board-unit.is-enemy .unit-hp-fill {
-  background: linear-gradient(90deg, #a62634, #ff6b6b);
+  background: linear-gradient(90deg, #d13a3a, #ff7373);
 }
 
 .unit-rage-fill {
+  position: relative;
+  z-index: 2;
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #d99b26, #ffe58f);
-  box-shadow: 0 0 4px rgba(245, 199, 106, 0.8);
+  background: linear-gradient(90deg, #e0a72e, #ffe08a);
+  box-shadow: none;
   transition: width 0.12s ease;
 }
 
-.board-unit.is-enemy .unit-rage-fill {
-  background: linear-gradient(90deg, #b8324f, #ff8566);
-  box-shadow: 0 0 4px rgba(255, 92, 92, 0.85);
+.board-unit.is-ult-ready .unit-rage-fill {
+  box-shadow: none;
+  animation: unitRagePulse 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes unitRagePulse {
+  0% {
+    filter: brightness(1);
+  }
+  100% {
+    filter: brightness(1.25);
+  }
 }
 
 /* 大招棋盘范围冲击波 */
 .ult-board-burst {
   position: absolute;
-  width: calc(var(--cell-size, 42px) * 2.8);
-  height: calc(var(--cell-size, 42px) * 2.8);
+  width: calc(var(--cell-w, var(--cell-size, 54px)) * 2.8);
+  height: calc(var(--cell-h, var(--cell-size, 54px)) * 2.8);
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0.2);
   background: radial-gradient(circle, rgba(255, 241, 184, 0.75) 0%, rgba(245, 199, 106, 0.45) 45%, rgba(103, 232, 249, 0.2) 70%, transparent 100%);
@@ -2456,59 +2533,104 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   }
 }
 
-/* 飘伤害数字（暴击更大更红） */
+/* 飘伤害/治疗数字（以被击单位头像圆环右上角为起点，向右上方轻微飘动 ≤12px 后淡出，不盖住任何棋子的脸） */
 .battle-float {
   position: absolute;
-  transform: translate(-50%, -50%);
-  font-size: 12px;
+  margin-left: calc(var(--unit-base-size, 43px) * 0.34);
+  margin-top: calc(var(--unit-base-size, 43px) * -0.24);
+  transform: translate(-10%, -100%);
+  font-size: 10px;
+  line-height: 1.1;
   font-weight: 700;
   color: #f4efe4;
+  -webkit-text-stroke: 1px #000;
+  paint-order: stroke fill;
   text-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.95),
-    0 0 5px rgba(0, 0, 0, 0.85);
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0 1px 2px rgba(0, 0, 0, 0.95);
   white-space: nowrap;
   pointer-events: none;
-  animation: battleFloatUp 0.65s ease-out forwards;
+  animation: battleFloatUp 0.6s ease-out forwards;
+}
+
+.battle-float.on-boss {
+  margin-left: calc(var(--unit-base-size, 43px) * 0.42);
+  margin-top: calc(var(--unit-base-size, 43px) * -0.32);
+}
+
+.battle-float.at-right-edge {
+  margin-left: calc(var(--unit-base-size, 43px) * 0.22);
+  animation-name: battleFloatUpEdge;
+}
+
+.battle-float.heal {
+  color: #7ddec0;
 }
 
 .battle-float.ult {
-  font-size: 14px;
+  font-size: 10px;
   color: #ffe7b0;
   text-shadow:
-    0 0 8px rgba(245, 199, 106, 0.9),
-    0 1px 4px rgba(0, 0, 0, 0.95);
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0 0 6px rgba(245, 199, 106, 0.85);
 }
 
 .battle-float.crit {
-  font-size: 16px;
+  font-size: 11px;
   color: #ff4747;
   text-shadow:
-    0 0 8px rgba(255, 56, 56, 0.92),
-    0 0 14px rgba(255, 196, 106, 0.75),
-    0 2px 5px rgba(0, 0, 0, 0.98);
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0 0 6px rgba(255, 56, 56, 0.88);
 }
 
 @keyframes battleFloatUp {
   0% {
     opacity: 0;
-    transform: translate(-50%, 4px) scale(0.82);
+    transform: translate(-10%, -100%) translate(0px, 0px) scale(0.9);
   }
 
   20% {
     opacity: 1;
-    transform: translate(-50%, -4px) scale(1.1);
+    transform: translate(-10%, -100%) translate(3px, -3px) scale(1.04);
   }
 
   100% {
     opacity: 0;
-    transform: translate(-50%, -28px) scale(1);
+    transform: translate(-10%, -100%) translate(8px, -8px) scale(0.96);
+  }
+}
+
+@keyframes battleFloatUpEdge {
+  0% {
+    opacity: 0;
+    transform: translate(-65%, -100%) translate(0px, 0px) scale(0.9);
+  }
+
+  20% {
+    opacity: 1;
+    transform: translate(-65%, -100%) translate(2px, -3px) scale(1.04);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-65%, -100%) translate(5px, -8px) scale(0.96);
   }
 }
 
 .battle-log-line {
   flex: none;
-  height: 15px;
-  line-height: 15px;
+  height: 13px;
+  line-height: 13px;
+  padding: 0 2px;
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
@@ -2769,10 +2891,10 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   font-size: 11px;
 }
 
-/* 3. 对比行 (40px) */
+/* 3. 对比行 (32px) */
 .stage-compare-row {
   flex: none;
-  height: 40px;
+  height: 32px;
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-sm);
   background: rgba(18, 16, 36, 0.88);
@@ -2810,10 +2932,10 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   color: #f07167;
 }
 
-/* 4. 操作行 (48px) */
+/* 4. 操作行 (40px) */
 .stage-action-row {
   flex: none;
-  height: 48px;
+  height: 40px;
   display: flex;
   align-items: stretch;
   gap: 10px;
@@ -2821,7 +2943,9 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .stage-btn-main {
   flex: 1 1 auto;
-  min-height: 48px;
+  min-height: 40px;
+  height: 40px;
+  padding: 4px 12px;
   font-size: 15px;
   letter-spacing: 3px;
 }
@@ -2829,8 +2953,9 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 .stage-btn-toggle {
   flex: 0 0 auto;
   min-width: 72px;
-  min-height: 48px;
-  padding: 6px 10px;
+  min-height: 40px;
+  height: 40px;
+  padding: 4px 10px;
   font-size: 13px;
 }
 
@@ -2844,18 +2969,18 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   box-shadow: inset 0 0 10px rgba(125, 222, 192, 0.18);
 }
 
-/* 5. 挂机收益卡 (56px) */
+/* 5. 挂机收益卡 (46px) */
 .stage-idle-card {
   flex: none;
-  height: 56px;
+  height: 46px;
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-sm);
   background: rgba(18, 16, 36, 0.88);
-  padding: 5px 12px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .stage-idle-info {
@@ -2864,11 +2989,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
 }
 
 .stage-idle-time {
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.15;
   font-weight: 700;
   color: var(--text-main);
   white-space: nowrap;
@@ -2878,6 +3004,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .stage-idle-reward {
   font-size: 11px;
+  line-height: 1.15;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2885,11 +3012,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .stage-btn-claim {
-  flex: 0 0 76px;
-  min-width: 72px;
-  min-height: 44px;
-  height: 44px;
-  padding: 6px 10px;
+  flex: 0 0 72px;
+  min-width: 68px;
+  min-height: 36px;
+  height: 36px;
+  padding: 4px 10px;
+  font-size: 13px;
 }
 
 /* === 通用图标样式 (.gi) === */
@@ -3057,8 +3185,8 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .stage-idle-icon {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
 }
 
 .item-modal-icon-wrap {
