@@ -1,0 +1,20 @@
+【新增 GitHub Pages 自定义部署工作流】
+只新建/修改文件，不要运行终端命令，不做 git 操作，不要改任何游戏代码。
+
+背景：仓库是纯静态 H5 游戏（根目录 index.html、css/、js/、assets/、.nojekyll，另有 README.md、tools/、.design/ 等不需要发布的文件）。现在用 GitHub Pages 默认的“从分支发布”，最近部署反复超时，所以改为用自定义 GitHub Actions 工作流发布，只打包游戏真正需要的文件，让产物更小。
+
+请新建文件 .github/workflows/deploy-pages.yml，要求：
+1. 触发：push 到 main 分支；另外支持 workflow_dispatch 手动触发。
+2. permissions：contents: read, pages: write, id-token: write。
+3. concurrency：group: "pages"，cancel-in-progress: true（新提交会取消旧的排队部署）。
+4. build job（ubuntu-latest）：
+   - actions/checkout@v4
+   - 一个 shell 步骤组装 _site 目录：
+     a) 复制 index.html、.nojekyll、css/、js/ 到 _site。
+     b) 复制 assets/ 下所有子目录（assets/icons、assets/enemies、assets/home、assets/fonts 等）原样到 _site/assets/。
+     c) assets/ 根目录下的单个文件（主要是 .mp4 和 .jpg 立绘）只复制在 index.html、css/*.css、js/*.js 中以文件名出现过的那些（用 grep -rqF 文件名 检查），未被引用的旧版视频不复制。复制后打印一份清单和 _site 总大小（du -sh _site）。
+     d) 不复制 README.md、tools/、.design/、任何 .py 文件。
+   - actions/configure-pages@v5
+   - actions/upload-pages-artifact@v3，path: _site
+5. deploy job：needs build，environment 为 name: github-pages、url: ${{ steps.deployment.outputs.page_url }}，使用 actions/deploy-pages@v4（id: deployment），timeout-minutes: 15。
+6. 文件里加简短中文注释说明每一步。

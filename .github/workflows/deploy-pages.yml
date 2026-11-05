@@ -1,0 +1,95 @@
+# GitHub Pages 自定义部署工作流
+# 只打包游戏运行所需的核心静态资源，剔除未引用资源与工具文件，提升部署速度
+
+name: Deploy to GitHub Pages
+
+# 1. 触发条件：推送到 main 分支时自动触发，同时支持在 Actions 页面手动触发
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# 2. 权限设置：允许读取仓库内容并写入 GitHub Pages 与 OIDC 令牌
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 3. 并发控制：新提交触发部署时，自动取消正在排队或进行中的旧部署
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # 4. 构建任务：筛选并组装需要发布的静态文件到 _site 目录
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 组装 _site 发布目录（仅包含游戏必需文件）
+      - name: Assemble _site directory
+        run: |
+          mkdir -p _site/assets
+
+          # a) 复制入口文件、.nojekyll 以及样式和脚本目录
+          cp index.html .nojekyll _site/
+          cp -r css js _site/
+
+          # b) 复制 assets/ 下的所有子目录（如 icons、enemies、home、fonts 等）
+          for item in assets/*; do
+            if [ -d "$item" ]; then
+              cp -r "$item" _site/assets/
+            fi
+          done
+
+          # c) 仅复制 assets/ 根目录下在代码中实际被引用的单个文件（跳过未使用的旧版视频/图片）
+          echo "=== 已复制的 assets 根目录文件 ==="
+          for item in assets/*; do
+            if [ -f "$item" ]; then
+              filename=$(basename "$item")
+              if grep -rqF "$filename" index.html css/*.css js/*.js; then
+                cp "$item" _site/assets/
+                echo "  + $filename"
+              else
+                echo "  - [跳过未引用] $filename"
+              fi
+            fi
+          done
+
+          # d) 兜底清理：确保不包含任何 .py 脚本文件
+          find _site -name "*.py" -type f -delete
+
+          # 打印打包清单与产物总大小
+          echo "=== _site 目录结构与大小 ==="
+          ls -la _site
+          ls -la _site/assets
+          du -sh _site
+
+      # 配置 GitHub Pages 环境
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # 上传 _site 目录作为 Pages 部署产物
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  # 5. 部署任务：将构建产物发布到 GitHub Pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # 执行正式部署
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
