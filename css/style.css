@@ -289,6 +289,10 @@ body {
   animation: paneIn 0.36s cubic-bezier(0.22, 0.8, 0.28, 1);
 }
 
+#tab-cultivate {
+  position: relative;
+}
+
 #tab-cultivate.active,
 #tab-stage.active {
   overflow: hidden;
@@ -370,7 +374,11 @@ body {
 }
 
 #tab-cultivate>.gufeng-card {
-  flex: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
 }
 
 .hero-portrait,
@@ -527,7 +535,7 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 8px;
+  bottom: 180px;
   z-index: 6;
   text-align: center;
   pointer-events: none;
