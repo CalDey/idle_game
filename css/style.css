@@ -2476,6 +2476,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   z-index: 3;
 }
 
+.board-unit.is-boss .unit-hp-bar::after {
+  content: none;
+  display: none;
+  background-image: none;
+}
+
 .unit-rage-bar::after {
   content: "";
   position: absolute;

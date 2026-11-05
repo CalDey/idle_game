@@ -274,6 +274,9 @@
   function resolveUnitHpSegments(u, sideHpMeta) {
     const hp = Math.max(1, Number(u && u.maxHp) || 1);
     const isBoss = Boolean(u && u.isBoss);
+    if (isBoss) {
+      return { step: hp, segments: 1 };
+    }
     const refStep =
       sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.step > 0
         ? sideHpMeta.step
@@ -281,14 +284,11 @@
           ? sideHpMeta
           : computeNiceHpStep(hp);
 
-    if (!isBoss && sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.segments >= 3) {
+    if (sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.segments >= 3) {
       return { step: refStep, segments: sideHpMeta.segments };
     }
 
-    let segments = clampHpSegments(hp / refStep, isBoss);
-    if (isBoss && sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.segments) {
-      segments = Math.max(sideHpMeta.segments, segments);
-    }
+    const segments = clampHpSegments(hp / refStep, false);
     return { step: refStep, segments };
   }
 
@@ -326,15 +326,19 @@
     applyUnitPosition(el, u.c, u.r, u.isBoss, false);
     el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
 
-    const { step: stepVal, segments } = resolveUnitHpSegments(u, sideHpStep);
-    const stepPct = 100 / segments;
-    const majorPct = stepPct * 5;
-    const stepPctStr = `${stepPct.toFixed(4)}%`;
-    const majorPctStr = `${majorPct.toFixed(4)}%`;
-    el.style.setProperty('--hp-step', String(stepVal));
-    el.style.setProperty('--hp-segments', String(segments));
-    el.style.setProperty('--hp-step-pct', stepPctStr);
-    el.style.setProperty('--hp-major-pct', majorPctStr);
+    let hpBarStyleAttr = '';
+    if (!u.isBoss) {
+      const { step: stepVal, segments } = resolveUnitHpSegments(u, sideHpStep);
+      const stepPct = 100 / segments;
+      const majorPct = stepPct * 5;
+      const stepPctStr = `${stepPct.toFixed(4)}%`;
+      const majorPctStr = `${majorPct.toFixed(4)}%`;
+      el.style.setProperty('--hp-step', String(stepVal));
+      el.style.setProperty('--hp-segments', String(segments));
+      el.style.setProperty('--hp-step-pct', stepPctStr);
+      el.style.setProperty('--hp-major-pct', majorPctStr);
+      hpBarStyleAttr = ` style="--hp-step:${stepVal};--hp-segments:${segments};--hp-step-pct:${stepPctStr};--hp-major-pct:${majorPctStr}"`;
+    }
 
     const heroCfg = u.side === 'player' ? getHeroCfg(u) : null;
     const heroAvatar = u.side === 'player' ? (u.avatar || (heroCfg && heroCfg.avatar) || '') : '';
@@ -358,7 +362,7 @@
     el.innerHTML = `
       <div class="unit-body">
         <div class="unit-bars">
-          <div class="unit-hp-bar" style="--hp-step:${stepVal};--hp-segments:${segments};--hp-step-pct:${stepPctStr};--hp-major-pct:${majorPctStr}"><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
+          <div class="unit-hp-bar"${hpBarStyleAttr}><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
           <div class="unit-rage-bar"><div class="unit-rage-fill" style="width:0%"></div></div>
         </div>
         <div class="unit-avatar-wrap">
