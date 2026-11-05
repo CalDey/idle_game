@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=47" />
+  <link rel="stylesheet" href="css/style.css?v=50" />
 </head>
 
 <body>
@@ -202,43 +202,36 @@
           </div>
 
           <div id="battle-stage" class="battle-stage" data-region="0">
-            <div class="battle-hud">
-              <div class="fighter-hud fighter-hud-player">
-                <div class="hp-bar-track">
-                  <div id="hp-bar-player" class="hp-bar-fill hp-fill-player"></div>
-                </div>
-                <div id="hp-text-player" class="hp-label">我 · 血 120/120</div>
-              </div>
-              <div class="fighter-hud fighter-hud-enemy">
-                <div class="hp-bar-track">
-                  <div id="hp-bar-enemy" class="hp-bar-fill hp-fill-enemy"></div>
-                </div>
-                <div id="hp-text-enemy" class="hp-label">山贼喽啰</div>
-              </div>
+            <div class="battle-top-bar">
+              <span id="battle-stage-enemy-title" class="battle-enemy-title">山贼喽啰</span>
+              <span id="battle-form-hint" class="battle-form-hint">拖动角色布阵</span>
             </div>
 
-            <div class="battle-arena">
-              <div id="fighter-player" class="fighter-box fighter-player">
-                <img class="fighter-hero-img" src="assets/hero_v21_new_hd.jpg?v=1" alt="主角" />
-                <video class="fighter-hero-img fighter-hero-video" src="assets/hero_v21_new_main.mp4?v=1"
-                  poster="assets/hero_v21_new_poster.jpg?v=1" muted autoplay loop playsinline webkit-playsinline
-                  preload="metadata"></video>
-                <div id="float-layer-player" class="fighter-float-layer"></div>
-              </div>
-
-              <div id="fighter-enemy" class="fighter-box fighter-enemy">
-                <img id="enemy-portrait" class="fighter-enemy-img" src="assets/enemies/placeholder.webp?v=18" alt="山贼喽啰"
-                  loading="lazy" />
-                <div id="enemy-silhouette" class="enemy-silhouette" aria-hidden="true">
-                  <div class="enemy-figure"></div>
-                </div>
-                <span id="enemy-tag" class="enemy-tag" hidden>Boss</span>
-                <span id="enemy-nameplate" class="enemy-nameplate">山贼喽啰</span>
-                <div id="float-layer-enemy" class="fighter-float-layer"></div>
+            <div id="battle-board-wrap" class="battle-board-wrap">
+              <div id="battle-board" class="battle-board" aria-label="自走棋战场">
+                <div id="battle-grid" class="battle-grid" aria-hidden="true"></div>
+                <div id="battle-fx-layer" class="battle-fx-layer" aria-hidden="true"></div>
+                <div id="battle-units" class="battle-units"></div>
+                <div id="battle-float-layer" class="battle-float-layer" aria-hidden="true"></div>
               </div>
             </div>
 
             <div id="battle-log-line" class="battle-log-line">准备就绪 · 点击挑战开始推关</div>
+
+            <div id="battle-ult-overlay" class="battle-ult-overlay" hidden aria-hidden="true">
+              <div class="ult-backdrop"></div>
+              <div class="ult-stage-box">
+                <img id="ult-hero-img" class="ult-hero-media ult-hero-img" src="assets/hero_v21_new_hd.jpg?v=1" alt="" />
+                <video id="ult-hero-video" class="ult-hero-media ult-hero-video" muted playsinline webkit-playsinline
+                  preload="metadata" poster="assets/hero_v21_new_poster.jpg?v=1"></video>
+                <div class="ult-slash-beam" aria-hidden="true"></div>
+                <div class="ult-vignette" aria-hidden="true"></div>
+                <div class="ult-caption">
+                  <span id="ult-hero-name" class="ult-hero-name">清冷剑仙</span>
+                  <span class="ult-skill-tag">绝技 · 破妄神通</span>
+                </div>
+              </div>
+            </div>
 
             <div id="battle-result-overlay" class="battle-result-overlay" hidden>
               <div class="battle-result-card">
@@ -556,14 +549,14 @@
   </div>
 
   <script src="js/no-zoom.js?v=22"></script>
-  <script src="js/config.js?v=39"></script>
+  <script src="js/config.js?v=43"></script>
   <script src="js/equip.js?v=22"></script>
   <script src="js/state.js?v=24"></script>
   <script src="js/titles.js?v=22"></script>
-  <script src="js/battle.js?v=22"></script>
+  <script src="js/battle.js?v=26"></script>
   <script src="js/gear.js?v=30"></script>
-  <script src="js/stage-ui.js?v=25"></script>
-  <script src="js/game.js?v=35"></script>
+  <script src="js/stage-ui.js?v=29"></script>
+  <script src="js/game.js?v=36"></script>
 </body>
 
 </html>

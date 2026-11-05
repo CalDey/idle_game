@@ -1,17 +1,36 @@
-// 闯关页 UI（B2 MVP）：章节进度、回合事件播放、倍速与跳过、自动推关、失败指引与挂机收益领取。
+// 闯关页自走棋 UI：6×8 棋盘自适应、战前拖放布阵、分段式战斗回放、满怒点击/自动释放大招、动态立绘演出与挂机收益。
 (function () {
   const fmt = (n) => window.GameConfig.formatNumber(n);
-  let log = function () { };
-  let onChange = function () { };
-  let switchTab = function () { };
+  function dispNum(val) {
+    const mult = (window.GameConfig.BATTLE && window.GameConfig.BATTLE.DISPLAY_MULT) || 10;
+    return fmt(Math.max(1, Math.round((val || 0) * mult)));
+  }
+  let log = function () {};
+  let onChange = function () {};
+  let switchTab = function () {};
+
+  const COLS = 6;
+  const ROWS = 8;
+  const MANUAL_ULT_TIMEOUT_MS = 3000;
 
   let isPlaying = false;
   let playTimer = 0;
   let autoNextTimer = 0;
-  let currentSim = null;
+  let ultAutoCastTimer = 0;
+  let ultCutsceneTimer = 0;
+  let ultFadeTimer = 0;
+  let isUltPlaying = false;
+  let waitingForManualUlt = false;
+  let manualUltReadyAt = {};
+  let manualUltQueue = [];
+
+  let currentSession = null;
   let currentEnemy = null;
   let currentPlayer = null;
-  let eventIndex = 0;
+  let unitDomMap = {};
+  let previewBoardKey = '';
+  let gridBuilt = false;
+  let dragState = null;
 
   // 自动推关失败后暂停，等战力上涨再自动重试（每 30 秒最多一次）
   let haltedByLoss = false;
@@ -25,6 +44,9 @@
   let lastUnlocked = null;
   let preloadedNextUrl = '';
   let preloadImg = null;
+  let preloadedRegionIdx = -1;
+  let preloadRegionBgImg = null;
+  let resultOverlayTimer = 0;
 
   function $(id) {
     return document.getElementById(id);
@@ -53,25 +75,6 @@
     return `assets/enemies/${filename}?v=18`;
   }
 
-  function updateEnemyPortrait(enemy) {
-    const box = $('fighter-enemy');
-    const imgEl = $('enemy-portrait');
-    if (!box || !imgEl) return;
-    const url = resolveEnemyImgUrl(enemy);
-    if (!url) {
-      imgEl.dataset.srcKey = '';
-      box.classList.add('is-fallback');
-      imgEl.removeAttribute('src');
-      return;
-    }
-    imgEl.alt = (enemy && enemy.name) || '';
-    if (imgEl.dataset.srcKey !== url) {
-      imgEl.dataset.srcKey = url;
-      box.classList.remove('is-fallback');
-      imgEl.src = url;
-    }
-  }
-
   function preloadNextStageEnemy(stageNum) {
     const cur = Math.max(1, Math.floor(stageNum || 1));
     if (cur >= 300) return;
@@ -83,6 +86,16 @@
     img.decoding = 'async';
     img.src = nextUrl;
     preloadImg = img;
+  }
+
+  function preloadNextRegionBg(regionIdx) {
+    const nextIdx = Math.min(5, Math.max(0, Math.floor(regionIdx || 0)) + 1);
+    if (nextIdx === preloadedRegionIdx) return;
+    preloadedRegionIdx = nextIdx;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = `assets/battle/bg_region${nextIdx}.webp?v=1`;
+    preloadRegionBgImg = img;
   }
 
   function unlocked() {
@@ -104,6 +117,7 @@
     if (s.stage.speed !== 1 && s.stage.speed !== 2) s.stage.speed = 2;
     if (s.stage.auto === undefined) s.stage.auto = true;
     if (!s.stage.idleAt) s.stage.idleAt = Date.now();
+    window.Battle.ensureFormation(s);
     return s.stage;
   }
 
@@ -118,92 +132,501 @@
 
   function getStepDelay() {
     const st = ensureStageState();
-    return st.speed === 1 ? 360 : 180;
+    return st.speed === 1 ? 185 : 95;
+  }
+
+  function getMoveDelay() {
+    const st = ensureStageState();
+    return st.speed === 1 ? 130 : 65;
+  }
+
+  function getEnemyUltDelay() {
+    const st = ensureStageState();
+    return st.speed === 1 ? 450 : 240;
+  }
+
+  function getManualUltTimeout() {
+    const st = ensureStageState();
+    return st.speed === 2 ? MANUAL_ULT_TIMEOUT_MS / 2 : MANUAL_ULT_TIMEOUT_MS;
+  }
+
+  function serializeFormation(formation) {
+    if (!formation || typeof formation !== 'object') return '';
+    return Object.keys(formation)
+      .sort()
+      .map((k) => `${k}:${formation[k].c},${formation[k].r}`)
+      .join('|');
   }
 
   function getCachedWinRate(state, stageNum, playerCp) {
-    const key = `${stageNum}:${Math.round(playerCp)}`;
+    const formStr = serializeFormation(state && state.formation);
+    const key = `${stageNum}:${Math.round(playerCp)}:${state && state.heroId}:${formStr}`;
     if (key !== cachedWinRateKey) {
       cachedWinRateKey = key;
-      cachedWinRateVal = window.Battle.winRate(state, stageNum, 100);
+      cachedWinRateVal = window.Battle.winRate(state, stageNum, 40);
     }
     return cachedWinRateVal;
   }
 
-  function spawnBattleFloat(side, dmg, crit) {
-    const layer = $(side === 'a' ? 'float-layer-player' : 'float-layer-enemy');
+  // 构建 6×8 棋盘网格
+  function ensureGridCells() {
+    const gridEl = $('battle-grid');
+    if (!gridEl || gridBuilt) return;
+    let html = '';
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const halfCls = r < 4 ? 'is-enemy-half' : 'is-player-half';
+        const riverCls = r === 3 ? ' is-river-top' : r === 4 ? ' is-river-bottom' : '';
+        html += `<div class="board-cell ${halfCls}${riverCls}" data-c="${c}" data-r="${r}"></div>`;
+      }
+    }
+    gridEl.innerHTML = html;
+    gridBuilt = true;
+  }
+
+  // 按 #battle-board-wrap 可用宽高自适应缩放 6×8 棋盘，不出现滚动条
+  function layoutBoard() {
+    const wrap = $('battle-board-wrap');
+    const board = $('battle-board');
+    if (!wrap || !board) return;
+    const W = wrap.clientWidth;
+    const H = wrap.clientHeight;
+    if (W <= 0 || H <= 0) return;
+    const cell = Math.max(20, Math.floor(Math.min((W - 2) / COLS, (H - 2) / ROWS)));
+    const boardW = cell * COLS;
+    const boardH = cell * ROWS;
+    board.style.setProperty('--cell-size', `${cell}px`);
+    board.style.width = `${boardW}px`;
+    board.style.height = `${boardH}px`;
+  }
+
+  function cellLeftPct(c) {
+    return `${((c / COLS) * 100).toFixed(4)}%`;
+  }
+
+  function cellTopPct(r) {
+    return `${((r / ROWS) * 100).toFixed(4)}%`;
+  }
+
+  function createUnitElement(u) {
+    const el = document.createElement('div');
+    const sideCls = u.side === 'player' ? 'is-player' : 'is-enemy';
+    const bossCls = u.isBoss ? ' is-boss' : '';
+    const leaderCls = u.isLeader ? ' is-leader' : '';
+    el.className = `board-unit ${sideCls}${bossCls}${leaderCls}`;
+    el.dataset.unitId = u.id;
+    if (u.heroId) el.dataset.heroId = u.heroId;
+    el.dataset.side = u.side;
+    el.style.left = cellLeftPct(u.c);
+    el.style.top = cellTopPct(u.r);
+    el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
+
+    const imgUrl = u.side === 'player' ? u.img : resolveEnemyImgUrl(u);
+    const frameUrl = u.isBoss
+      ? 'assets/battle/frame_boss.webp?v=1'
+      : u.side !== 'player'
+        ? 'assets/battle/frame_enemy.webp?v=1'
+        : u.isLeader
+          ? 'assets/battle/frame_leader.webp?v=1'
+          : 'assets/battle/frame_player.webp?v=1';
+    const shortChar = (u.name || '?').slice(0, 1);
+
+    el.innerHTML = `
+      <div class="unit-body">
+        <div class="unit-avatar-wrap">
+          <div class="unit-avatar${imgUrl ? '' : ' is-img-fallback'}">
+            ${imgUrl ? `<img class="unit-avatar-img" src="${imgUrl}" alt="${u.name}" draggable="false" />` : ''}
+            <span class="unit-avatar-fallback">${shortChar}</span>
+          </div>
+          <img class="unit-frame-img" src="${frameUrl}" alt="" aria-hidden="true" draggable="false" />
+          ${u.isBoss ? '<span class="unit-boss-tag">Boss</span>' : ''}
+          ${u.side === 'player' ? '<span class="unit-ult-tag">大招</span>' : ''}
+        </div>
+        <div class="unit-bars">
+          <div class="unit-hp-bar"><div class="unit-hp-fill" style="width:100%"></div></div>
+          ${u.side === 'player' || u.isBoss ? '<div class="unit-rage-bar"><div class="unit-rage-fill" style="width:0%"></div></div>' : ''}
+        </div>
+      </div>
+    `;
+
+    const imgEl = el.querySelector('.unit-avatar-img');
+    const avatarBox = el.querySelector('.unit-avatar');
+    if (imgEl && avatarBox) {
+      imgEl.addEventListener('error', () => {
+        avatarBox.classList.add('is-img-fallback');
+      });
+      imgEl.addEventListener('load', () => {
+        avatarBox.classList.remove('is-img-fallback');
+      });
+    }
+
+    return {
+      el,
+      bodyEl: el.querySelector('.unit-body'),
+      hpFill: el.querySelector('.unit-hp-fill'),
+      rageFill: el.querySelector('.unit-rage-fill'),
+      hitTimer: 0,
+      atkTimer: 0
+    };
+  }
+
+  function mountUnitsToBoard(units) {
+    const container = $('battle-units');
+    if (!container) return;
+    container.innerHTML = '';
+    unitDomMap = {};
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      const dom = createUnitElement(u);
+      unitDomMap[u.id] = dom;
+      container.appendChild(dom.el);
+    }
+  }
+
+  function syncUnitBarsAndState(u) {
+    const dom = unitDomMap[u.id];
+    if (!dom) return;
+    const hpPct = u.maxHp > 0 ? Math.max(0, Math.min(100, (u.hp / u.maxHp) * 100)) : 0;
+    if (dom.hpFill) {
+      dom.hpFill.style.width = `${hpPct.toFixed(1)}%`;
+    }
+    if (dom.rageFill) {
+      const ragePct = u.maxRage > 0 ? Math.max(0, Math.min(100, ((u.rage || 0) / u.maxRage) * 100)) : 0;
+      dom.rageFill.style.width = `${ragePct.toFixed(1)}%`;
+    }
+    const ultReady = u.side === 'player' && u.alive && (u.rage || 0) >= (u.maxRage || 100);
+    dom.el.classList.toggle('is-ult-ready', ultReady);
+    dom.el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
+    if (!u.alive) {
+      dom.el.classList.add('is-dead');
+      dom.el.classList.remove('is-ult-ready');
+      delete manualUltReadyAt[u.id];
+    } else if (u.side === 'player') {
+      if (ultReady) {
+        if (!manualUltReadyAt[u.id]) {
+          manualUltReadyAt[u.id] = Date.now();
+        }
+      } else {
+        delete manualUltReadyAt[u.id];
+      }
+    }
+  }
+
+  function syncAllSessionUnits() {
+    if (!currentSession) return;
+    const units = currentSession.units;
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      const dom = unitDomMap[u.id];
+      if (dom) {
+        dom.el.style.left = cellLeftPct(u.c);
+        dom.el.style.top = cellTopPct(u.r);
+      }
+      syncUnitBarsAndState(u);
+    }
+  }
+
+  // 在棋盘对应格生成飘字（受击伤害、暴击放大变红、大招伤害）
+  function spawnBoardFloat(c, r, dmg, crit, isUlt) {
+    const layer = $('battle-float-layer');
     if (!layer) return;
     const span = document.createElement('span');
-    span.className = 'battle-float' + (crit ? ' crit' : '');
-    span.textContent = `${crit ? '暴击 ' : ''}-${fmt(dmg)}`;
+    let cls = 'battle-float';
+    if (crit) cls += ' crit';
+    if (isUlt) cls += ' ult';
+    span.className = cls;
+    span.style.left = `${(((c + 0.5) / COLS) * 100).toFixed(2)}%`;
+    span.style.top = `${(((r + 0.35) / ROWS) * 100).toFixed(2)}%`;
+    const prefix = crit ? '暴击 ' : isUlt ? '绝技 ' : '';
+    span.textContent = `${prefix}-${dispNum(dmg)}`;
     layer.appendChild(span);
     setTimeout(() => {
       if (span.parentNode) span.parentNode.removeChild(span);
-    }, 650);
+    }, 700);
+  }
+
+  function spawnUltBoardFx(c, r, isEnemy) {
+    const fxLayer = $('battle-fx-layer');
+    if (!fxLayer) return;
+    const ring = document.createElement('div');
+    ring.className = isEnemy ? 'ult-board-burst is-enemy-ult' : 'ult-board-burst';
+    ring.style.left = `${(((c + 0.5) / COLS) * 100).toFixed(2)}%`;
+    ring.style.top = `${(((r + 0.5) / ROWS) * 100).toFixed(2)}%`;
+    fxLayer.appendChild(ring);
+    setTimeout(() => {
+      if (ring.parentNode) ring.parentNode.removeChild(ring);
+    }, 620);
   }
 
   function clearBattleFloats() {
-    const lp = $('float-layer-player');
-    const le = $('float-layer-enemy');
-    if (lp) lp.innerHTML = '';
-    if (le) le.innerHTML = '';
+    const fl = $('battle-float-layer');
+    const fx = $('battle-fx-layer');
+    if (fl) fl.innerHTML = '';
+    if (fx) fx.innerHTML = '';
   }
 
-  let atkPulseTimer = 0;
-  let hitPulseTimer = 0;
-
-  function clearFighterPulse() {
-    clearTimeout(atkPulseTimer);
-    clearTimeout(hitPulseTimer);
-    atkPulseTimer = 0;
-    hitPulseTimer = 0;
-    const p = $('fighter-player');
-    const e = $('fighter-enemy');
-    if (p) p.classList.remove('is-attacking', 'is-hit');
-    if (e) e.classList.remove('is-attacking', 'is-hit');
-  }
-
-  function pulseFighter(attackerSide) {
-    const atkEl = $(attackerSide === 'a' ? 'fighter-player' : 'fighter-enemy');
-    const defEl = $(attackerSide === 'a' ? 'fighter-enemy' : 'fighter-player');
-    clearTimeout(atkPulseTimer);
-    clearTimeout(hitPulseTimer);
-    if (atkEl) {
-      atkEl.classList.remove('is-attacking');
-      void atkEl.offsetWidth;
-      atkEl.classList.add('is-attacking');
-      atkPulseTimer = setTimeout(() => {
-        atkEl.classList.remove('is-attacking');
-      }, 130);
+  function pulseAttackAndHit(attackerId, targetId, dc, dr) {
+    const atkDom = unitDomMap[attackerId];
+    const defDom = unitDomMap[targetId];
+    if (atkDom && atkDom.bodyEl) {
+      clearTimeout(atkDom.atkTimer);
+      const lx = Math.max(-1, Math.min(1, dc || 0)) * 9;
+      const ly = Math.max(-1, Math.min(1, dr || 0)) * 9;
+      atkDom.bodyEl.style.setProperty('--lunge-x', `${lx}px`);
+      atkDom.bodyEl.style.setProperty('--lunge-y', `${ly}px`);
+      atkDom.el.classList.remove('is-attacking');
+      void atkDom.el.offsetWidth;
+      atkDom.el.classList.add('is-attacking');
+      atkDom.atkTimer = setTimeout(() => {
+        atkDom.el.classList.remove('is-attacking');
+      }, 150);
     }
-    if (defEl) {
-      defEl.classList.remove('is-hit');
-      void defEl.offsetWidth;
-      defEl.classList.add('is-hit');
-      hitPulseTimer = setTimeout(() => {
-        defEl.classList.remove('is-hit');
-      }, 130);
+    if (defDom) {
+      clearTimeout(defDom.hitTimer);
+      defDom.el.classList.remove('is-hit');
+      void defDom.el.offsetWidth;
+      defDom.el.classList.add('is-hit');
+      defDom.hitTimer = setTimeout(() => {
+        defDom.el.classList.remove('is-hit');
+      }, 160);
     }
   }
 
-  function updateHpBars(hpA, maxHpA, hpB, maxHpB, enemy) {
-    const pctA = maxHpA > 0 ? Math.max(0, Math.min(100, (hpA / maxHpA) * 100)) : 0;
-    const pctB = maxHpB > 0 ? Math.max(0, Math.min(100, (hpB / maxHpB) * 100)) : 0;
-    const barA = $('hp-bar-player');
-    const barB = $('hp-bar-enemy');
-    const txtA = $('hp-text-player');
-    const txtB = $('hp-text-enemy');
-    if (barA) barA.style.width = `${pctA.toFixed(1)}%`;
-    if (barB) barB.style.width = `${pctB.toFixed(1)}%`;
-    if (txtA) txtA.textContent = `我 · 血 ${fmt(Math.round(hpA))}/${fmt(Math.round(maxHpA))}`;
-    if (txtB && enemy) {
-      txtB.textContent = `${enemy.name}${enemy.isBoss ? ' · Boss' : ''} · ${fmt(Math.round(hpB))}`;
+  function flashUnitHit(unitId) {
+    const defDom = unitDomMap[unitId];
+    if (!defDom) return;
+    clearTimeout(defDom.hitTimer);
+    defDom.el.classList.remove('is-hit');
+    void defDom.el.offsetWidth;
+    defDom.el.classList.add('is-hit');
+    defDom.hitTimer = setTimeout(() => {
+      defDom.el.classList.remove('is-hit');
+    }, 200);
+  }
+
+  function clearAllTimers() {
+    clearTimeout(playTimer);
+    clearTimeout(ultAutoCastTimer);
+    clearTimeout(ultCutsceneTimer);
+    clearTimeout(ultFadeTimer);
+    playTimer = 0;
+    ultAutoCastTimer = 0;
+    ultCutsceneTimer = 0;
+    ultFadeTimer = 0;
+    waitingForManualUlt = false;
+    manualUltReadyAt = {};
+    manualUltQueue = [];
+  }
+
+  function hideUltOverlay() {
+    clearTimeout(ultCutsceneTimer);
+    clearTimeout(ultFadeTimer);
+    ultCutsceneTimer = 0;
+    ultFadeTimer = 0;
+    isUltPlaying = false;
+    const overlay = $('battle-ult-overlay');
+    const video = $('ult-hero-video');
+    if (video) {
+      try {
+        video.pause();
+      } catch (e) {}
     }
+    if (overlay) {
+      overlay.classList.remove('is-active', 'is-fading', 'use-fallback', 'is-video-playing');
+      overlay.hidden = true;
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  // 播放大招全屏动态立绘演出（1x 约 1.35 秒，2x 缩短为 0.55 秒）
+  function playUltCutscene(ultEv, onComplete) {
+    const overlay = $('battle-ult-overlay');
+    const imgEl = $('ult-hero-img');
+    const videoEl = $('ult-hero-video');
+    const nameEl = $('ult-hero-name');
+    if (!overlay || !isPlaying) {
+      onComplete();
+      return;
+    }
+
+    isUltPlaying = true;
+    const st = ensureStageState();
+    const duration = st.speed === 2 ? 550 : 1350;
+    const fadeStart = Math.max(120, duration - 200);
+
+    // 演出期间顺延其他满怒角色的 3 秒手动点击倒计时
+    for (const uid in manualUltReadyAt) {
+      if (Object.prototype.hasOwnProperty.call(manualUltReadyAt, uid)) {
+        manualUltReadyAt[uid] += duration;
+      }
+    }
+
+    if (nameEl) {
+      nameEl.textContent = ultEv.casterName || '绝技释放';
+    }
+    const staticSrc = ultEv.casterImg || ultEv.casterPoster || 'assets/hero_v21_new_hd.jpg?v=1';
+    const posterSrc = ultEv.casterPoster || staticSrc;
+    if (imgEl) {
+      imgEl.src = staticSrc;
+      imgEl.alt = ultEv.casterName || '';
+    }
+
+    overlay.hidden = false;
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.classList.remove('is-fading', 'use-fallback', 'is-video-playing');
+    void overlay.offsetWidth;
+    overlay.classList.add('is-active');
+
+    if (videoEl && ultEv.casterVideo) {
+      videoEl.defaultMuted = true;
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      videoEl.setAttribute('muted', '');
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.poster = posterSrc;
+      if (videoEl.getAttribute('src') !== ultEv.casterVideo) {
+        videoEl.setAttribute('src', ultEv.casterVideo);
+        videoEl.src = ultEv.casterVideo;
+      } else {
+        try {
+          videoEl.currentTime = 0;
+        } catch (e) {}
+      }
+
+      const onPlaying = () => {
+        if (!videoEl.error && isUltPlaying) {
+          overlay.classList.add('is-video-playing');
+        }
+      };
+      const onError = () => {
+        overlay.classList.add('use-fallback');
+        overlay.classList.remove('is-video-playing');
+      };
+      videoEl.addEventListener('playing', onPlaying, { once: true });
+      videoEl.addEventListener('error', onError, { once: true });
+
+      let playPromise = null;
+      try {
+        playPromise = videoEl.play();
+      } catch (err) {
+        onError();
+      }
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise
+          .then(() => {
+            if (isUltPlaying && !videoEl.error) {
+              overlay.classList.add('is-video-playing');
+            }
+          })
+          .catch(() => {
+            onError();
+          });
+      }
+    } else {
+      overlay.classList.add('use-fallback');
+    }
+
+    ultFadeTimer = setTimeout(() => {
+      if (overlay && isUltPlaying) {
+        overlay.classList.add('is-fading');
+      }
+    }, fadeStart);
+
+    ultCutsceneTimer = setTimeout(() => {
+      hideUltOverlay();
+      if (isPlaying) {
+        onComplete();
+      }
+    }, duration);
+  }
+
+  function applyUltDamageVisuals(ultEv) {
+    if (!ultEv) return;
+    const isEnemyUlt = Boolean(ultEv.isEnemyUlt || ultEv.who === 'b');
+    const casterDom = unitDomMap[ultEv.casterId];
+    if (casterDom) {
+      casterDom.el.classList.remove('is-ult-ready', 'is-ult-casting');
+      void casterDom.el.offsetWidth;
+      casterDom.el.classList.add('is-ult-casting');
+      setTimeout(() => {
+        casterDom.el.classList.remove('is-ult-casting');
+      }, 420);
+      if (casterDom.rageFill) casterDom.rageFill.style.width = '0%';
+    }
+    delete manualUltReadyAt[ultEv.casterId];
+
+    spawnUltBoardFx(ultEv.primaryC, ultEv.primaryR, isEnemyUlt);
+
+    const targets = ultEv.targets || [];
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i];
+      flashUnitHit(t.unitId);
+      spawnBoardFloat(t.c, t.r, t.dmg, t.crit, !t.isSplash);
+      const u = currentSession && currentSession.unitMap[t.unitId];
+      if (u) {
+        syncUnitBarsAndState(u);
+      }
+    }
+
+    const logLine = $('battle-log-line');
+    if (logLine) {
+      const splashCount = Math.max(0, targets.length - 1);
+      if (isEnemyUlt) {
+        const splashNote = splashCount > 0 ? `，波及周围 ${splashCount} 人` : '';
+        logLine.textContent = `Boss【${ultEv.casterName}】释放凶威绝技！对 ${ultEv.primaryTargetName} 造成 ${dispNum(ultEv.dmg)} 伤害${splashNote}`;
+      } else {
+        const splashNote = splashCount > 0 ? `，波及周围 ${splashCount} 敌` : '';
+        logLine.textContent = `【${ultEv.casterName}】释放大招！对 ${ultEv.primaryTargetName} 造成 ${dispNum(ultEv.dmg)} 伤害${splashNote}`;
+      }
+    }
+  }
+
+  function triggerUnitUlt(unitId) {
+    if (!isPlaying || !currentSession || isUltPlaying) return;
+    clearTimeout(playTimer);
+    clearTimeout(ultAutoCastTimer);
+    playTimer = 0;
+    ultAutoCastTimer = 0;
+    waitingForManualUlt = false;
+    delete manualUltReadyAt[unitId];
+    manualUltQueue = manualUltQueue.filter((id) => id !== unitId);
+
+    const stepEvents = currentSession.castUlt(unitId);
+    const ultEv = stepEvents.find((e) => e.type === 'ult');
+    if (!ultEv) {
+      stepPlayback();
+      return;
+    }
+
+    const caster = currentSession.unitMap[ultEv.casterId];
+    if (caster) {
+      const dom = unitDomMap[caster.id];
+      if (dom) {
+        dom.el.classList.remove('is-ult-ready');
+        if (dom.rageFill) dom.rageFill.style.width = '0%';
+      }
+    }
+
+    playUltCutscene(ultEv, () => {
+      if (!isPlaying || !currentSession) return;
+      applyUltDamageVisuals(ultEv);
+      if (currentSession.finished) {
+        playTimer = setTimeout(finishBattle, getStepDelay());
+      } else {
+        playTimer = setTimeout(stepPlayback, getStepDelay());
+      }
+    });
   }
 
   function hideResultOverlay() {
+    clearTimeout(resultOverlayTimer);
+    resultOverlayTimer = 0;
     const overlay = $('battle-result-overlay');
-    if (overlay) overlay.hidden = true;
+    if (overlay) {
+      overlay.classList.remove('is-banner');
+      overlay.hidden = true;
+    }
   }
 
   function showFailOverlay(enemy, player, timeout, fails) {
@@ -228,10 +651,18 @@
       subEl.textContent = `本关已连败 ${fails} 次，建议先提升装备或参悟功法`;
       actionsEl.hidden = false;
     } else {
-      subEl.textContent = '失败不损分毫，可再次挑战或提升战力';
+      subEl.textContent = '失败不损分毫，可调整布阵或提升战力后再战';
       actionsEl.hidden = true;
     }
+    clearTimeout(resultOverlayTimer);
+    resultOverlayTimer = 0;
+    overlay.classList.remove('is-banner');
     overlay.hidden = false;
+    resultOverlayTimer = setTimeout(() => {
+      if (overlay && !overlay.hidden) {
+        overlay.classList.add('is-banner');
+      }
+    }, 4000);
   }
 
   function renderNavUnlockState() {
@@ -269,7 +700,6 @@
   }
 
   function renderIdleCard() {
-    const s = window.GameState.state;
     const st = ensureStageState();
     const best = st.best || 0;
     const now = Date.now();
@@ -303,6 +733,20 @@
     }
   }
 
+  function renderPreBattleBoard(s, enemy) {
+    if (isPlaying || dragState) return;
+    const formStr = serializeFormation(s.formation);
+    const key = `${enemy.n}:${s.heroId}:${formStr}`;
+    const container = $('battle-units');
+    if (key === previewBoardKey && container && container.children.length > 0) {
+      return;
+    }
+    previewBoardKey = key;
+    const pUnits = window.Battle.buildPlayerUnits(s);
+    const eUnits = window.Battle.buildEnemyUnits(enemy);
+    mountUnitsToBoard([...pUnits, ...eUnits]);
+  }
+
   function render() {
     renderNavUnlockState();
     const s = window.GameState.state;
@@ -315,6 +759,9 @@
     if (bodyEl) bodyEl.style.display = isUnlocked ? 'flex' : 'none';
     if (!isUnlocked) return;
 
+    ensureGridCells();
+    layoutBoard();
+
     const stageNum = st.cur;
     const enemy = isPlaying && currentEnemy ? currentEnemy : window.Battle.enemyFor(stageNum);
     const player = isPlaying && currentPlayer ? currentPlayer : window.Battle.playerStats(s);
@@ -326,21 +773,32 @@
     if (stageBox) {
       stageBox.dataset.region = String(regionIdx);
       stageBox.classList.toggle('is-boss', enemy.isBoss);
+      stageBox.classList.toggle('is-in-battle', isPlaying);
     }
 
-    const nameplate = $('enemy-nameplate');
-    const enemyTag = $('enemy-tag');
-    if (nameplate) nameplate.textContent = enemy.name;
-    if (enemyTag) {
-      enemyTag.hidden = !enemy.isBoss;
-      enemyTag.textContent = 'Boss';
+    const enemyTitleEl = $('battle-stage-enemy-title');
+    const formHintEl = $('battle-form-hint');
+    if (enemyTitleEl) {
+      if (enemy.isBoss) {
+        enemyTitleEl.textContent = `第 ${stageNum} 关 · Boss【${enemy.name}】`;
+      } else {
+        const mobCnt = 3 + Math.min(2, Math.floor(((enemy.stageInChapter || 1) - 1) / 3));
+        enemyTitleEl.textContent = `第 ${stageNum} 关 · ${enemy.name} 等 ${mobCnt} 敌`;
+      }
+    }
+    if (formHintEl) {
+      if (isPlaying) {
+        formHintEl.textContent = st.auto ? '自动释放大招中' : '怒气满点击头像放大招';
+      } else {
+        formHintEl.textContent = '战前可拖动我方角色布阵';
+      }
     }
 
-    updateEnemyPortrait(enemy);
     preloadNextStageEnemy(enemy.n);
+    preloadNextRegionBg(regionIdx);
 
     if (!isPlaying) {
-      updateHpBars(player.hp, player.hp, enemy.hp, enemy.hp, enemy);
+      renderPreBattleBoard(s, enemy);
     }
 
     const cpPlayerEl = $('stage-cp-player');
@@ -352,8 +810,7 @@
       const rate = getCachedWinRate(s, stageNum, player.cp);
       const label = window.Battle.winRateLabel(rate);
       winrateEl.textContent = label;
-      winrateEl.dataset.level =
-        rate >= 0.6 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
+      winrateEl.dataset.level = rate >= 0.6 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
     }
 
     const btnChallenge = $('btn-stage-challenge');
@@ -376,28 +833,25 @@
   }
 
   function finishBattle() {
-    clearTimeout(playTimer);
-    playTimer = 0;
-    clearFighterPulse();
-    if (!isPlaying || !currentSim || !currentEnemy || !currentPlayer) {
+    clearAllTimers();
+    hideUltOverlay();
+    if (!isPlaying || !currentSession || !currentEnemy || !currentPlayer) {
       isPlaying = false;
       return;
     }
 
     const s = window.GameState.state;
     const st = ensureStageState();
-    const sim = currentSim;
+    const sim = currentSession;
     const enemy = currentEnemy;
     const player = currentPlayer;
     const stageNum = enemy.n;
 
-    isPlaying = false;
-    currentSim = null;
+    syncAllSessionUnits();
 
-    const lastEv = sim.events[sim.events.length - 1];
-    if (lastEv) {
-      updateHpBars(lastEv.hpA, player.hp, lastEv.hpB, enemy.hp, enemy);
-    }
+    isPlaying = false;
+    currentSession = null;
+    previewBoardKey = '';
 
     const logLine = $('battle-log-line');
 
@@ -435,7 +889,7 @@
           log(`首通第 ${stageNum} 关【${enemy.name}】，获 ${rewardText}`, 'success');
         }
       } else if (logLine) {
-        logLine.textContent = `第 ${sim.rounds} 回合击败 ${enemy.name}！`;
+        logLine.textContent = `第 ${sim.rounds} 回合击败 ${enemy.name} 阵容！`;
       }
 
       if (stageNum < 300) {
@@ -482,41 +936,134 @@
   }
 
   function stepPlayback() {
-    if (!isPlaying || !currentSim) return;
-    const events = currentSim.events;
-    if (eventIndex >= events.length) {
+    if (!isPlaying || !currentSession || isUltPlaying) return;
+
+    const st = ensureStageState();
+    for (let i = 0; i < currentSession.units.length; i++) {
+      syncUnitBarsAndState(currentSession.units[i]);
+    }
+    const readyList = currentSession.getReadyPlayerUnits();
+
+    // 检查是否有我方单位怒气已满
+    if (readyList.length > 0) {
+      if (st.auto) {
+        // 自动推关模式：满怒立即释放
+        triggerUnitUlt(readyList[0].id);
+        return;
+      }
+
+      // 手动模式：不暂停战斗，满怒头像持续发光；
+      // 1) 若玩家点击过满怒头像（排入队列），立即在下一步插入释放
+      while (manualUltQueue.length > 0) {
+        const queuedId = manualUltQueue.shift();
+        const qu = currentSession.unitMap[queuedId];
+        if (qu && qu.alive && qu.side === 'player' && qu.rage >= (qu.maxRage || 100)) {
+          triggerUnitUlt(qu.id);
+          return;
+        }
+      }
+
+      // 2) 若满怒后超时仍未点击（1x 为 3 秒，2x 为 1.5 秒），自动释放该角色大招
+      const now = Date.now();
+      const manualTimeoutMs = getManualUltTimeout();
+      for (let i = 0; i < readyList.length; i++) {
+        const ru = readyList[i];
+        const readySince = manualUltReadyAt[ru.id] || now;
+        manualUltReadyAt[ru.id] = readySince;
+        if (now - readySince >= manualTimeoutMs) {
+          triggerUnitUlt(ru.id);
+          return;
+        }
+      }
+    }
+
+    if (currentSession.finished) {
       finishBattle();
       return;
     }
 
-    const ev = events[eventIndex++];
-    const player = currentPlayer;
-    const enemy = currentEnemy;
-
-    updateHpBars(ev.hpA, player.hp, ev.hpB, enemy.hp, enemy);
-    pulseFighter(ev.who);
-    spawnBattleFloat(ev.who === 'a' ? 'b' : 'a', ev.dmg, ev.crit);
-
-    const logLine = $('battle-log-line');
-    if (logLine) {
-      if (ev.who === 'a') {
-        logLine.textContent = `第 ${ev.t} 回合 · ${enemy.name} 受到 ${fmt(ev.dmg)} 点伤害${ev.crit ? '（暴击）' : ''}`;
-      } else {
-        logLine.textContent = `第 ${ev.t} 回合 · 我方 受到 ${fmt(ev.dmg)} 点伤害${ev.crit ? '（暴击）' : ''}`;
+    const stepEvents = currentSession.step({ autoUlt: false });
+    if (!stepEvents || stepEvents.length === 0) {
+      if (currentSession.finished) {
+        finishBattle();
       }
+      return;
     }
 
-    if (eventIndex >= events.length) {
-      playTimer = setTimeout(finishBattle, getStepDelay());
-    } else {
-      playTimer = setTimeout(stepPlayback, getStepDelay());
+    const mainEv = stepEvents[0];
+    const logLine = $('battle-log-line');
+
+    if (mainEv.type === 'move') {
+      const dom = unitDomMap[mainEv.unitId];
+      if (dom) {
+        dom.el.style.left = cellLeftPct(mainEv.toC);
+        dom.el.style.top = cellTopPct(mainEv.toR);
+      }
+      if (logLine) {
+        const readyHint =
+          !st.auto && readyList.length > 0 ? `（【${readyList[0].name}】满怒可点头像释放）` : '';
+        logLine.textContent = `第 ${mainEv.t} 回合 · ${mainEv.name} 踏步逼近${readyHint}`;
+      }
+      playTimer = setTimeout(stepPlayback, getMoveDelay());
+      return;
+    }
+
+    if (mainEv.type === 'attack') {
+      const dc = mainEv.targetC - mainEv.attackerC;
+      const dr = mainEv.targetR - mainEv.attackerR;
+      pulseAttackAndHit(mainEv.attackerId, mainEv.targetId, dc, dr);
+      spawnBoardFloat(mainEv.targetC, mainEv.targetR, mainEv.dmg, mainEv.crit, false);
+
+      const atkUnit = currentSession.unitMap[mainEv.attackerId];
+      const defUnit = currentSession.unitMap[mainEv.targetId];
+      if (atkUnit) syncUnitBarsAndState(atkUnit);
+      if (defUnit) syncUnitBarsAndState(defUnit);
+
+      if (logLine) {
+        const dieNote = mainEv.targetDied ? '（击破）' : '';
+        const newReady = currentSession.getReadyPlayerUnits();
+        const readyHint =
+          !st.auto && newReady.length > 0 ? ` · 点击【${newReady[0].name}】头像放大招` : '';
+        logLine.textContent = `第 ${mainEv.t} 回合 · ${mainEv.attackerName} 攻 ${mainEv.targetName} -${dispNum(mainEv.dmg)}${mainEv.crit ? '（暴击）' : ''}${dieNote}${readyHint}`;
+      }
+
+      if (currentSession.finished) {
+        playTimer = setTimeout(finishBattle, getStepDelay());
+      } else {
+        playTimer = setTimeout(stepPlayback, getStepDelay());
+      }
+      return;
+    }
+
+    if (mainEv.type === 'ult') {
+      // 敌方 Boss 大招：只播放棋盘红色震波特效与飘字，不播全屏立绘
+      if (mainEv.isEnemyUlt || mainEv.who === 'b') {
+        applyUltDamageVisuals(mainEv);
+        if (currentSession.finished) {
+          playTimer = setTimeout(finishBattle, getEnemyUltDelay());
+        } else {
+          playTimer = setTimeout(stepPlayback, getEnemyUltDelay());
+        }
+        return;
+      }
+
+      playUltCutscene(mainEv, () => {
+        if (!isPlaying || !currentSession) return;
+        applyUltDamageVisuals(mainEv);
+        if (currentSession.finished) {
+          playTimer = setTimeout(finishBattle, getStepDelay());
+        } else {
+          playTimer = setTimeout(stepPlayback, getStepDelay());
+        }
+      });
     }
   }
 
   function skipBattle() {
-    if (!isPlaying) return;
-    clearTimeout(playTimer);
-    playTimer = 0;
+    if (!isPlaying || !currentSession) return;
+    clearAllTimers();
+    hideUltOverlay();
+    currentSession.runToEnd(true);
     finishBattle();
   }
 
@@ -527,9 +1074,14 @@
       return;
     }
 
+    if (dragState) {
+      cancelDrag();
+    }
+
     clearTimeout(autoNextTimer);
     autoNextTimer = 0;
-    clearFighterPulse();
+    clearAllTimers();
+    hideUltOverlay();
     clearBattleFloats();
     hideResultOverlay();
 
@@ -541,22 +1093,24 @@
 
     s.seq = (s.seq || 0) + 1;
     const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x9e3779b1)) >>> 0;
-    const sim = window.Battle.simulate(player, enemy, seed);
+    const session = window.Battle.createSession(s, enemy, seed);
 
     isPlaying = true;
-    currentSim = sim;
+    currentSession = session;
     currentEnemy = enemy;
     currentPlayer = player;
-    eventIndex = 0;
+    previewBoardKey = '';
 
-    updateHpBars(player.hp, player.hp, enemy.hp, enemy.hp, enemy);
+    mountUnitsToBoard(session.units);
+    syncAllSessionUnits();
+
     const logLine = $('battle-log-line');
     if (logLine) {
       logLine.textContent = `第 1 回合 · 迎战【${enemy.name}】`;
     }
     render();
 
-    playTimer = setTimeout(stepPlayback, getStepDelay());
+    playTimer = setTimeout(stepPlayback, getMoveDelay());
   }
 
   function toggleAuto() {
@@ -567,7 +1121,12 @@
       autoNextTimer = 0;
     } else {
       haltedByLoss = false;
-      if (unlocked() && !isPlaying) {
+      if (isPlaying && currentSession && !isUltPlaying) {
+        const readyUnit = currentSession.getReadyPlayerUnit();
+        if (readyUnit) {
+          triggerUnitUlt(readyUnit.id);
+        }
+      } else if (unlocked() && !isPlaying) {
         startBattle(false);
       }
     }
@@ -583,7 +1142,6 @@
   }
 
   function claimIdleRewards() {
-    const s = window.GameState.state;
     const st = ensureStageState();
     const best = st.best || 0;
     if (best <= 0) return;
@@ -624,6 +1182,210 @@
     }
   }
 
+  // 战前拖放布阵 & 战中点击满怒头像放大招
+  function highlightDropCell(c, r) {
+    const gridEl = $('battle-grid');
+    if (!gridEl) return;
+    const cells = gridEl.querySelectorAll('.board-cell.is-drop-target');
+    cells.forEach((cell) => cell.classList.remove('is-drop-target'));
+    if (c !== null && r !== null) {
+      const target = gridEl.querySelector(`.board-cell[data-c="${c}"][data-r="${r}"]`);
+      if (target) target.classList.add('is-drop-target');
+    }
+  }
+
+  function cancelDrag() {
+    if (!dragState) return;
+    const { unitEl, bodyEl } = dragState;
+    if (unitEl) unitEl.classList.remove('is-dragging');
+    if (bodyEl) bodyEl.style.transform = '';
+    const board = $('battle-board');
+    if (board) board.classList.remove('is-dragging-formation');
+    highlightDropCell(null, null);
+    dragState = null;
+  }
+
+  function clientPosToPlayerCell(clientX, clientY) {
+    const board = $('battle-board');
+    if (!board) return null;
+    const rect = board.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    const rawC = Math.floor(((clientX - rect.left) / rect.width) * COLS);
+    const rawR = Math.floor(((clientY - rect.top) / rect.height) * ROWS);
+    const c = Math.max(0, Math.min(COLS - 1, rawC));
+    const r = Math.max(4, Math.min(ROWS - 1, rawR));
+    return { c, r };
+  }
+
+  function initBoardInteraction() {
+    const board = $('battle-board');
+    if (!board) return;
+
+    function startUnitInteraction(unitEl, clientX, clientY, pointerId) {
+      const side = unitEl.dataset.side;
+      if (side !== 'player') return false;
+
+      // 战斗中：若该单位怒气满，点击立即在下一步插入放大招
+      if (isPlaying) {
+        if (!currentSession) return false;
+        const unitId = unitEl.dataset.unitId;
+        const u = currentSession.unitMap[unitId];
+        if (u && u.alive && u.rage >= (u.maxRage || 100)) {
+          if (isUltPlaying) {
+            if (!manualUltQueue.includes(u.id)) {
+              manualUltQueue.push(u.id);
+            }
+          } else {
+            triggerUnitUlt(u.id);
+          }
+          return true;
+        }
+        return false;
+      }
+
+      // 战前：拖放布阵
+      const heroId = unitEl.dataset.heroId;
+      if (!heroId) return false;
+      const s = window.GameState.state;
+      const form = window.Battle.ensureFormation(s);
+      const orig = form[heroId];
+      if (!orig) return false;
+
+      const bodyEl = unitEl.querySelector('.unit-body');
+      dragState = {
+        heroId,
+        unitEl,
+        bodyEl,
+        startX: clientX,
+        startY: clientY,
+        origC: orig.c,
+        origR: orig.r,
+        targetC: orig.c,
+        targetR: orig.r,
+        pointerId,
+        moved: false
+      };
+
+      board.classList.add('is-dragging-formation');
+      unitEl.classList.add('is-dragging');
+      highlightDropCell(orig.c, orig.r);
+      return true;
+    }
+
+    function moveUnitInteraction(clientX, clientY) {
+      if (!dragState) return;
+      const dx = clientX - dragState.startX;
+      const dy = clientY - dragState.startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        dragState.moved = true;
+      }
+      if (dragState.bodyEl) {
+        dragState.bodyEl.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(1.14)`;
+      }
+      const cell = clientPosToPlayerCell(clientX, clientY);
+      if (cell) {
+        dragState.targetC = cell.c;
+        dragState.targetR = cell.r;
+        highlightDropCell(cell.c, cell.r);
+      }
+    }
+
+    function endUnitInteraction() {
+      if (!dragState) return;
+      const { heroId, origC, origR, targetC, targetR } = dragState;
+      cancelDrag();
+
+      if (isPlaying) return;
+      if (targetC === origC && targetR === origR) return;
+
+      const s = window.GameState.state;
+      const form = window.Battle.ensureFormation(s);
+      let swappedWith = null;
+      const keys = Object.keys(form);
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (k !== heroId && form[k] && form[k].c === targetC && form[k].r === targetR) {
+          swappedWith = k;
+          break;
+        }
+      }
+
+      if (swappedWith) {
+        form[swappedWith] = { c: origC, r: origR };
+      }
+      form[heroId] = { c: targetC, r: targetR };
+      s.formation = form;
+      window.GameState.saveGame();
+
+      cachedWinRateKey = '';
+      previewBoardKey = '';
+      const logLine = $('battle-log-line');
+      if (logLine) {
+        logLine.textContent = '阵型已保存 · 点击挑战开始推关';
+      }
+      render();
+    }
+
+    if (window.PointerEvent) {
+      board.addEventListener('pointerdown', (e) => {
+        const unitEl = e.target.closest('.board-unit');
+        if (!unitEl) return;
+        if (startUnitInteraction(unitEl, e.clientX, e.clientY, e.pointerId)) {
+          e.preventDefault();
+          if (board.setPointerCapture && e.pointerId != null) {
+            try {
+              board.setPointerCapture(e.pointerId);
+            } catch (err) {}
+          }
+        }
+      });
+
+      board.addEventListener('pointermove', (e) => {
+        if (!dragState) return;
+        if (dragState.pointerId != null && e.pointerId !== dragState.pointerId) return;
+        e.preventDefault();
+        moveUnitInteraction(e.clientX, e.clientY);
+      });
+
+      const onPointerEnd = (e) => {
+        if (!dragState) return;
+        if (dragState.pointerId != null && e.pointerId !== dragState.pointerId) return;
+        endUnitInteraction();
+      };
+      board.addEventListener('pointerup', onPointerEnd);
+      board.addEventListener('pointercancel', cancelDrag);
+    } else {
+      board.addEventListener(
+        'touchstart',
+        (e) => {
+          const unitEl = e.target.closest('.board-unit');
+          if (!unitEl || !e.touches[0]) return;
+          const t = e.touches[0];
+          if (startUnitInteraction(unitEl, t.clientX, t.clientY, t.identifier)) {
+            e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+
+      board.addEventListener(
+        'touchmove',
+        (e) => {
+          if (!dragState || !e.touches[0]) return;
+          e.preventDefault();
+          const t = e.touches[0];
+          moveUnitInteraction(t.clientX, t.clientY);
+        },
+        { passive: false }
+      );
+
+      board.addEventListener('touchend', () => {
+        if (dragState) endUnitInteraction();
+      });
+      board.addEventListener('touchcancel', cancelDrag);
+    }
+  }
+
   function tick() {
     const now = Date.now();
     if (unlocked() !== lastUnlocked) {
@@ -640,10 +1402,13 @@
   }
 
   function onShow() {
+    previewBoardKey = '';
     render();
+    requestAnimationFrame(layoutBoard);
   }
 
   function onHide() {
+    if (dragState) cancelDrag();
     if (isPlaying) {
       skipBattle();
     }
@@ -656,23 +1421,15 @@
     onChange = (hooks && hooks.onChange) || onChange;
     switchTab = (hooks && hooks.switchTab) || switchTab;
 
+    ensureGridCells();
+    initBoardInteraction();
+
     const btnChallenge = $('btn-stage-challenge');
     const btnAuto = $('btn-stage-auto');
     const btnSpeed = $('btn-stage-speed');
     const btnClaim = $('btn-stage-claim');
     const btnGotoPeach = $('btn-goto-peach');
     const btnGotoGongfa = $('btn-goto-gongfa');
-    const enemyPortrait = $('enemy-portrait');
-    const fighterEnemy = $('fighter-enemy');
-
-    if (enemyPortrait && fighterEnemy) {
-      enemyPortrait.addEventListener('load', () => {
-        fighterEnemy.classList.remove('is-fallback');
-      });
-      enemyPortrait.addEventListener('error', () => {
-        fighterEnemy.classList.add('is-fallback');
-      });
-    }
 
     if (btnChallenge) {
       btnChallenge.addEventListener('click', () => startBattle(true));
@@ -686,15 +1443,40 @@
     if (btnClaim) {
       btnClaim.addEventListener('click', claimIdleRewards);
     }
+    const resultOverlay = $('battle-result-overlay');
+    if (resultOverlay) {
+      resultOverlay.addEventListener('click', (e) => {
+        if (e.target && e.target.closest && e.target.closest('#battle-fail-actions .btn')) {
+          return;
+        }
+        hideResultOverlay();
+      });
+    }
     if (btnGotoPeach) {
-      btnGotoPeach.addEventListener('click', () => {
+      btnGotoPeach.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
         switchTab('tab-gear');
       });
     }
     if (btnGotoGongfa) {
-      btnGotoGongfa.addEventListener('click', () => {
+      btnGotoGongfa.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
         switchTab('tab-upgrades');
       });
+    }
+
+    window.addEventListener('resize', layoutBoard);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(layoutBoard, 60);
+    });
+    if (typeof ResizeObserver === 'function') {
+      const wrap = $('battle-board-wrap');
+      if (wrap) {
+        const ro = new ResizeObserver(() => layoutBoard());
+        ro.observe(wrap);
+      }
     }
 
     document.addEventListener('visibilitychange', () => {

@@ -1,0 +1,20 @@
+【任务】把“闯关”战斗（tab-stage，#battle-stage）从现在的一对一回合制改成“自走棋”形式。纯原生 JS/CSS，不引入任何库，必须兼容 iPhone Safari。只改 index.html、css/style.css、js/battle.js、js/stage-ui.js、js/config.js（需要时 js/game.js），不要动其它页面。不要运行终端命令，不要做 git 操作。
+
+【现状】js/battle.js 有 enemyFor(n)、playerStats(state)、simulate(a,b,seed)、winRate、firstClearReward；js/stage-ui.js 负责播放战斗事件、血条、飘字、结算、自动推关、挂机奖励。主角列表在 GameConfig.HEROES（6 个，均已解锁，字段 id/name/img/poster/video，没有 locked 字段的都算已解锁），当前主角是 GameState.state.heroId。敌人图片在 assets/enemies/（mob_*.webp、boss_*.webp），解析逻辑见 stage-ui.js 的 resolveEnemyImgUrl。
+
+【需求】
+1. 棋盘：战场改成网格棋盘，建议 6 列 × 8 行（竖屏手机，上半 4 行敌方、下半 4 行我方），格子用半透明描边，背景沿用当前区域背景。棋盘按 #battle-stage 可用宽高自适应缩放，不出现滚动条。
+2. 单位外观：每个单位是圆形头像（圆框内显示角色头像，用 object-fit:cover 并让脸部居中偏上，object-position 约 50% 15%），下方有细血条，我方单位再加一条怒气条（金色）。我方圆框青/金色，敌方红色，Boss 圆框更大（占 1.3 倍）并带“Boss”小标。受击闪白、飘伤害数字（暴击更大更红），死亡淡出。
+3. 我方阵容：所有已解锁的 HEROES 全部上场（目前 6 个）。总属性 = 现在的 playerStats(state)，按人数平均分配 atk/hp/def（spd、crit、critDmg 不变），保证总战力与原来一致、平衡不变。当前主角（heroId）排在第一个。
+4. 敌方阵容：普通关 3~5 个小怪（从当前区域 mobs 里取，数量随关卡在章节内递增），Boss 关 = 1 个 Boss + 2 个小怪。总属性 = enemyFor(n) 的属性；Boss 关 Boss 占 60%，小怪平分剩余；普通关小怪平分。
+5. 战斗逻辑：确定性模拟（继续用 mulberry32 种子），每个“tick”每个存活单位按 spd 行动：若最近敌人在攻击范围（相邻 1 格，含斜向）内就攻击，否则朝最近敌人走一格（不能与其他单位重叠）。伤害公式沿用 rollHit。普攻和受击都给我方单位加怒气，怒气满 100 可放大招。大招：对一个目标造成约 3 倍普攻伤害并对其周围 1 格敌人造成 1.5 倍溅射。新的模拟函数输出事件列表（移动、攻击、大招、死亡），stage-ui 按事件播放动画；winRate 与胜负判定都用同一个新模拟，保证预估胜率与实际一致。有回合/时间上限，超时算失败。
+6. 大招释放：
+   - 手动：战斗中我方单位怒气满时头像发光闪烁，点击该头像立即释放大招。
+   - 自动：开启“自动推关”(挂机)时，怒气满自动释放。手动模式下怒气满后若玩家 4 秒内没点也自动释放，避免卡住。
+   - 播放：放大招时战斗暂停，屏幕上覆盖一层全屏（覆盖 #battle-stage 即可）暗色遮罩，中间播放该角色的动态立绘（hero.video，muted playsinline webkit-playsinline，poster 用 hero.poster），配角色名艺术字（用现有的毛笔/艺术字字体）+ 一道光效横扫，约 1.6 秒后淡出，然后播放大招伤害特效，战斗继续。视频播放失败时显示 hero.img 静态图。倍速/跳过时大招立绘缩短为 0.6 秒或跳过。
+   - 由于播放是按事件回放，手动点击时可以把“这一刻释放大招”插入：实现上可以让模拟分段推进（每段到某个我方单位怒气满时停下等待输入或自动），不需要预先一次性算完全部战斗；但 winRate 估算用“怒气满立即自动释放”的策略。
+7. 开战前布阵：未在战斗中时，我方单位显示在我方半区，可以用手指/鼠标拖动到我方半区任意空格（支持 touch 和 pointer 事件，拖动时显示高亮目标格）；两个单位可以互换位置。阵型保存到 GameState.state.formation（{heroId: {c, r}}），存档兼容旧存档（没有就用默认阵型：前排 3 个、后排 3 个）。新解锁的角色自动放到空格。战斗中禁止拖动。
+8. 去掉原来的一对一大立绘对战区（fighter-player / fighter-enemy 两个大框和顶部双血条 HUD），保留：章节进度栏、battle-log-line、战败结算 overlay（去摘桃/去功法按钮）、下方的战力对比栏、挑战/自动/倍速/跳过按钮、挂机奖励卡。原来 game.js 里控制战斗页主角视频(els.battleHeroVideo, tryPlayBattleHero 等)的代码要做空值保护，不能因为元素被删而报错。
+9. 修改 index.html 里 style.css、battle.js、stage-ui.js、config.js（若改动）的 ?v= 版本号各 +1。
+
+【验收】页面无控制台报错；能拖动布阵并保存；点挑战后单位会移动、攻击、飘字、死亡；怒气满能点头像放大招并播放动态立绘；自动推关时自动放大招；胜负、首通奖励、挂机奖励照常结算；390×844 竖屏下棋盘完整显示。

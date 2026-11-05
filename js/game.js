@@ -1594,6 +1594,10 @@
         }
       });
     }
+
+    if (window.StageUI && typeof window.StageUI.render === 'function') {
+      window.StageUI.render();
+    }
   }
 
   function renderRoleList() {
