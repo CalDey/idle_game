@@ -2027,7 +2027,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   --cell-w: 60px;
   --cell-h: 54px;
   --cell-size: 54px;
-  --unit-base-size: calc(min(var(--cell-w), var(--cell-h)) - 15px);
+  --unit-base-size: calc(min(var(--cell-w), var(--cell-h)) - 2px);
   position: relative;
   width: calc(var(--cell-w) * 6);
   height: calc(var(--cell-h) * 8);
@@ -2118,7 +2118,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .board-unit {
-  --unit-base-size: calc(min(var(--cell-w, var(--cell-size, 54px)), var(--cell-h, var(--cell-size, 54px))) - 15px);
+  --unit-base-size: calc(min(var(--cell-w, var(--cell-size, 54px)), var(--cell-h, var(--cell-size, 54px))) - 2px);
   --avatar-size: var(--unit-base-size);
   --unit-row: 0;
   --unit-z-bonus: 0;
@@ -2177,7 +2177,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   align-items: center;
   justify-content: center;
   padding: 0;
-  gap: 3px;
+  gap: 0;
   overflow: visible;
   pointer-events: none;
   transition: transform 0.11s ease;
@@ -2407,9 +2407,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   transform: translateX(-50%) scale(1);
 }
 
-/* 头顶分段血条组：位于圆形头像正上方（底边距圆环顶部 3px），宽 = 头像直径 + 4px，高 = 6 + 1 + 3 = 10px */
+/* 头顶分段血条组：绝对定位于圆形头像正上方（底边距圆环顶部 2px，溢出格子顶部），宽 = 头像直径 + 4px，高 = 6 + 1 + 3 = 10px */
 .unit-bars {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% + (var(--unit-base-size) / 2) + 2px);
+  transform: translateX(-50%);
   width: calc(var(--avatar-size) + 4px);
   height: 10px;
   flex: none;
@@ -2421,6 +2424,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   box-shadow: 0 0 0 1px #000;
   overflow: hidden;
   z-index: 10;
+  pointer-events: none;
 }
 
 .board-unit.is-boss .unit-bars {
@@ -2568,11 +2572,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   }
 }
 
-/* 飘伤害/治疗数字（以被击单位头像圆环右上角为起点，向右上方轻微飘动 ≤12px 后淡出，不盖住任何棋子的脸） */
+/* 飘伤害/治疗数字（从头顶血条右上方冒出，向右上方轻微飘动 ≤12px 后淡出，不盖住任何棋子的脸与血条） */
 .battle-float {
   position: absolute;
-  margin-left: calc(var(--unit-base-size, 43px) * 0.34);
-  margin-top: calc(var(--unit-base-size, 43px) * -0.24);
+  margin-left: calc(var(--unit-base-size, 52px) * 0.28);
+  margin-top: calc(var(--unit-base-size, 52px) * -0.5 - 12px);
   transform: translate(-10%, -100%);
   font-size: 10px;
   line-height: 1.1;
@@ -2592,12 +2596,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .battle-float.on-boss {
-  margin-left: calc(var(--unit-base-size, 43px) * 0.42);
-  margin-top: calc(var(--unit-base-size, 43px) * -0.32);
+  margin-left: calc(var(--unit-base-size, 52px) * 0.34);
+  margin-top: calc(var(--unit-base-size, 52px) * -0.5 - 13px);
 }
 
 .battle-float.at-right-edge {
-  margin-left: calc(var(--unit-base-size, 43px) * 0.22);
+  margin-left: calc(var(--unit-base-size, 52px) * 0.18);
   animation-name: battleFloatUpEdge;
 }
 
