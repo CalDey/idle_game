@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=61" />
+  <link rel="stylesheet" href="css/style.css?v=62" />
 </head>
 
 <body>
@@ -86,7 +86,6 @@
               <span id="title-plate-name" class="realm-title">初入仙途</span>
               <span id="title-plate-badge" class="plate-badge"></span>
             </button>
-            <button id="btn-portrait-focus" class="portrait-focus-btn" type="button" aria-pressed="false" aria-label="隐藏境界突破，查看完整立绘">看立绘</button>
             <div class="meditation-caption">
               <div class="meditation-hint">盘膝打坐 · 周天搬运</div>
               <div id="tap-gain-hint" class="meditation-subhint">点击画面凝神吐纳（每次 +4 灵气）</div>
@@ -380,6 +379,17 @@
 
           <div class="setting-row">
             <div>
+              <div class="setting-label">隐藏境界突破</div>
+              <div class="setting-sub">勾选后修行页只显示完整立绘，可在设置中随时取消</div>
+            </div>
+            <label class="setting-check">
+              <input id="chk-portrait-focus" type="checkbox" />
+              <span>看完整立绘</span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div>
               <div class="setting-label">境界体系</div>
               <div class="setting-sub">练气 → 筑基 → 金丹 → 元婴 → 化神（各分一至九层）</div>
             </div>
@@ -557,7 +567,7 @@
   <script src="js/battle.js?v=26"></script>
   <script src="js/gear.js?v=30"></script>
   <script src="js/stage-ui.js?v=39"></script>
-  <script src="js/game.js?v=37"></script>
+  <script src="js/game.js?v=38"></script>
 </body>
 
 </html>

@@ -37,7 +37,7 @@
 
     els.tabCultivate = document.getElementById('tab-cultivate');
     els.meditationZone = document.getElementById('meditation-zone');
-    els.btnPortraitFocus = document.getElementById('btn-portrait-focus');
+    els.chkPortraitFocus = document.getElementById('chk-portrait-focus');
     els.titlePlateName = document.getElementById('title-plate-name');
     els.tapGainHint = document.getElementById('tap-gain-hint');
 
@@ -229,14 +229,12 @@
   function applyPortraitFocus(on) {
     const active = Boolean(on);
     const tab = els.tabCultivate || document.getElementById('tab-cultivate');
-    const btn = els.btnPortraitFocus || document.getElementById('btn-portrait-focus');
+    const chk = els.chkPortraitFocus || document.getElementById('chk-portrait-focus');
     if (tab) {
       tab.classList.toggle('is-portrait-focus', active);
     }
-    if (btn) {
-      btn.textContent = active ? '显示突破' : '看立绘';
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-      btn.setAttribute('aria-label', active ? '显示境界突破' : '隐藏境界突破，查看完整立绘');
+    if (chk) {
+      chk.checked = active;
     }
     try {
       localStorage.setItem(PORTRAIT_FOCUS_KEY, active ? '1' : '0');
@@ -255,7 +253,7 @@
 
   // 点击打坐区获取额外灵气
   function handleMeditationTap(e) {
-    if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('#btn-portrait-focus, #title-plate')) {
+    if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('#title-plate')) {
       return;
     }
     const gain = GameState.getTapQiGain();
@@ -1762,15 +1760,9 @@
 
     // 绑定事件
     els.meditationZone.addEventListener('pointerdown', handleMeditationTap);
-    if (els.btnPortraitFocus) {
-      els.btnPortraitFocus.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-      });
-      els.btnPortraitFocus.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const tab = els.tabCultivate || document.getElementById('tab-cultivate');
-        applyPortraitFocus(!(tab && tab.classList.contains('is-portrait-focus')));
+    if (els.chkPortraitFocus) {
+      els.chkPortraitFocus.addEventListener('change', () => {
+        applyPortraitFocus(!!els.chkPortraitFocus.checked);
       });
     }
     els.btnBreakthrough.addEventListener('click', attemptBreakthrough);
