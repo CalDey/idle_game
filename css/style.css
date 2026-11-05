@@ -2453,30 +2453,6 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .unit-hp-bar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent calc(var(--hp-major-pct, 100%) - 1.5px),
-      #000000 calc(var(--hp-major-pct, 100%) - 1.5px),
-      #000000 var(--hp-major-pct, 100%)
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent calc(var(--hp-step-pct, 20%) - 1px),
-      #000000 calc(var(--hp-step-pct, 20%) - 1px),
-      #000000 var(--hp-step-pct, 20%)
-    );
-  clip-path: inset(0 2px 0 0);
-  pointer-events: none;
-  z-index: 3;
-}
-
-.board-unit.is-boss .unit-hp-bar::after {
   content: none;
   display: none;
   background-image: none;

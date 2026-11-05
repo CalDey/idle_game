@@ -241,80 +241,12 @@
     return { id: qId, name: '仙品', color: '#f07167' };
   }
 
-  // 先按 1/2/5×10^n 选参考 step，再将整格数 clamp 到整数（普通 3~8 格，Boss 3~10 格）；同阵营小怪/角色共用同一整数格数
-  function computeNiceHpStep(refHp) {
-    const hp = Math.max(1, Number(refHp) || 1);
-    const exp = Math.floor(Math.log10(hp));
-    const bases = [1, 2, 5];
-    let bestStep = hp / 5;
-    let bestDiff = Infinity;
-    for (let e = exp - 2; e <= exp + 1; e++) {
-      const pow = Math.pow(10, e);
-      for (let i = 0; i < bases.length; i++) {
-        const step = bases[i] * pow;
-        const ticks = hp / step;
-        if (ticks >= 3 && ticks <= 8) {
-          const diff = Math.abs(ticks - 4.5);
-          if (diff < bestDiff) {
-            bestDiff = diff;
-            bestStep = step;
-          }
-        }
-      }
-    }
-    return bestStep;
-  }
-
-  function clampHpSegments(rawSegments, isBoss) {
-    const maxSeg = isBoss ? 10 : 8;
-    const rounded = Math.round(Number(rawSegments) || 5);
-    return Math.max(3, Math.min(maxSeg, rounded));
-  }
-
-  function resolveUnitHpSegments(u, sideHpMeta) {
+  function resolveUnitHpSegments(u) {
     const hp = Math.max(1, Number(u && u.maxHp) || 1);
-    const isBoss = Boolean(u && u.isBoss);
-    if (isBoss) {
-      return { step: hp, segments: 1 };
-    }
-    const refStep =
-      sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.step > 0
-        ? sideHpMeta.step
-        : typeof sideHpMeta === 'number' && sideHpMeta > 0
-          ? sideHpMeta
-          : computeNiceHpStep(hp);
-
-    if (sideHpMeta && typeof sideHpMeta === 'object' && sideHpMeta.segments >= 3) {
-      return { step: refStep, segments: sideHpMeta.segments };
-    }
-
-    const segments = clampHpSegments(hp / refStep, false);
-    return { step: refStep, segments };
+    return { step: hp, segments: 1 };
   }
 
-  function computeSideHpSteps(units) {
-    const sideMinHp = {};
-    for (let i = 0; i < units.length; i++) {
-      const u = units[i];
-      if (!u || !u.side) continue;
-      const hp = Math.max(1, Number(u.maxHp) || 1);
-      if (sideMinHp[u.side] === undefined || hp < sideMinHp[u.side]) {
-        sideMinHp[u.side] = hp;
-      }
-    }
-    const steps = {};
-    const sides = Object.keys(sideMinHp);
-    for (let i = 0; i < sides.length; i++) {
-      const side = sides[i];
-      const minHp = sideMinHp[side];
-      const step = computeNiceHpStep(minHp);
-      const segments = clampHpSegments(minHp / step, false);
-      steps[side] = { step, segments };
-    }
-    return steps;
-  }
-
-  function createUnitElement(u, sideHpStep) {
+  function createUnitElement(u) {
     const el = document.createElement('div');
     const sideCls = u.side === 'player' ? 'is-player' : 'is-enemy';
     const bossCls = u.isBoss ? ' is-boss' : '';
@@ -325,20 +257,6 @@
     el.dataset.side = u.side;
     applyUnitPosition(el, u.c, u.r, u.isBoss, false);
     el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
-
-    let hpBarStyleAttr = '';
-    if (!u.isBoss) {
-      const { step: stepVal, segments } = resolveUnitHpSegments(u, sideHpStep);
-      const stepPct = 100 / segments;
-      const majorPct = stepPct * 5;
-      const stepPctStr = `${stepPct.toFixed(4)}%`;
-      const majorPctStr = `${majorPct.toFixed(4)}%`;
-      el.style.setProperty('--hp-step', String(stepVal));
-      el.style.setProperty('--hp-segments', String(segments));
-      el.style.setProperty('--hp-step-pct', stepPctStr);
-      el.style.setProperty('--hp-major-pct', majorPctStr);
-      hpBarStyleAttr = ` style="--hp-step:${stepVal};--hp-segments:${segments};--hp-step-pct:${stepPctStr};--hp-major-pct:${majorPctStr}"`;
-    }
 
     const heroCfg = u.side === 'player' ? getHeroCfg(u) : null;
     const heroAvatar = u.side === 'player' ? (u.avatar || (heroCfg && heroCfg.avatar) || '') : '';
@@ -362,7 +280,7 @@
     el.innerHTML = `
       <div class="unit-body">
         <div class="unit-bars">
-          <div class="unit-hp-bar"${hpBarStyleAttr}><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
+          <div class="unit-hp-bar"><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
           <div class="unit-rage-bar"><div class="unit-rage-fill" style="width:0%"></div></div>
         </div>
         <div class="unit-avatar-wrap">
@@ -404,10 +322,9 @@
     if (!container) return;
     container.innerHTML = '';
     unitDomMap = {};
-    const sideSteps = computeSideHpSteps(units);
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
-      const dom = createUnitElement(u, sideSteps[u.side]);
+      const dom = createUnitElement(u);
       unitDomMap[u.id] = dom;
       container.appendChild(dom.el);
     }
