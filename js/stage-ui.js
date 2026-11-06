@@ -401,6 +401,22 @@
     }, 600);
   }
 
+  function spawnBoardHealFloat(c, r, amount) {
+    const layer = $('battle-float-layer');
+    if (!layer) return;
+    const span = document.createElement('span');
+    let cls = 'battle-float heal';
+    if (c >= COLS - 1) cls += ' at-right-edge';
+    span.className = cls;
+    span.style.left = `${(((c + 0.5) / COLS) * 100).toFixed(2)}%`;
+    span.style.top = `${(((r + 0.5) / ROWS) * 100).toFixed(2)}%`;
+    span.textContent = `+${dispNum(amount)}`;
+    layer.appendChild(span);
+    setTimeout(() => {
+      if (span.parentNode) span.parentNode.removeChild(span);
+    }, 600);
+  }
+
   function spawnUltBoardFx(c, r, isEnemy) {
     const fxLayer = $('battle-fx-layer');
     if (!fxLayer) return;
@@ -493,6 +509,14 @@
     const overlay = $('battle-ult-overlay');
     const imgEl = $('ult-hero-img');
     const nameEl = $('ult-hero-name');
+    const skillTagEl = $('ult-skill-tag');
+    if (nameEl && ultEv) {
+      nameEl.textContent = ultEv.casterName || '绝技释放';
+    }
+    if (skillTagEl) {
+      const skillName = (ultEv && ultEv.skillName) || '破妄神通';
+      skillTagEl.textContent = `绝技 · ${skillName}`;
+    }
     if (!overlay || !isPlaying) {
       onComplete();
       return;
@@ -510,9 +534,6 @@
       }
     }
 
-    if (nameEl) {
-      nameEl.textContent = ultEv.casterName || '绝技释放';
-    }
     const staticSrc = ultEv.casterImg || ultEv.casterPoster || 'assets/hero_v21_new_hd.jpg?v=1';
     if (imgEl) {
       imgEl.src = staticSrc;
@@ -571,6 +592,16 @@
       }
     }
 
+    const heals = ultEv.heals || [];
+    for (let i = 0; i < heals.length; i++) {
+      const h = heals[i];
+      spawnBoardHealFloat(h.c, h.r, h.amount);
+      const u = currentSession && currentSession.unitMap[h.unitId];
+      if (u) {
+        syncUnitBarsAndState(u);
+      }
+    }
+
     const logLine = $('battle-log-line');
     if (logLine) {
       const splashCount = Math.max(0, targets.length - 1);
@@ -578,8 +609,26 @@
         const splashNote = splashCount > 0 ? `，波及周围 ${splashCount} 人` : '';
         logLine.textContent = `Boss【${ultEv.casterName}】释放凶威绝技！对 ${ultEv.primaryTargetName} 造成 ${dispNum(ultEv.dmg)} 伤害${splashNote}`;
       } else {
-        const splashNote = splashCount > 0 ? `，波及周围 ${splashCount} 敌` : '';
-        logLine.textContent = `【${ultEv.casterName}】释放大招！对 ${ultEv.primaryTargetName} 造成 ${dispNum(ultEv.dmg)} 伤害${splashNote}`;
+        const skillName = ultEv.skillName || '破妄神通';
+        const notes = [];
+        if (ultEv.skillKind === 'row' && targets.length > 1) {
+          notes.push(`贯通同行 ${targets.length} 敌`);
+        } else if (splashCount > 0) {
+          notes.push(`波及周围 ${splashCount} 敌`);
+        }
+        if (heals.length === 1 && heals[0].unitId === ultEv.casterId) {
+          notes.push(`回复了 ${dispNum(heals[0].amount)} 生命`);
+        } else if (heals.length > 0) {
+          notes.push(`全队各回复了 ${dispNum(heals[0].amount)} 生命`);
+        }
+        if (ultEv.freezeTargetId) {
+          notes.push(`霜冻了 ${ultEv.primaryTargetName}`);
+        }
+        if (ultEv.buffTargetName) {
+          notes.push(`为 ${ultEv.buffTargetName} 附加甜心加护`);
+        }
+        const extraNote = notes.length > 0 ? `，${notes.join('，')}` : '';
+        logLine.textContent = `【${ultEv.casterName}】释放绝技「${skillName}」！对 ${ultEv.primaryTargetName} 造成 ${dispNum(ultEv.dmg)} 伤害${extraNote}`;
       }
     }
   }

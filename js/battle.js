@@ -242,6 +242,111 @@
     return nextForm;
   }
 
+  const FALLBACK_HERO_SKILLS = {
+    lanyi: {
+      id: 'jianyi_powang',
+      name: '剑意斩 · 破妄',
+      kind: 'single',
+      mainMult: 2.2,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    cloak: {
+      id: 'youming_shiguang',
+      name: '幽冥噬光',
+      kind: 'splash_lifesteal',
+      mainMult: 1.4,
+      splashMult: 0.5,
+      healSelfOfMainDmg: 0.25,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    saintess: {
+      id: 'shengcai_guangyi',
+      name: '圣裁光翼',
+      kind: 'damage_heal_allies',
+      mainMult: 1.3,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0.08,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    miko: {
+      id: 'yinghuo_zhuci',
+      name: '樱火祝词',
+      kind: 'row',
+      mainMult: 1.1,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 1.1,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    shuanghua: {
+      id: 'shuanghua_ningpo',
+      name: '霜华凝魄',
+      kind: 'splash_freeze',
+      mainMult: 1.5,
+      splashMult: 0.5,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    sweetmaid: {
+      id: 'tianxin_jiahu',
+      name: '甜心加护',
+      kind: 'damage_buff_ally',
+      mainMult: 1.2,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1.35,
+      buffHits: 2
+    }
+  };
+
+  function getHeroSkillConfig(heroId, unitSkill) {
+    const C = cfg();
+    if (heroId && C && C.HERO_SKILLS && C.HERO_SKILLS[heroId]) {
+      return C.HERO_SKILLS[heroId];
+    }
+    if (heroId && C && Array.isArray(C.HEROES)) {
+      const found = C.HEROES.find((h) => h && h.id === heroId);
+      if (found && found.skill) return found.skill;
+    }
+    if (heroId && FALLBACK_HERO_SKILLS[heroId]) {
+      return FALLBACK_HERO_SKILLS[heroId];
+    }
+    if (unitSkill && (!unitSkill.heroId || unitSkill.heroId === heroId)) {
+      return unitSkill;
+    }
+    const B = (C && C.BATTLE) || {};
+    return {
+      id: 'powang_shentong',
+      name: '破妄神通',
+      kind: 'splash',
+      mainMult: B.ULT_MAIN_MULT || 1.6,
+      splashMult: B.ULT_SPLASH_MULT || 0.5,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
+    };
+  }
+
   function buildPlayerUnits(stateOrPlayer) {
     const pStats = playerStats(stateOrPlayer);
     const s = resolveStateRef(stateOrPlayer);
@@ -256,6 +361,7 @@
 
     return heroes.map((h, idx) => {
       const pos = formation[h.id] || DEFAULT_PLAYER_SLOTS[idx % DEFAULT_PLAYER_SLOTS.length] || { c: idx % BOARD_COLS, r: 5 };
+      const skillCfg = getHeroSkillConfig(h.id, h.skill);
       return {
         id: `p_${h.id}`,
         heroId: h.id,
@@ -263,6 +369,8 @@
         name: h.name || '修士',
         img: h.img || '',
         poster: h.poster || h.img || '',
+        skill: Object.assign({ heroId: h.id }, skillCfg),
+        skillId: skillCfg.id,
         isBoss: false,
         isLeader: idx === 0,
         c: pos.c,
@@ -278,6 +386,9 @@
         critDmg: pStats.critDmg || pStats.cd || 1.5,
         rage: 0,
         maxRage,
+        skipNextAtk: false,
+        atkBuffMult: 1,
+        atkBuffHits: 0,
         unyieldingUsed: false,
         alive: true,
         order: idx
@@ -328,6 +439,9 @@
         critDmg: eStats.critDmg || eStats.cd || 1.5,
         rage: 0,
         maxRage,
+        skipNextAtk: false,
+        atkBuffMult: 1,
+        atkBuffHits: 0,
         alive: true,
         order: 0
       });
@@ -358,6 +472,9 @@
           critDmg: eStats.critDmg || eStats.cd || 1.5,
           rage: 0,
           maxRage,
+          skipNextAtk: false,
+          atkBuffMult: 1,
+          atkBuffHits: 0,
           alive: true,
           order: i + 1
         });
@@ -394,6 +511,9 @@
           critDmg: eStats.critDmg || eStats.cd || 1.5,
           rage: 0,
           maxRage,
+          skipNextAtk: false,
+          atkBuffMult: 1,
+          atkBuffHits: 0,
           alive: true,
           order: i
         });
@@ -483,7 +603,7 @@
       return false;
     }
 
-    function rollHit(attacker, defender) {
+    function rollHit(attacker, defender, isUlt) {
       const cd = attacker.critDmg || attacker.cd || 1.5;
       const critChance = attacker.crit != null ? attacker.crit : 0.05;
       const shareA = attacker.share || 1 / 6;
@@ -497,6 +617,9 @@
         formMult *
         sideFactor *
         (0.95 + rng() * 0.1);
+      if (!isUlt && attacker.atkBuffHits > 0 && attacker.atkBuffMult > 1) {
+        d *= attacker.atkBuffMult;
+      }
       const crit = rng() < critChance;
       if (crit) d *= cd;
       return { dmg: d, crit };
@@ -626,60 +749,179 @@
 
       caster.rage = 0;
       caster.unyieldingUsed = false;
+      const skill = getHeroSkillConfig(caster.heroId, caster.skill);
+      const skillId = skill.id || 'powang_shentong';
+      const skillName = skill.name || '破妄神通';
+      const skillKind = skill.kind || 'splash';
+
       const stepEvents = [];
       const hitTargets = [];
       const deadList = [];
+      const heals = [];
+      let buffTargetId = null;
+      let buffTargetName = null;
+      let freezeTargetId = null;
+      let mainDmg = 0;
+      let mainCrit = false;
 
-      // 主目标：2 倍普攻伤害
-      const mainRes = rollHit(caster, primary);
-      const mainRawDmg = mainRes.dmg * ultMainMult;
-      const mainDmg = Math.max(1, Math.round(mainRawDmg));
-      if (applyDamageToUnit(primary, mainRawDmg, false)) {
-        deadList.push(primary);
-      }
-      hitTargets.push({
-        unitId: primary.id,
-        name: primary.name,
-        c: primary.c,
-        r: primary.r,
-        dmg: mainDmg,
-        crit: mainRes.crit,
-        isSplash: false,
-        hp: Math.max(0, Math.round(primary.hp)),
-        maxHp: Math.round(primary.maxHp),
-        died: !primary.alive
-      });
-
-      // 周围 1 格（含斜向）其它敌人：总计 0.8 倍溅射伤害
-      const splashEnemies = [];
-      for (let i = 0; i < enemyUnits.length; i++) {
-        const e = enemyUnits[i];
-        if (!e.alive || e.id === primary.id) continue;
-        if (chebyshevDist(primary, e) <= 1) {
-          splashEnemies.push(e);
+      if (skillKind === 'row') {
+        const rowMult = skill.rowMult || skill.mainMult || 1.1;
+        const rowEnemies = [primary];
+        for (let i = 0; i < enemyUnits.length; i++) {
+          const e = enemyUnits[i];
+          if (e.alive && e.id !== primary.id && e.r === primary.r) {
+            rowEnemies.push(e);
+          }
         }
-      }
-      const perSplashMult = splashEnemies.length > 0 ? ultSplashMult / splashEnemies.length : 0;
-      for (let i = 0; i < splashEnemies.length; i++) {
-        const e = splashEnemies[i];
-        const spRes = rollHit(caster, e);
-        const spRawDmg = spRes.dmg * perSplashMult;
-        const spDmg = Math.max(1, Math.round(spRawDmg));
-        if (applyDamageToUnit(e, spRawDmg, false)) {
-          deadList.push(e);
+        for (let i = 0; i < rowEnemies.length; i++) {
+          const e = rowEnemies[i];
+          const rRes = rollHit(caster, e, true);
+          const rRawDmg = rRes.dmg * rowMult;
+          const rDmg = Math.max(1, Math.round(rRawDmg));
+          if (i === 0) {
+            mainDmg = rDmg;
+            mainCrit = rRes.crit;
+          }
+          if (applyDamageToUnit(e, rRawDmg, false)) {
+            deadList.push(e);
+          }
+          hitTargets.push({
+            unitId: e.id,
+            name: e.name,
+            c: e.c,
+            r: e.r,
+            dmg: rDmg,
+            crit: rRes.crit,
+            isSplash: i > 0,
+            hp: Math.max(0, Math.round(e.hp)),
+            maxHp: Math.round(e.maxHp),
+            died: !e.alive
+          });
+        }
+      } else {
+        const mainMult = skill.mainMult != null ? skill.mainMult : ultMainMult;
+        const splashMult = skill.splashMult != null ? skill.splashMult : 0;
+
+        // 主目标伤害
+        const mainRes = rollHit(caster, primary, true);
+        const mainRawDmg = mainRes.dmg * mainMult;
+        mainDmg = Math.max(1, Math.round(mainRawDmg));
+        mainCrit = mainRes.crit;
+        if (applyDamageToUnit(primary, mainRawDmg, false)) {
+          deadList.push(primary);
         }
         hitTargets.push({
-          unitId: e.id,
-          name: e.name,
-          c: e.c,
-          r: e.r,
-          dmg: spDmg,
-          crit: spRes.crit,
-          isSplash: true,
-          hp: Math.max(0, Math.round(e.hp)),
-          maxHp: Math.round(e.maxHp),
-          died: !e.alive
+          unitId: primary.id,
+          name: primary.name,
+          c: primary.c,
+          r: primary.r,
+          dmg: mainDmg,
+          crit: mainRes.crit,
+          isSplash: false,
+          hp: Math.max(0, Math.round(primary.hp)),
+          maxHp: Math.round(primary.maxHp),
+          died: !primary.alive
         });
+
+        // 周围 1 格（含斜向）其它敌人溅射
+        if (splashMult > 0) {
+          const splashEnemies = [];
+          for (let i = 0; i < enemyUnits.length; i++) {
+            const e = enemyUnits[i];
+            if (!e.alive || e.id === primary.id) continue;
+            if (chebyshevDist(primary, e) <= 1) {
+              splashEnemies.push(e);
+            }
+          }
+          const perSplashMult = splashEnemies.length > 0 ? splashMult / splashEnemies.length : 0;
+          for (let i = 0; i < splashEnemies.length; i++) {
+            const e = splashEnemies[i];
+            const spRes = rollHit(caster, e, true);
+            const spRawDmg = spRes.dmg * perSplashMult;
+            const spDmg = Math.max(1, Math.round(spRawDmg));
+            if (applyDamageToUnit(e, spRawDmg, false)) {
+              deadList.push(e);
+            }
+            hitTargets.push({
+              unitId: e.id,
+              name: e.name,
+              c: e.c,
+              r: e.r,
+              dmg: spDmg,
+              crit: spRes.crit,
+              isSplash: true,
+              hp: Math.max(0, Math.round(e.hp)),
+              maxHp: Math.round(e.maxHp),
+              died: !e.alive
+            });
+          }
+        }
+      }
+
+      // 魔灵光：施法者回复生命 = 本次主目标实际伤害的 25%（不超过自身 maxHp，死亡单位不抬血）
+      if ((skillKind === 'splash_lifesteal' || skill.healSelfOfMainDmg > 0) && caster.alive && caster.hp > 0) {
+        const ratio = skill.healSelfOfMainDmg || 0.25;
+        const healAmt = Math.max(1, Math.round(mainDmg * ratio));
+        caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+        heals.push({
+          unitId: caster.id,
+          name: caster.name,
+          c: caster.c,
+          r: caster.r,
+          amount: healAmt,
+          hp: Math.round(caster.hp),
+          maxHp: Math.round(caster.maxHp)
+        });
+      }
+
+      // 圣王女：所有存活我方单位各回复自身 maxHp × 8%（向上取整至少 1，不超过 maxHp）
+      if (skillKind === 'damage_heal_allies' || skill.healAllyMaxHpRatio > 0) {
+        const ratio = skill.healAllyMaxHpRatio || 0.08;
+        for (let i = 0; i < playerUnits.length; i++) {
+          const ally = playerUnits[i];
+          if (!ally.alive || ally.hp <= 0) continue;
+          const healAmt = Math.max(1, Math.ceil(ally.maxHp * ratio));
+          ally.hp = Math.min(ally.maxHp, ally.hp + healAmt);
+          heals.push({
+            unitId: ally.id,
+            name: ally.name,
+            c: ally.c,
+            r: ally.r,
+            amount: healAmt,
+            hp: Math.round(ally.hp),
+            maxHp: Math.round(ally.maxHp)
+          });
+        }
+      }
+
+      // 霜华玉仙：主目标存活则挂 skipNextAtk = true
+      if (skillKind === 'splash_freeze') {
+        if (primary.alive && primary.hp > 0) {
+          primary.skipNextAtk = true;
+          freezeTargetId = primary.id;
+        }
+      }
+
+      // 甜心女仆：选存活我方中当前 atk 最高的一人（并列取 order 更小/先遍历到的）
+      if (skillKind === 'damage_buff_ally' || (skill.buffHits > 0 && skill.buffAtkMult > 1)) {
+        let bestAlly = null;
+        for (let i = 0; i < playerUnits.length; i++) {
+          const ally = playerUnits[i];
+          if (!ally.alive || ally.hp <= 0) continue;
+          if (
+            !bestAlly ||
+            ally.atk > bestAlly.atk ||
+            (ally.atk === bestAlly.atk && (ally.order != null ? ally.order : i) < (bestAlly.order != null ? bestAlly.order : i))
+          ) {
+            bestAlly = ally;
+          }
+        }
+        if (bestAlly) {
+          bestAlly.atkBuffMult = skill.buffAtkMult || 1.35;
+          bestAlly.atkBuffHits = skill.buffHits || 2;
+          buffTargetId = bestAlly.id;
+          buffTargetName = bestAlly.name;
+        }
       }
 
       const hpA = Math.max(0, Math.round(sumSideHp('player')));
@@ -695,13 +937,20 @@
         casterImg: caster.img,
         casterPoster: caster.poster,
         casterRage: 0,
+        skillId,
+        skillName,
+        skillKind,
         primaryTargetId: primary.id,
         primaryTargetName: primary.name,
         primaryC: primary.c,
         primaryR: primary.r,
         dmg: mainDmg,
-        crit: mainRes.crit,
+        crit: mainCrit,
         targets: hitTargets,
+        heals,
+        buffTargetId,
+        buffTargetName,
+        freezeTargetId,
         hpA,
         hpB
       };
@@ -901,8 +1150,32 @@
 
         const dist = chebyshevDist(actor, target);
         if (dist <= 1) {
+          if (actor.skipNextAtk) {
+            actor.skipNextAtk = false;
+            const skipEv = {
+              type: 'skip_atk',
+              t: round,
+              unitId: actor.id,
+              name: actor.name,
+              side: actor.side,
+              c: actor.c,
+              r: actor.r,
+              hpA: Math.max(0, Math.round(sumSideHp('player'))),
+              hpB: Math.max(0, Math.round(sumSideHp('enemy')))
+            };
+            events.push(skipEv);
+            continue;
+          }
+
           // 攻击相邻目标
           const res = rollHit(actor, target);
+          if (actor.atkBuffHits > 0) {
+            actor.atkBuffHits -= 1;
+            if (actor.atkBuffHits <= 0) {
+              actor.atkBuffHits = 0;
+              actor.atkBuffMult = 1;
+            }
+          }
           const dmg = Math.max(1, Math.round(res.dmg));
           const targetDied = applyDamageToUnit(target, res.dmg, true);
 

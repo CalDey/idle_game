@@ -605,13 +605,213 @@
       { id: 'biguanbuchu', name: '闭关不出', cat: '彩蛋', tier: 'egg', stat: 'qi', value: 0.03, bonus: '灵气 +3%', cond: '一次离线结算满 12 小时' },
       { id: 'diandaoshousuan', name: '点到手酸', cat: '彩蛋', tier: 'egg', stat: 'tap', value: 0.03, bonus: '点击灵气 +3%', cond: '单日点击 1000 次' }
     ],
+    HERO_SKILLS: {
+      lanyi: {
+        id: 'jianyi_powang',
+        name: '剑意斩 · 破妄',
+        kind: 'single',
+        mainMult: 2.2,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      cloak: {
+        id: 'youming_shiguang',
+        name: '幽冥噬光',
+        kind: 'splash_lifesteal',
+        mainMult: 1.4,
+        splashMult: 0.5,
+        healSelfOfMainDmg: 0.25,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      saintess: {
+        id: 'shengcai_guangyi',
+        name: '圣裁光翼',
+        kind: 'damage_heal_allies',
+        mainMult: 1.3,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0.08,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      miko: {
+        id: 'yinghuo_zhuci',
+        name: '樱火祝词',
+        kind: 'row',
+        mainMult: 1.1,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 1.1,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      shuanghua: {
+        id: 'shuanghua_ningpo',
+        name: '霜华凝魄',
+        kind: 'splash_freeze',
+        mainMult: 1.5,
+        splashMult: 0.5,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      sweetmaid: {
+        id: 'tianxin_jiahu',
+        name: '甜心加护',
+        kind: 'damage_buff_ally',
+        mainMult: 1.2,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1.35,
+        buffHits: 2
+      }
+    },
     HEROES: [
-      { id: 'lanyi', name: '清冷剑仙', quality: 'xian', avatar: 'assets/battle/avatars/lanyi.webp?v=2', avatarPos: '47% 17%', avatarScale: 2.6, img: 'assets/hero_v21_new_hd.jpg?v=1', poster: 'assets/hero_v21_new_poster.jpg?v=1' },
-      { id: 'cloak', name: '魔灵光', quality: 'xian', avatar: 'assets/battle/avatars/cloak.webp', avatarPos: '55% 15%', avatarScale: 2.6, img: 'assets/hero_mlg_dawn_hd.jpg?v=1', poster: 'assets/hero_mlg_dawn_poster.jpg?v=1' },
-      { id: 'saintess', name: '圣王女', quality: 'xian', avatar: 'assets/battle/avatars/saintess.webp', avatarPos: '48% 12%', avatarScale: 2.6, img: 'assets/hero_saintess_v4b_hd.jpg?v=1', poster: 'assets/hero_saintess_v4b_poster.jpg?v=1' },
-      { id: 'miko', name: '灼樱巫女', quality: 'xian', avatar: 'assets/battle/avatars/miko.webp', avatarPos: '57% 14%', avatarScale: 2.6, img: 'assets/hero_miko_dawn_hd.jpg?v=2', poster: 'assets/hero_miko_dawn_poster.jpg?v=2' },
-      { id: 'shuanghua', name: '霜华玉仙', quality: 'xian', avatar: 'assets/battle/avatars/shuanghua.webp', avatarPos: '52% 17%', avatarScale: 2.6, img: 'assets/hero_shuanghua_hd.jpg?v=1', poster: 'assets/hero_shuanghua_poster.jpg?v=1' },
-      { id: 'sweetmaid', name: '甜心女仆', quality: 'xian', avatar: 'assets/battle/avatars/sweetmaid.webp', avatarPos: '64% 19%', avatarScale: 2.6, img: 'assets/hero_sweetmaid_hd.jpg?v=1', poster: 'assets/hero_sweetmaid_poster.jpg?v=1' }
+      {
+        id: 'lanyi',
+        name: '清冷剑仙',
+        quality: 'xian',
+        avatar: 'assets/battle/avatars/lanyi.webp?v=2',
+        avatarPos: '47% 17%',
+        avatarScale: 2.6,
+        img: 'assets/hero_v21_new_hd.jpg?v=1',
+        poster: 'assets/hero_v21_new_poster.jpg?v=1',
+        skill: {
+          id: 'jianyi_powang',
+          name: '剑意斩 · 破妄',
+          kind: 'single',
+          mainMult: 2.2,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'cloak',
+        name: '魔灵光',
+        quality: 'xian',
+        avatar: 'assets/battle/avatars/cloak.webp',
+        avatarPos: '55% 15%',
+        avatarScale: 2.6,
+        img: 'assets/hero_mlg_dawn_hd.jpg?v=1',
+        poster: 'assets/hero_mlg_dawn_poster.jpg?v=1',
+        skill: {
+          id: 'youming_shiguang',
+          name: '幽冥噬光',
+          kind: 'splash_lifesteal',
+          mainMult: 1.4,
+          splashMult: 0.5,
+          healSelfOfMainDmg: 0.25,
+          healAllyMaxHpRatio: 0,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'saintess',
+        name: '圣王女',
+        quality: 'xian',
+        avatar: 'assets/battle/avatars/saintess.webp',
+        avatarPos: '48% 12%',
+        avatarScale: 2.6,
+        img: 'assets/hero_saintess_v4b_hd.jpg?v=1',
+        poster: 'assets/hero_saintess_v4b_poster.jpg?v=1',
+        skill: {
+          id: 'shengcai_guangyi',
+          name: '圣裁光翼',
+          kind: 'damage_heal_allies',
+          mainMult: 1.3,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0.08,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'miko',
+        name: '灼樱巫女',
+        quality: 'xian',
+        avatar: 'assets/battle/avatars/miko.webp',
+        avatarPos: '57% 14%',
+        avatarScale: 2.6,
+        img: 'assets/hero_miko_dawn_hd.jpg?v=2',
+        poster: 'assets/hero_miko_dawn_poster.jpg?v=2',
+        skill: {
+          id: 'yinghuo_zhuci',
+          name: '樱火祝词',
+          kind: 'row',
+          mainMult: 1.1,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 1.1,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'shuanghua',
+        name: '霜华玉仙',
+        quality: 'xian',
+        avatar: 'assets/battle/avatars/shuanghua.webp',
+        avatarPos: '52% 17%',
+        avatarScale: 2.6,
+        img: 'assets/hero_shuanghua_hd.jpg?v=1',
+        poster: 'assets/hero_shuanghua_poster.jpg?v=1',
+        skill: {
+          id: 'shuanghua_ningpo',
+          name: '霜华凝魄',
+          kind: 'splash_freeze',
+          mainMult: 1.5,
+          splashMult: 0.5,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'sweetmaid',
+        name: '甜心女仆',
+        quality: 'xian',
+        avatar: 'assets/battle/avatars/sweetmaid.webp',
+        avatarPos: '64% 19%',
+        avatarScale: 2.6,
+        img: 'assets/hero_sweetmaid_hd.jpg?v=1',
+        poster: 'assets/hero_sweetmaid_poster.jpg?v=1',
+        skill: {
+          id: 'tianxin_jiahu',
+          name: '甜心加护',
+          kind: 'damage_buff_ally',
+          mainMult: 1.2,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 0,
+          buffAtkMult: 1.35,
+          buffHits: 2
+        }
+      }
     ]
   };
   window.CONFIG = window.GameConfig;
