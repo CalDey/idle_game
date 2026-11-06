@@ -134,7 +134,10 @@ body {
 
 /* Top bar */
 .top-header {
-  flex: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 48px;
   box-sizing: border-box;
   padding: 4px 12px;
@@ -221,7 +224,7 @@ body {
 .main-content:has(#tab-cultivate.active) > .resource-grid,
 #meditation-zone .resource-grid {
   position: absolute;
-  top: 6px;
+  top: 54px;
   left: 10px;
   right: 10px;
   margin: 0;
@@ -294,9 +297,18 @@ body {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  padding: 0 12px 8px;
+  padding: 48px 12px 8px;
   display: flex;
   flex-direction: column;
+}
+
+.app-container[data-tab="tab-cultivate"] .main-content,
+.main-content:has(#tab-cultivate.active) {
+  padding-top: 0;
+}
+
+.app-container[data-tab]:not([data-tab="tab-cultivate"]) .main-content {
+  padding-top: 48px;
 }
 
 .tab-pane {
@@ -388,7 +400,6 @@ body {
   min-height: 168px;
   width: calc(100% + 24px);
   margin: 0 -12px;
-  padding-top: 50px;
   cursor: pointer;
   background: var(--bg-stage);
   overflow: hidden;
@@ -453,7 +464,6 @@ body {
 }
 
 .hero-stage .hero-portrait {
-  top: 50px;
   animation: heroFloat 5.2s ease-in-out infinite;
 }
 
@@ -514,7 +524,7 @@ body {
 
 .realm-title-plate {
   position: absolute;
-  top: 52px;
+  top: 96px;
   left: 12px;
   transform: none;
   z-index: 6;
