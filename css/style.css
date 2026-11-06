@@ -388,6 +388,7 @@ body {
   min-height: 168px;
   width: calc(100% + 24px);
   margin: 0 -12px;
+  padding-top: 50px;
   cursor: pointer;
   background: var(--bg-stage);
   overflow: hidden;
@@ -452,6 +453,7 @@ body {
 }
 
 .hero-stage .hero-portrait {
+  top: 50px;
   animation: heroFloat 5.2s ease-in-out infinite;
 }
 
@@ -512,7 +514,7 @@ body {
 
 .realm-title-plate {
   position: absolute;
-  top: 46px;
+  top: 52px;
   left: 12px;
   transform: none;
   z-index: 6;
