@@ -388,11 +388,6 @@ body {
   pointer-events: none;
 }
 
-.hero-breathe {
-  transform-origin: 50% 82%;
-  animation: heroBreathe 4s ease-in-out infinite;
-}
-
 .hero-stage .hero-portrait {
   animation: heroFloat 5.2s ease-in-out infinite;
 }
@@ -406,18 +401,6 @@ body {
 
   50% {
     transform: translateY(-5px);
-  }
-}
-
-@keyframes heroBreathe {
-
-  0%,
-  100% {
-    transform: scaleY(1);
-  }
-
-  50% {
-    transform: scaleY(1.012);
   }
 }
 
