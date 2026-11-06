@@ -534,7 +534,7 @@
       }
     }
 
-    const staticSrc = ultEv.casterImg || ultEv.casterPoster || 'assets/hero_v21_new_hd.jpg?v=1';
+    const staticSrc = ultEv.casterImg || ultEv.casterPoster || 'assets/hero_v21_new_hd.jpg?v=3';
     if (imgEl) {
       imgEl.src = staticSrc;
       imgEl.alt = ultEv.casterName || '';

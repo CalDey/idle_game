@@ -785,6 +785,18 @@
         rowMult: 0,
         buffAtkMult: 1.35,
         buffHits: 2
+      },
+      jianghua: {
+        id: 'hongxiu_chanxin',
+        name: '红袖缠心',
+        kind: 'damage_heal_allies',
+        mainMult: 1.4,
+        splashMult: 0.45,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0.05,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
       }
     },
     HEROES: [
@@ -792,11 +804,11 @@
         id: 'lanyi',
         name: '清冷剑仙',
         quality: 'xian',
-        avatar: 'assets/battle/avatars/lanyi.webp?v=2',
+        avatar: 'assets/battle/avatars/lanyi.webp?v=3',
         avatarPos: '47% 17%',
         avatarScale: 2.6,
-        img: 'assets/hero_v21_new_hd.jpg?v=1',
-        poster: 'assets/hero_v21_new_poster.jpg?v=1',
+        img: 'assets/hero_v21_new_hd.jpg?v=3',
+        poster: 'assets/hero_v21_new_poster.jpg?v=3',
         skill: {
           id: 'jianyi_powang',
           name: '剑意斩 · 破妄',
@@ -814,11 +826,11 @@
         id: 'cloak',
         name: '魔灵光',
         quality: 'xian',
-        avatar: 'assets/battle/avatars/cloak.webp',
+        avatar: 'assets/battle/avatars/cloak.webp?v=3',
         avatarPos: '55% 15%',
         avatarScale: 2.6,
-        img: 'assets/hero_mlg_dawn_hd.jpg?v=1',
-        poster: 'assets/hero_mlg_dawn_poster.jpg?v=1',
+        img: 'assets/hero_mlg_dawn_hd.jpg?v=3',
+        poster: 'assets/hero_mlg_dawn_poster.jpg?v=3',
         skill: {
           id: 'youming_shiguang',
           name: '幽冥噬光',
@@ -836,11 +848,11 @@
         id: 'saintess',
         name: '圣王女',
         quality: 'xian',
-        avatar: 'assets/battle/avatars/saintess.webp',
+        avatar: 'assets/battle/avatars/saintess.webp?v=3',
         avatarPos: '48% 12%',
         avatarScale: 2.6,
-        img: 'assets/hero_saintess_v4b_hd.jpg?v=1',
-        poster: 'assets/hero_saintess_v4b_poster.jpg?v=1',
+        img: 'assets/hero_saintess_v4b_hd.jpg?v=3',
+        poster: 'assets/hero_saintess_v4b_poster.jpg?v=3',
         skill: {
           id: 'shengcai_guangyi',
           name: '圣裁光翼',
@@ -858,11 +870,11 @@
         id: 'miko',
         name: '灼樱巫女',
         quality: 'xian',
-        avatar: 'assets/battle/avatars/miko.webp',
+        avatar: 'assets/battle/avatars/miko.webp?v=3',
         avatarPos: '57% 14%',
         avatarScale: 2.6,
-        img: 'assets/hero_miko_dawn_hd.jpg?v=2',
-        poster: 'assets/hero_miko_dawn_poster.jpg?v=2',
+        img: 'assets/hero_miko_dawn_hd.jpg?v=3',
+        poster: 'assets/hero_miko_dawn_poster.jpg?v=3',
         skill: {
           id: 'yinghuo_zhuci',
           name: '樱火祝词',
@@ -880,11 +892,11 @@
         id: 'shuanghua',
         name: '霜华玉仙',
         quality: 'xian',
-        avatar: 'assets/battle/avatars/shuanghua.webp?v=2',
+        avatar: 'assets/battle/avatars/shuanghua.webp?v=3',
         avatarPos: '52% 17%',
         avatarScale: 2.6,
-        img: 'assets/hero_shuanghua_hd.jpg?v=2',
-        poster: 'assets/hero_shuanghua_poster.jpg?v=2',
+        img: 'assets/hero_shuanghua_hd.jpg?v=3',
+        poster: 'assets/hero_shuanghua_poster.jpg?v=3',
         skill: {
           id: 'shuanghua_ningpo',
           name: '霜华凝魄',
@@ -902,11 +914,11 @@
         id: 'sweetmaid',
         name: '甜心女仆',
         quality: 'xian',
-        avatar: 'assets/battle/avatars/sweetmaid.webp?v=2',
+        avatar: 'assets/battle/avatars/sweetmaid.webp?v=3',
         avatarPos: '64% 19%',
         avatarScale: 2.6,
-        img: 'assets/hero_sweetmaid_hd.jpg?v=2',
-        poster: 'assets/hero_sweetmaid_poster.jpg?v=2',
+        img: 'assets/hero_sweetmaid_hd.jpg?v=3',
+        poster: 'assets/hero_sweetmaid_poster.jpg?v=3',
         skill: {
           id: 'tianxin_jiahu',
           name: '甜心加护',
@@ -918,6 +930,28 @@
           rowMult: 0,
           buffAtkMult: 1.35,
           buffHits: 2
+        }
+      },
+      {
+        id: 'jianghua',
+        name: '绛华倾城',
+        quality: 'xian',
+        avatar: 'assets/battle/avatars/jianghua.webp?v=1',
+        avatarPos: '50% 18%',
+        avatarScale: 2.6,
+        img: 'assets/hero_jianghua_hd.jpg?v=1',
+        poster: 'assets/hero_jianghua_poster.jpg?v=1',
+        skill: {
+          id: 'hongxiu_chanxin',
+          name: '红袖缠心',
+          kind: 'damage_heal_allies',
+          mainMult: 1.4,
+          splashMult: 0.45,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0.05,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
         }
       }
     ]

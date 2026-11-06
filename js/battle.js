@@ -155,8 +155,8 @@
       {
         id: 'lanyi',
         name: '清冷剑仙',
-        img: 'assets/hero_v21_new_hd.jpg?v=1',
-        poster: 'assets/hero_v21_new_poster.jpg?v=1'
+        img: 'assets/hero_v21_new_hd.jpg?v=3',
+        poster: 'assets/hero_v21_new_poster.jpg?v=3'
       }
     ];
     const unlocked = rawList.filter((h) => h && !h.locked);
@@ -314,6 +314,18 @@
       rowMult: 0,
       buffAtkMult: 1.35,
       buffHits: 2
+    },
+    jianghua: {
+      id: 'hongxiu_chanxin',
+      name: '红袖缠心',
+      kind: 'damage_heal_allies',
+      mainMult: 1.4,
+      splashMult: 0.45,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0.05,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
     }
   };
 
