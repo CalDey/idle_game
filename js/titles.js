@@ -1,4 +1,4 @@
-// 称号：条件、佩戴加成与收藏加成。一夜筑基按「存档创建时间」起算，轮回不重置 createdAt。
+// 称号：条件、佩戴加成与收藏加成。一夜洞天按「存档创建时间」起算，轮回不重置 createdAt。
 (function () {
   const HOUR = 3600 * 1000;
   const DAY = 24 * HOUR;
@@ -92,7 +92,7 @@
       case 'lingqixiaofu':
         return (state.lifetimeQi || 0) >= 100000;
       case 'yiyerzhuji':
-        return realm >= 9 && Date.now() - state.createdAt <= DAY;
+        return realm >= 3 && Date.now() - state.createdAt <= DAY;
       case 'lvbailvzhan':
         return (state.failBreakthroughs || 0) >= 3;
       case 'zhaotaoxiaoxian':
@@ -125,7 +125,7 @@
       case 'lingqixiaofu':
         return [Math.floor(state.lifetimeQi || 0), 100000];
       case 'yiyerzhuji': {
-        if ((state.realmIndex || 0) >= 9) return [1, 1];
+        if ((state.realmIndex || 0) >= 3) return [1, 1];
         const left = state.createdAt + DAY - Date.now();
         return left > 0 ? [0, 1] : [-1, 1];
       }

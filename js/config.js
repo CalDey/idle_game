@@ -1,76 +1,184 @@
 // 修仙挂机 - 核心配置与数值表
 (function () {
-  const SUB_LEVEL_NAMES = ['一层', '二层', '三层', '四层', '五层', '六层', '七层', '八层', '九层'];
+  const SUB_LEVEL_NAMES = ['初', '中', '后'];
 
   const MAJOR_REALMS = [
     {
-      id: 'lianqi',
-      name: '练气',
+      id: 'banxue',
+      name: '搬血',
       baseQi: 50,
-      stepGrowth: 1.42,
+      stepGrowth: 1.35,
       baseSuccessRate: 0.92,
-      rateDecayPerSub: 0.015,
+      rateDecayPerSub: 0.02,
       tribulationSuccessRate: 0.75,
       failureQiLossRatio: 0.25,
       realmMultiplier: 1.0,
-      desc: '引天地灵气入体，洗涤凡胎，初窥仙门径。'
+      desc: '精血如雷，骨文入血催神曦淬肉；败则血枯骨裂。'
     },
     {
-      id: 'zhuji',
-      name: '筑基',
-      baseQi: 1800,
-      stepGrowth: 1.48,
-      baseSuccessRate: 0.85,
-      rateDecayPerSub: 0.018,
-      tribulationSuccessRate: 0.65,
-      failureQiLossRatio: 0.30,
-      realmMultiplier: 2.5,
-      desc: '铸就大道之基，气海凝实，寿元大增。'
-    },
-    {
-      id: 'jindan',
-      name: '金丹',
-      baseQi: 85000,
-      stepGrowth: 1.52,
-      baseSuccessRate: 0.78,
+      id: 'dongtian',
+      name: '洞天',
+      baseQi: 260,
+      stepGrowth: 1.36,
+      baseSuccessRate: 0.89,
       rateDecayPerSub: 0.02,
-      tribulationSuccessRate: 0.55,
-      failureQiLossRatio: 0.32,
-      realmMultiplier: 7.0,
-      desc: '百脉灵气凝结成丹，金丹一转，脱胎换骨。'
+      tribulationSuccessRate: 0.72,
+      failureQiLossRatio: 0.26,
+      realmMultiplier: 1.35,
+      desc: '夺天地造化开洞天吞神精；败则洞天崩、本源倒灌。'
     },
     {
-      id: 'yuanying',
-      name: '元婴',
-      baseQi: 5200000,
-      stepGrowth: 1.56,
-      baseSuccessRate: 0.70,
-      rateDecayPerSub: 0.02,
-      tribulationSuccessRate: 0.48,
-      failureQiLossRatio: 0.35,
-      realmMultiplier: 22.0,
-      desc: '碎丹成婴，神魂初成，已具备轮回转世之资格。'
-    },
-    {
-      id: 'huashen',
-      name: '化神',
-      baseQi: 420000000,
-      stepGrowth: 1.60,
-      baseSuccessRate: 0.62,
+      id: 'hualing',
+      name: '化灵',
+      baseQi: 1500,
+      stepGrowth: 1.38,
+      baseSuccessRate: 0.86,
       rateDecayPerSub: 0.022,
-      tribulationSuccessRate: 0.40,
+      tribulationSuccessRate: 0.68,
+      failureQiLossRatio: 0.27,
+      realmMultiplier: 1.7,
+      desc: '肉身、精神与洞天三重成灵；半途易成残灵。'
+    },
+    {
+      id: 'mingwen',
+      name: '铭纹',
+      baseQi: 8500,
+      stepGrowth: 1.40,
+      baseSuccessRate: 0.83,
+      rateDecayPerSub: 0.024,
+      tribulationSuccessRate: 0.65,
+      failureQiLossRatio: 0.28,
+      realmMultiplier: 2.3,
+      desc: '体内自铭杀符，不再只抄凶兽；错纹噬主。'
+    },
+    {
+      id: 'liezhen',
+      name: '列阵',
+      baseQi: 48000,
+      stepGrowth: 1.41,
+      baseSuccessRate: 0.80,
+      rateDecayPerSub: 0.025,
+      tribulationSuccessRate: 0.62,
+      failureQiLossRatio: 0.29,
+      realmMultiplier: 3.1,
+      desc: '身内铺杀阵推演杀伐；阵反则己身为祭。'
+    },
+    {
+      id: 'zunzhe',
+      name: '尊者',
+      baseQi: 260000,
+      stepGrowth: 1.43,
+      baseSuccessRate: 0.78,
+      rateDecayPerSub: 0.026,
+      tribulationSuccessRate: 0.58,
+      failureQiLossRatio: 0.30,
+      realmMultiplier: 4.2,
+      desc: '凡人称尊；成尊必染血债，方圆可寸草不生。'
+    },
+    {
+      id: 'shenhuo',
+      name: '神火',
+      baseQi: 1400000,
+      stepGrowth: 1.44,
+      baseSuccessRate: 0.75,
+      rateDecayPerSub: 0.028,
+      tribulationSuccessRate: 0.55,
+      failureQiLossRatio: 0.31,
+      realmMultiplier: 6.0,
+      desc: '燃神火、种道种；晚年火可熄，借火易被反吞。'
+    },
+    {
+      id: 'zhenyi',
+      name: '真一',
+      baseQi: 7500000,
+      stepGrowth: 1.46,
+      baseSuccessRate: 0.72,
+      rateDecayPerSub: 0.03,
+      tribulationSuccessRate: 0.52,
+      failureQiLossRatio: 0.32,
+      realmMultiplier: 8.5,
+      desc: '真神长燃；道种不稳则神形俱裂。'
+    },
+    {
+      id: 'shengji',
+      name: '圣祭',
+      baseQi: 40000000,
+      stepGrowth: 1.47,
+      baseSuccessRate: 0.69,
+      rateDecayPerSub: 0.03,
+      tribulationSuccessRate: 0.48,
+      failureQiLossRatio: 0.33,
+      realmMultiplier: 11.8,
+      desc: '危境过渡，可渡神王劫；可跳过则顺，败则为祭。'
+    },
+    {
+      id: 'tianshen',
+      name: '天神',
+      baseQi: 220000000,
+      stepGrowth: 1.49,
+      baseSuccessRate: 0.66,
+      rateDecayPerSub: 0.032,
+      tribulationSuccessRate: 0.45,
+      failureQiLossRatio: 0.34,
+      realmMultiplier: 17.5,
+      desc: '断肢可再生，一滴血崩山；威压镇下境。'
+    },
+    {
+      id: 'xudao',
+      name: '虚道',
+      baseQi: 1200000000,
+      stepGrowth: 1.50,
+      baseSuccessRate: 0.63,
+      rateDecayPerSub: 0.034,
+      tribulationSuccessRate: 0.42,
       failureQiLossRatio: 0.35,
-      realmMultiplier: 75.0,
-      desc: '元神化道，执掌一方天地法则，举手投足皆是天威。'
+      realmMultiplier: 25.5,
+      desc: '以道种触大道；易化道失我。'
+    },
+    {
+      id: 'zhanwo',
+      name: '斩我',
+      baseQi: 6500000000,
+      stepGrowth: 1.52,
+      baseSuccessRate: 0.60,
+      rateDecayPerSub: 0.036,
+      tribulationSuccessRate: 0.39,
+      failureQiLossRatio: 0.36,
+      realmMultiplier: 37.2,
+      desc: '斩我明道；斩偏则道消人灭。'
+    },
+    {
+      id: 'dunyi',
+      name: '遁一',
+      baseQi: 36000000000,
+      stepGrowth: 1.54,
+      baseSuccessRate: 0.58,
+      rateDecayPerSub: 0.038,
+      tribulationSuccessRate: 0.36,
+      failureQiLossRatio: 0.37,
+      realmMultiplier: 65.0,
+      desc: '一方霸主，统领杀伐。'
+    },
+    {
+      id: 'zhizun',
+      name: '至尊',
+      baseQi: 200000000000,
+      stepGrowth: 1.55,
+      baseSuccessRate: 0.55,
+      rateDecayPerSub: 0.04,
+      tribulationSuccessRate: 0.35,
+      failureQiLossRatio: 0.38,
+      realmMultiplier: 120.0,
+      desc: '人道绝巅；威压压境，长生靠神源非善果。（当前终点）'
     }
   ];
 
-  // Build flat list of 45 realm stages (练气一层 .. 化神九层)
+  // Build flat list of 42 realm stages (搬血初 .. 至尊后)
   const REALM_STAGES = [];
   MAJOR_REALMS.forEach((major, majorIdx) => {
     SUB_LEVEL_NAMES.forEach((subName, subIdx) => {
-      const isMajorTribulation = subIdx === 8 && majorIdx < MAJOR_REALMS.length - 1;
-      const isMaxStage = majorIdx === MAJOR_REALMS.length - 1 && subIdx === 8;
+      const isMajorTribulation = subIdx === 2 && majorIdx < MAJOR_REALMS.length - 1;
+      const isMaxStage = majorIdx === MAJOR_REALMS.length - 1 && subIdx === 2;
       const reqQi = Math.round(major.baseQi * Math.pow(major.stepGrowth, subIdx));
       const baseRate = isMajorTribulation
         ? major.tribulationSuccessRate
@@ -98,8 +206,8 @@
     });
   });
 
-  // P0：筑基之后抬高灵气需求，避免十几分钟修到化神。倍数由 tools/sim.js 校准。
-  const LATE_REALM_QI_MULT = [1, 12, 90, 500, 2200];
+  // 洞天之后逐步抬高灵气需求，避免十几分钟通关至至尊后。倍数由 tools/sim.js 校准。
+  const LATE_REALM_QI_MULT = [1, 4, 6, 8, 11, 14, 18, 22, 26, 30, 35, 40, 48, 60];
   REALM_STAGES.forEach((stage) => {
     const mult = LATE_REALM_QI_MULT[stage.majorIndex] || 1;
     if (mult !== 1) stage.reqQi = Math.round(stage.reqQi * mult);
@@ -110,7 +218,7 @@
     { id: 'charm', name: '护符', itemName: '温玉佩', stat: 'atk', base: 5, growth: 1.06 },
     { id: 'crown', name: '头冠', itemName: '白玉簪', stat: 'hp', base: 70, growth: 1.06 },
     { id: 'belt', name: '腰带', itemName: '流云丝绦', stat: 'hp', base: 50, growth: 1.06 },
-    { id: 'robe', name: '法袍', itemName: '练气短衫', stat: 'def', base: 5, growth: 1.06 },
+    { id: 'robe', name: '法袍', itemName: '搬血短衫', stat: 'def', base: 5, growth: 1.06 },
     { id: 'boots', name: '靴', itemName: '踏云履', stat: 'spd', base: 4, growth: 1.02 }
   ];
 
@@ -169,10 +277,10 @@
 
   // 大境界渡劫门槛。P2 打开 ENABLE_STAGE_GATES 后才会拦住突破。
   const TRIBULATION_GATES = {
-    8: { chapter: 3, stage: 30, boss: '黑风寨主' },
-    17: { chapter: 9, stage: 90, boss: '青冥蛟王' },
-    26: { chapter: 15, stage: 150, boss: '赤炎魔君' },
-    35: { chapter: 21, stage: 210, boss: '九幽鬼母' }
+    8: { chapter: 3, stage: 30, boss: '黑风寨主' }, // 化灵后
+    17: { chapter: 9, stage: 90, boss: '青冥蛟王' }, // 尊者后
+    26: { chapter: 15, stage: 150, boss: '赤炎魔君' }, // 圣祭后
+    35: { chapter: 21, stage: 210, boss: '九幽鬼母' } // 斩我后
   };
 
   const BATTLE = {
@@ -197,7 +305,7 @@
     PACE_NORMAL: 1.95,
     PACE_BOSS: 1.15,
     DISPLAY_MULT: 10,
-    UNLOCK_REALM: 2,
+    UNLOCK_REALM: 2, // 搬血后
     CRUSH_RATIO: 3,
     REGIONS: [
       {
@@ -294,7 +402,7 @@
     BASE_CAP: 50,
     CAP_PER_LEVEL: 2,
     GIFT: 30,
-    UNLOCK_REALM: 1
+    UNLOCK_REALM: 1 // 搬血中
   };
 
   function treeUpgradeCost(level) {
@@ -313,57 +421,57 @@
   const GONGFA_LIST = [
     {
       id: 'yinqijue',
-      name: '《引气入体诀》',
-      desc: '基础吐纳心法，引导周天灵气汇聚丹田。',
+      name: '《搬血淬体诀》',
+      desc: '催动滚滚精血如雷鸣，引骨文神曦淬炼凡躯，稍有不慎便血枯骨裂。',
       baseCost: 10,
       costScale: 1.22,
       baseQiPerSec: 2,
-      unlockRealmIndex: 0
+      unlockRealmIndex: 0 // 搬血初
     },
     {
       id: 'taiqingjue',
-      name: '《太清养气篇》',
-      desc: '道门正宗温养法门，生生不息，绵密悠长。',
+      name: '《洞天纳神篇》',
+      desc: '夺天地造化强开洞天，鲸吞十方神精，反噬则洞天崩塌、本源倒灌。',
       baseCost: 120,
       costScale: 1.25,
       baseQiPerSec: 18,
-      unlockRealmIndex: 3 // 练气四层
+      unlockRealmIndex: 3 // 洞天初
     },
     {
       id: 'zhuji_zhenjie',
-      name: '《百脉筑基真解》',
-      desc: '贯通奇经八脉，周天运转效率倍增。',
+      name: '《化灵三元真解》',
+      desc: '肉身、精神与洞天三重化生真灵，周天运转倍增，半途易成残灵。',
       baseCost: 1600,
       costScale: 1.28,
       baseQiPerSec: 160,
-      unlockRealmIndex: 9 // 筑基一层
+      unlockRealmIndex: 6 // 化灵初
     },
     {
       id: 'jiuzhuan_jindan',
-      name: '《九转金丹大道》',
-      desc: '以天地为烘炉，锤炼不朽金丹，鲸吞万里灵气。',
+      name: '《尊者血祭大道》',
+      desc: '以万灵血债铸就凡人尊位，鲸吞万里灵机，所过之处寸草不生。',
       baseCost: 28000,
       costScale: 1.30,
       baseQiPerSec: 2200,
-      unlockRealmIndex: 18 // 金丹一层
+      unlockRealmIndex: 15 // 尊者初
     },
     {
       id: 'zixiao_yuanying',
-      name: '《紫霄凝婴神章》',
-      desc: '紫气东来，元婴吐纳之间引动星辰之力。',
+      name: '《天神威压神章》',
+      desc: '断肢再生、一滴血可崩山，神威镇压下境，呼吸间引动天地本源。',
       baseCost: 550000,
       costScale: 1.32,
       baseQiPerSec: 36000,
-      unlockRealmIndex: 27 // 元婴一层
+      unlockRealmIndex: 27 // 天神初
     },
     {
       id: 'taixu_huashen',
-      name: '《太虚化神天书》',
-      desc: '神游太虚，一念生万法，呼吸与天地同频。',
+      name: '《至尊人道天书》',
+      desc: '立身人道绝巅，统领诸天杀伐，燃神源以镇万古。',
       baseCost: 12000000,
       costScale: 1.35,
       baseQiPerSec: 680000,
-      unlockRealmIndex: 36 // 化神一层
+      unlockRealmIndex: 36 // 遁一初
     }
   ];
 
@@ -376,7 +484,7 @@
       baseCost: 12,
       costScale: 1.24,
       baseStonePerSec: 1,
-      unlockRealmIndex: 0
+      unlockRealmIndex: 0 // 搬血初
     },
     {
       id: 'lingquan',
@@ -385,7 +493,7 @@
       baseCost: 150,
       costScale: 1.26,
       baseStonePerSec: 10,
-      unlockRealmIndex: 2 // 练气三层
+      unlockRealmIndex: 2 // 搬血后
     },
     {
       id: 'yaoyuan',
@@ -394,7 +502,7 @@
       baseCost: 2200,
       costScale: 1.28,
       baseStonePerSec: 110,
-      unlockRealmIndex: 9 // 筑基一层
+      unlockRealmIndex: 6 // 化灵初
     },
     {
       id: 'lingmai',
@@ -403,7 +511,7 @@
       baseCost: 38000,
       costScale: 1.30,
       baseStonePerSec: 1450,
-      unlockRealmIndex: 18 // 金丹一层
+      unlockRealmIndex: 15 // 尊者初
     },
     {
       id: 'dongtian_fudi',
@@ -412,7 +520,7 @@
       baseCost: 750000,
       costScale: 1.33,
       baseStonePerSec: 24000,
-      unlockRealmIndex: 27 // 元婴一层
+      unlockRealmIndex: 27 // 天神初
     },
     {
       id: 'xiantian_zuqiao',
@@ -421,7 +529,7 @@
       baseCost: 16000000,
       costScale: 1.36,
       baseStonePerSec: 450000,
-      unlockRealmIndex: 36 // 化神一层
+      unlockRealmIndex: 36 // 遁一初
     }
   ];
 
@@ -569,7 +677,7 @@
     homeBuildingTier,
     homeBgTier,
     OFFLINE_CAP_SECONDS: 12 * 3600, // 12小时上限
-    REINCARNATION_MIN_STAGE: 27, // 元婴一层 (index 27)
+    REINCARNATION_MIN_STAGE: 27, // 天神初 (index 27)
     ENABLE_STAGE_GATES: true,
     LATE_REALM_QI_MULT,
     EQUIP_SLOTS,
@@ -590,12 +698,12 @@
     TITLE_COLLECTION_QI: 0.005,
     TITLES: [
       { id: 'churu', name: '初入仙途', cat: '入门', tier: 'intro', stat: 'qi', value: 0.01, bonus: '灵气 +1%', cond: '踏入仙途' },
-      { id: 'yinqiruti', name: '引气入体', cat: '入门', tier: 'intro', stat: 'tap', value: 0.01, bonus: '点击灵气 +1%', cond: '达到练气一层' },
+      { id: 'yinqiruti', name: '引气入体', cat: '入门', tier: 'intro', stat: 'tap', value: 0.01, bonus: '点击灵气 +1%', cond: '达到搬血初' },
       { id: 'tunaxinren', name: '吐纳新人', cat: '入门', tier: 'intro', stat: 'tap', value: 0.02, bonus: '点击灵气 +2%', cond: '累计点击 100 次' },
       { id: 'jingzuo', name: '静坐童子', cat: '入门', tier: 'intro', stat: 'qi', value: 0.02, bonus: '灵气 +2%', cond: '累计修炼 1 小时' },
       { id: 'qinxiubuchuo', name: '勤修不辍', cat: '修炼', tier: 'cultivate', stat: 'break', value: 0.01, bonus: '突破成功率 +1%', cond: '连续 3 日登录' },
       { id: 'lingqixiaofu', name: '灵气小富', cat: '修炼', tier: 'cultivate', stat: 'qi', value: 0.02, bonus: '灵气 +2%', cond: '累计获得灵气 10 万' },
-      { id: 'yiyerzhuji', name: '一夜筑基', cat: '修炼', tier: 'cultivate', stat: 'qi', value: 0.03, bonus: '灵气 +3%', cond: '开档 24 小时内筑基' },
+      { id: 'yiyerzhuji', name: '一夜洞天', cat: '修炼', tier: 'cultivate', stat: 'qi', value: 0.03, bonus: '灵气 +3%', cond: '开档 24 小时内突破至洞天初' },
       { id: 'lvbailvzhan', name: '屡败屡战', cat: '修炼', tier: 'cultivate', stat: 'break', value: 0.01, bonus: '突破成功率 +1%', cond: '突破失败累计 3 次' },
       { id: 'zhaotaoxiaoxian', name: '摘桃小仙', cat: '仙桃', tier: 'peach', stat: 'peach', value: 0.02, bonus: '仙桃回复 +2%', cond: '累计摘桃 50 次' },
       { id: 'chudelingbao', name: '初得灵宝', cat: '仙桃', tier: 'peach', stat: 'jade', value: 0.02, bonus: '分解灵玉 +2%', cond: '获得第一件灵品及以上' },

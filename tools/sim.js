@@ -75,7 +75,7 @@ function simulate() {
       qi -= stage.reqQi;
       realm += 1;
       const name = CFG.REALM_STAGES[realm].fullName;
-      if (name.endsWith('一层') || realm === CFG.REALM_STAGES.length - 1) {
+      if (name.endsWith('初') || realm === CFG.REALM_STAGES.length - 1) {
         marks[name] = t;
       }
     }
@@ -94,9 +94,9 @@ function fmt(sec) {
 const result = simulate();
 const lines = [];
 lines.push('暗黑修仙 · 贪心模拟（不计突破失败，不计装备）');
-lines.push(`筑基后灵气倍率 LATE_REALM_QI_MULT = ${JSON.stringify(CFG.LATE_REALM_QI_MULT)}`);
+lines.push(`灵气倍率 LATE_REALM_QI_MULT = ${JSON.stringify(CFG.LATE_REALM_QI_MULT)}`);
 lines.push(`用时 ${fmt(result.seconds)}，停在 ${CFG.REALM_STAGES[result.realm].fullName}`);
-['筑基一层', '金丹一层', '元婴一层', '化神一层', '化神九层'].forEach((name) => {
+['洞天初', '化灵初', '尊者初', '天神初', '遁一初', '至尊后'].forEach((name) => {
   lines.push(`${name}：${fmt(result.marks[name])}`);
 });
 const weights = (lv) => {

@@ -25,7 +25,7 @@
     return {
       version: 3,
       heroId: 'lanyi',
-      realmIndex: 0, // 0 = 练气一层
+      realmIndex: 0, // 0 = 搬血初
       qi: 0,
       stones: 25,
       pityBonus: 0, // 当前小境界渡劫失败累积的额外成功率
@@ -248,7 +248,7 @@
     if (state.realmIndex < window.GameConfig.REINCARNATION_MIN_STAGE) {
       return 0;
     }
-    // 元婴一层(index 27)基础可得 2 点道果，每高一小层增加，化神期大幅提升
+    // 天神初(index 27)基础可得 2 点道果，每高一小层增加，至尊期大幅提升
     const stepsAbove = state.realmIndex - window.GameConfig.REINCARNATION_MIN_STAGE;
     const realmBonus = Math.floor(Math.pow(1.22, stepsAbove) * 2);
     const qiBonus = Math.floor(Math.log10(Math.max(1, state.qi / 1e6)));

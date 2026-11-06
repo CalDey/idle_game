@@ -121,20 +121,34 @@
     els.appContainer = document.querySelector('.app-container');
   }
 
-  // 立绘光效只改表现，不改数值。境界色：练气青、筑基碧、金丹金、元婴紫、化神白金。
+  // 立绘光效只改表现，不改数值。按人道十四境配色，兼容旧存档 fallback。
   const REALM_AURAS = {
+    banxue: { core: '#67e8f9', glow: 'rgba(103, 232, 249, 0.55)', mote: 'rgba(186, 244, 255, 0.95)' },
+    dongtian: { core: '#38bdf8', glow: 'rgba(56, 189, 248, 0.55)', mote: 'rgba(186, 230, 253, 0.95)' },
+    hualing: { core: '#4ade80', glow: 'rgba(74, 222, 128, 0.5)', mote: 'rgba(190, 255, 214, 0.95)' },
+    mingwen: { core: '#2dd4bf', glow: 'rgba(45, 212, 191, 0.55)', mote: 'rgba(153, 246, 228, 0.95)' },
+    liezhen: { core: '#34d399', glow: 'rgba(52, 211, 153, 0.55)', mote: 'rgba(167, 243, 208, 0.95)' },
+    zunzhe: { core: '#f5c76a', glow: 'rgba(245, 199, 106, 0.58)', mote: 'rgba(255, 226, 160, 0.96)' },
+    shenhuo: { core: '#fb923c', glow: 'rgba(251, 146, 60, 0.58)', mote: 'rgba(254, 215, 170, 0.96)' },
+    zhenyi: { core: '#facc15', glow: 'rgba(250, 204, 21, 0.58)', mote: 'rgba(254, 240, 138, 0.96)' },
+    shengji: { core: '#f87171', glow: 'rgba(248, 113, 113, 0.58)', mote: 'rgba(254, 202, 202, 0.96)' },
+    tianshen: { core: '#c084fc', glow: 'rgba(192, 132, 252, 0.58)', mote: 'rgba(230, 204, 255, 0.96)' },
+    xudao: { core: '#a78bfa', glow: 'rgba(167, 139, 250, 0.58)', mote: 'rgba(221, 214, 254, 0.96)' },
+    zhanwo: { core: '#e879f9', glow: 'rgba(232, 121, 249, 0.58)', mote: 'rgba(245, 208, 254, 0.96)' },
+    dunyi: { core: '#fde047', glow: 'rgba(253, 224, 71, 0.60)', mote: 'rgba(254, 249, 195, 0.97)' },
+    zhizun: { core: '#fff3c4', glow: 'rgba(255, 236, 180, 0.62)', mote: 'rgba(255, 248, 226, 0.98)' },
     lianqi: { core: '#67e8f9', glow: 'rgba(103, 232, 249, 0.55)', mote: 'rgba(186, 244, 255, 0.95)' },
     zhuji: { core: '#4ade80', glow: 'rgba(74, 222, 128, 0.5)', mote: 'rgba(190, 255, 214, 0.95)' },
     jindan: { core: '#f5c76a', glow: 'rgba(245, 199, 106, 0.58)', mote: 'rgba(255, 226, 160, 0.96)' },
     yuanying: { core: '#c084fc', glow: 'rgba(192, 132, 252, 0.58)', mote: 'rgba(230, 204, 255, 0.96)' },
     huashen: { core: '#fff3c4', glow: 'rgba(255, 236, 180, 0.62)', mote: 'rgba(255, 248, 226, 0.98)' }
   };
-  let auraMoteColor = REALM_AURAS.lianqi.mote;
+  let auraMoteColor = REALM_AURAS.banxue.mote;
   let lastAuraRealm = '';
   let burstMotes = function () {};
 
   function syncRealmAura(stage) {
-    const aura = REALM_AURAS[stage.majorId] || REALM_AURAS.lianqi;
+    const aura = REALM_AURAS[stage.majorId] || REALM_AURAS.banxue;
     auraMoteColor = aura.mote;
     if (stage.majorId === lastAuraRealm) return;
     lastAuraRealm = stage.majorId;
@@ -275,7 +289,7 @@
     const s = GameState.state;
     const stage = GameState.getCurrentStage();
     if (stage.isMaxStage) {
-      addLog('道友已臻至化神九层大圆满，可前往【轮回】转世重修，凝聚无上道果！', 'gold');
+      addLog('道友已臻至至尊后大圆满，可前往【轮回】转世重修，凝聚无上道果！', 'gold');
       return;
     }
     const gate = window.Equip && Equip.tribulationLock(GameState.state);
@@ -929,11 +943,11 @@
     els.pendingDaoguo.textContent = `+${pending} 道果`;
 
     if (canReincarnate) {
-      els.reincarnateReqHint.textContent = `当前境界已达元婴期以上，兵解转世可立即凝结 ${pending} 枚道果！`;
+      els.reincarnateReqHint.textContent = `当前境界已达天神境以上，兵解转世可立即凝结 ${pending} 枚道果！`;
       els.btnReincarnate.disabled = false;
     } else {
       const currentName = GameState.getCurrentStage().fullName;
-      els.reincarnateReqHint.textContent = `需突破至【元婴一层】方可开启轮回转世（当前：${currentName}）。`;
+      els.reincarnateReqHint.textContent = `需突破至【天神初】方可开启轮回转世（当前：${currentName}）。`;
       els.btnReincarnate.disabled = true;
     }
 
@@ -1037,7 +1051,7 @@
     const ratio = stage.isMaxStage ? 1 : Math.min(1, s.qi / stage.reqQi);
     const pct = (ratio * 100).toFixed(1);
     els.qiProgressText.textContent = stage.isMaxStage
-      ? `${formatNumber(s.qi)} (已臻化神大圆满)`
+      ? `${formatNumber(s.qi)} (已臻至尊后大圆满)`
       : `${formatNumber(s.qi)} / ${formatNumber(stage.reqQi)}`;
     els.qiProgressPercent.textContent = `${pct}%`;
     els.qiProgressBar.style.width = `${pct}%`;
@@ -1065,7 +1079,7 @@
       els.badgeBreakthrough.classList.toggle('visible', canBreak);
     }
 
-    // 若已达元婴期，实时更新可获取道果数
+    // 若已达天神境，实时更新可获取道果数
     if (s.realmIndex >= REINCARNATION_MIN_STAGE) {
       const pending = GameState.getPendingDaoGuo();
       els.pendingDaoguo.textContent = `+${pending} 道果`;
@@ -1424,7 +1438,7 @@
     updateSaveTimestampUI();
 
     if (isNew) {
-      addLog('初入仙途，盘膝吐纳。运转《引气入体诀》，感应天地灵气。', 'success');
+      addLog('初入仙途，盘膝吐纳。运转《搬血淬体诀》，感应天地灵气。', 'success');
     } else {
       addLog('神识归位，继续吐纳天地灵机。');
     }
