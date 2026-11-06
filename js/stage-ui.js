@@ -279,6 +279,7 @@
 
     el.innerHTML = `
       <div class="unit-body">
+        ${u.isBoss ? '<span class="unit-boss-tag">Boss</span>' : ''}
         <div class="unit-bars">
           <div class="unit-hp-bar"><div class="unit-hp-fill" style="width:100%"></div><div class="unit-hp-lag" style="width:100%"></div></div>
           <div class="unit-rage-bar"><div class="unit-rage-fill" style="width:0%"></div></div>
@@ -289,7 +290,6 @@
             <span class="unit-avatar-fallback">${shortChar}</span>
           </div>
           ${u.isLeader ? '<span class="unit-leader-tag" aria-label="主角">主</span>' : ''}
-          ${u.isBoss ? '<span class="unit-boss-tag">Boss</span>' : ''}
           ${u.side === 'player' ? '<span class="unit-ult-tag">大招</span>' : ''}
         </div>
       </div>

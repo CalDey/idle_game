@@ -2318,14 +2318,14 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 .unit-boss-tag {
   position: absolute;
   top: auto;
-  bottom: -1px;
-  left: -2px;
-  transform: none;
-  z-index: 7;
+  bottom: calc(50% + (var(--unit-base-size) / 2) + 2px + 10px + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11;
   font-size: 7px;
   font-weight: 700;
   line-height: 1;
-  padding: 1px 3px;
+  padding: 1px 4px;
   border-radius: 999px;
   background: linear-gradient(180deg, #c93b2b 0%, #6e1510 100%);
   border: 1px solid #ffb4a2;
