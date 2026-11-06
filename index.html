@@ -14,11 +14,11 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=70" />
+  <link rel="stylesheet" href="css/style.css?v=71" />
 </head>
 
 <body>
-  <div class="app-container">
+  <div class="app-container" data-tab="tab-cultivate">
     <!-- 顶部状态栏 -->
     <header class="top-header">
       <div class="header-title-row">
@@ -34,7 +34,10 @@
               src="assets/icons/ui_settings@64.webp?v=18" alt="" aria-hidden="true"></button>
         </div>
       </div>
+    </header>
 
+    <!-- 主内容区 -->
+    <main class="main-content">
       <div class="resource-grid">
         <div class="res-item">
           <div class="res-label">
@@ -61,10 +64,6 @@
           <div id="res-daoguo-val" class="res-value purple">0 (累0)</div>
         </div>
       </div>
-    </header>
-
-    <!-- 主内容区 -->
-    <main class="main-content">
       <!-- 页签1：打坐与突破 -->
       <section id="tab-cultivate" class="tab-pane active">
         <!-- 主角立绘舞台：点击吐纳灵气 -->
@@ -563,7 +562,7 @@
   <script src="js/battle.js?v=29"></script>
   <script src="js/gear.js?v=30"></script>
   <script src="js/stage-ui.js?v=45"></script>
-  <script src="js/game.js?v=41"></script>
+  <script src="js/game.js?v=42"></script>
 </body>
 
 </html>

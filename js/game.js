@@ -245,6 +245,9 @@
     if (tab) {
       tab.classList.toggle('is-portrait-focus', active);
     }
+    if (els.appContainer) {
+      els.appContainer.classList.toggle('is-portrait-focus', active);
+    }
     if (chk) {
       chk.checked = active;
     }
@@ -1124,6 +1127,9 @@
     const panes = document.querySelectorAll('.tab-pane');
     navBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === targetId));
     panes.forEach((p) => p.classList.toggle('active', p.id === targetId));
+    if (els.appContainer) {
+      els.appContainer.dataset.tab = targetId;
+    }
     if (targetId === 'tab-cultivate') {
       restorePortraitFocus();
     }
