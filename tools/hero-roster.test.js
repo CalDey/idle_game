@@ -75,10 +75,11 @@ const NEW_FOUR_HEROES = {
     skillKind: 'row',
     mainMult: 1.15,
     rowMult: 1.15,
+    avatar: 'assets/battle/avatars/honglian.webp?v=2',
     size: { width: 1008, height: 1792 },
     hdSha256: '1395be8b191bd281a7466128295189c699a3615cdbcb706ee2189d918cad69bf',
     posterSha256: '7a3620b6b26e7b8da9d83e50b312d76eb1836d9695921e5b01557a7e30014bdd',
-    avatarSha256: 'baec78c1b47d4ec864775619623dd5f1036878e1abc0f50b97dd61c0031fe058'
+    avatarSha256: '47cfa20d16c637ab70e80dae3e916388d915946529100cf4912568dbf15b35fa'
   },
   molan: {
     name: '墨兰执事',
@@ -101,10 +102,11 @@ const NEW_FOUR_HEROES = {
     skillName: '流风逐影',
     skillKind: 'single',
     mainMult: 1.75,
+    avatar: 'assets/battle/avatars/qinglan.webp?v=2',
     size: { width: 1080, height: 1920 },
     hdSha256: '884a7e73786ae83131f6db035bf8f5b5f29834c2bafa3e0c1dbfac6dfda8923d',
     posterSha256: '6f88c34fceccf44f67a2c2f545574131f66879e29852484de883031b9c48a4d9',
-    avatarSha256: 'f130cf669cbc1e8c621c94f482cd4566ba135e2752427c4e4ca378f90726752d'
+    avatarSha256: '65a6f948519feb9f3ec633448457f9db7f8d8b91ccf7810c3a9ae0bf53ef8c36'
   }
 };
 const PREVIOUS_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui'];
@@ -606,7 +608,7 @@ assert.ok(css.includes('MaShanZheng-Role.woff2?v=11'));
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=81'));
-assert.ok(index.includes('js/config.js?v=64'));
+assert.ok(index.includes('js/config.js?v=65'));
 assert.ok(index.includes('js/state.js?v=30'));
 assert.ok(index.includes('js/battle.js?v=33'));
 
