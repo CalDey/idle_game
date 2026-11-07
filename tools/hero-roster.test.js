@@ -397,17 +397,23 @@ const cssBody = cssDiff.split('\n').filter((line) => (
 ));
 assert.deepStrictEqual(cssBody, [
   '-  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=9") format("woff2");',
-  '+  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=10") format("woff2");'
+  '+  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=10") format("woff2");',
+  '-  object-position: 50% 15%;',
+  '+  object-position: center top;',
+  '-  object-position: center 16%;',
+  '+  object-position: center top;'
 ]);
 assert.ok(css.includes('scrollbar-width: none'));
 assert.ok(css.includes('object-position: center top'));
+assert.match(css, /\.ult-hero-media\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
+assert.match(css, /\.role-card-img\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.ok(css.includes('MaShanZheng-Role.woff2?v=10'));
 ['js/game.js', 'js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
   assert.strictEqual(git(['diff', '--stat', BASE, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=79'));
+assert.ok(index.includes('css/style.css?v=80'));
 assert.ok(index.includes('js/config.js?v=60'));
 assert.ok(index.includes('js/state.js?v=29'));
 assert.ok(index.includes('js/battle.js?v=32'));
