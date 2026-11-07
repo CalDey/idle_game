@@ -797,6 +797,18 @@
         rowMult: 0,
         buffAtkMult: 1,
         buffHits: 0
+      },
+      qingkui: {
+        id: 'huaying_huichun',
+        name: '花影回春',
+        kind: 'damage_heal_allies',
+        mainMult: 1.25,
+        splashMult: 0.35,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0.07,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
       }
     },
     HEROES: [
@@ -847,7 +859,7 @@
       {
         id: 'saintess',
         name: '圣王女',
-        quality: 'xian',
+        quality: 'tian',
         avatar: 'assets/battle/avatars/saintess.webp?v=4',
         avatarPos: '48% 12%',
         avatarScale: 2.6,
@@ -869,7 +881,7 @@
       {
         id: 'miko',
         name: '灼樱巫女',
-        quality: 'xian',
+        quality: 'di',
         avatar: 'assets/battle/avatars/miko.webp?v=4',
         avatarPos: '57% 14%',
         avatarScale: 2.6,
@@ -891,7 +903,7 @@
       {
         id: 'shuanghua',
         name: '霜华玉仙',
-        quality: 'xian',
+        quality: 'tian',
         avatar: 'assets/battle/avatars/shuanghua.webp?v=4',
         avatarPos: '52% 17%',
         avatarScale: 2.6,
@@ -913,7 +925,7 @@
       {
         id: 'sweetmaid',
         name: '甜心女仆',
-        quality: 'xian',
+        quality: 'xuan',
         avatar: 'assets/battle/avatars/sweetmaid.webp?v=4',
         avatarPos: '64% 19%',
         avatarScale: 2.6,
@@ -935,7 +947,7 @@
       {
         id: 'jianghua',
         name: '绛华倾城',
-        quality: 'xian',
+        quality: 'di',
         avatar: 'assets/battle/avatars/jianghua.webp?v=2',
         avatarPos: '50% 18%',
         avatarScale: 2.6,
@@ -949,6 +961,29 @@
           splashMult: 0.45,
           healSelfOfMainDmg: 0,
           healAllyMaxHpRatio: 0.05,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'qingkui',
+        name: '晴葵灵姬',
+        quality: 'tian',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/qingkui.webp?v=2',
+        avatarPos: '58% 13%',
+        avatarScale: 2.6,
+        img: 'assets/hero_qingkui_hd.jpg?v=1',
+        poster: 'assets/hero_qingkui_poster.jpg?v=1',
+        skill: {
+          id: 'huaying_huichun',
+          name: '花影回春',
+          kind: 'damage_heal_allies',
+          mainMult: 1.25,
+          splashMult: 0.35,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0.07,
           rowMult: 0,
           buffAtkMult: 1,
           buffHits: 0

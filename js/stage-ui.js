@@ -1531,9 +1531,12 @@
         const h = hid ? heroMap[hid] : null;
         if (h) {
           const av = h.avatar || h.img || '';
+          const slotQInfo = resolveQualityInfo(h.quality || 'xian');
+          const slotQCls = slotQInfo.id === 'xian' ? ' q-xian' : ` q-${slotQInfo.id}`;
+          const slotQStyle = slotQInfo.id === 'xian' ? '' : ` style="border-color:${slotQInfo.color}"`;
           slotsHtml += `
             <button type="button" class="squad-slot-item is-filled" data-slot-hero-id="${h.id}" title="点击移出【${h.name}】" aria-label="移出 ${h.name}">
-              <span class="squad-slot-avatar-wrap">
+              <span class="squad-slot-avatar-wrap${slotQCls}"${slotQStyle}>
                 <img class="squad-slot-avatar" src="${av}" alt="${h.name}" decoding="async" />
                 <span class="squad-slot-remove" aria-hidden="true">×</span>
                 <span class="squad-slot-idx">${i + 1}</span>
@@ -1585,6 +1588,9 @@
           `;
         } else {
           const stateCls = isSelected ? 'is-selected' : isFull ? 'is-full-disabled' : 'is-available';
+          const qInfo = resolveQualityInfo(h.quality || 'xian');
+          const qCls = qInfo.id === 'xian' ? 'q-xian' : `q-${qInfo.id}`;
+          const qStyle = qInfo.id === 'xian' ? '' : ` style="border-color:${qInfo.color}"`;
           const badgeHtml = isSelected
             ? `<span class="squad-hero-order">#${selIdx + 1}</span>`
             : '';
@@ -1595,7 +1601,7 @@
               : '+ 待命 · 点击上阵';
           listHtml += `
             <button type="button" class="squad-hero-card ${stateCls}" data-squad-hero-id="${h.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
-              <div class="squad-hero-avatar-box q-xian">
+              <div class="squad-hero-avatar-box ${qCls}"${qStyle}>
                 ${av ? `<img class="squad-hero-avatar" src="${av}" alt="${h.name}" decoding="async" />` : `<span class="squad-hero-fallback">${(h.name || '?').slice(0, 1)}</span>`}
                 ${badgeHtml}
               </div>

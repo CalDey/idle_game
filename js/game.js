@@ -1280,11 +1280,19 @@
     return [];
   }
 
+  function isHeroLocked(hero) {
+    if (!hero) return true;
+    if (window.Battle && typeof window.Battle.isHeroUnlocked === 'function') {
+      return !window.Battle.isHeroUnlocked(hero.id, GameState && GameState.state);
+    }
+    return Boolean(hero.locked);
+  }
+
   function resolveHero(heroId) {
     const heroes = getHeroList();
-    let hero = heroes.find((h) => h && h.id === heroId && !h.locked);
+    let hero = heroes.find((h) => h && h.id === heroId && !isHeroLocked(h));
     if (!hero) {
-      hero = heroes.find((h) => h && !h.locked) || {
+      hero = heroes.find((h) => h && !isHeroLocked(h)) || {
         id: 'lanyi',
         name: '蓝衣剑修',
         img: 'assets/hero_v21_new_hd.jpg?v=3',
@@ -1344,7 +1352,7 @@
       btn.type = 'button';
       btn.setAttribute('data-hero-id', hero.id);
 
-      if (hero.locked) {
+      if (isHeroLocked(hero)) {
         btn.className = 'role-card is-locked';
         btn.disabled = true;
         btn.setAttribute('aria-disabled', 'true');
@@ -1386,7 +1394,7 @@
     const heroId = card.getAttribute('data-hero-id');
     const heroes = getHeroList();
     const hero = heroes.find((h) => h && h.id === heroId);
-    if (!hero || hero.locked) return;
+    if (!hero || isHeroLocked(hero)) return;
 
     GameState.state.heroId = hero.id;
     GameState.saveGame();

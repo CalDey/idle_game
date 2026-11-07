@@ -376,6 +376,16 @@
         if (key in saved.equip) equip[key] = saved.equip[key];
       });
     }
+    let unlockedHeroes = saved.unlockedHeroes;
+    if (Array.isArray(unlockedHeroes)) {
+      const lockedSet = new Set(Array.isArray(saved.lockedHeroes) ? saved.lockedHeroes : []);
+      const cfgHeroes = (window.GameConfig && Array.isArray(window.GameConfig.HEROES) && window.GameConfig.HEROES) || [];
+      const qkHero = cfgHeroes.find((h) => h && h.id === 'qingkui');
+      unlockedHeroes = [...unlockedHeroes];
+      if (qkHero && !qkHero.locked && !lockedSet.has('qingkui') && !unlockedHeroes.includes('qingkui')) {
+        unlockedHeroes.push('qingkui');
+      }
+    }
     const heroId = (saved && typeof saved.heroId === 'string' && saved.heroId) ? saved.heroId : 'lanyi';
     const squad = normalizeSavedSquad(saved, heroId);
     const mergedStage = {
@@ -387,7 +397,7 @@
     if (mergedStage.best > 0 && mergedStage.cur <= mergedStage.best && mergedStage.best < 300) {
       mergedStage.cur = mergedStage.best + 1;
     }
-    return {
+    const merged = {
       ...def,
       ...saved,
       version: 3,
@@ -425,6 +435,10 @@
       peachesPicked: saved.peachesPicked || 0,
       decomposed: saved.decomposed || 0
     };
+    if (Array.isArray(unlockedHeroes)) {
+      merged.unlockedHeroes = unlockedHeroes;
+    }
+    return merged;
   }
 
   function saveGame() {

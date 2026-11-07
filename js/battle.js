@@ -550,6 +550,18 @@
       rowMult: 0,
       buffAtkMult: 1,
       buffHits: 0
+    },
+    qingkui: {
+      id: 'huaying_huichun',
+      name: '花影回春',
+      kind: 'damage_heal_allies',
+      mainMult: 1.25,
+      splashMult: 0.35,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0.07,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
     }
   };
 
@@ -609,6 +621,8 @@
         heroId: h.id,
         side: 'player',
         name: h.name || '修士',
+        quality: h.quality || 'xian',
+        avatar: h.avatar || '',
         img: h.img || '',
         poster: h.poster || h.img || '',
         skill: Object.assign({ heroId: h.id }, skillCfg),
