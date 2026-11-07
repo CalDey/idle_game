@@ -1339,10 +1339,38 @@
     }
   }
 
+  // 只排更换角色立绘列表。品阶沿用 QUALITIES 从低到高的下标，展示时从高到低；同品阶保持 HEROES 原顺序。不改全局数组。
+  function portraitHeroList(heroes, qualities) {
+    const rank = {};
+    const qualityList = qualities || QUALITIES || [];
+    for (let i = 0; i < qualityList.length; i++) {
+      const item = qualityList[i];
+      if (item && item.id) rank[item.id] = i;
+    }
+    const source = heroes || [];
+    const decorated = [];
+    for (let i = 0; i < source.length; i++) {
+      decorated.push({ hero: source[i], index: i });
+    }
+    decorated.sort((a, b) => {
+      const aq = a.hero && a.hero.quality;
+      const bq = b.hero && b.hero.quality;
+      const ra = Object.prototype.hasOwnProperty.call(rank, aq) ? rank[aq] : -1;
+      const rb = Object.prototype.hasOwnProperty.call(rank, bq) ? rank[bq] : -1;
+      if (ra !== rb) return rb - ra;
+      return a.index - b.index;
+    });
+    const ordered = [];
+    for (let i = 0; i < decorated.length; i++) ordered.push(decorated[i].hero);
+    return ordered;
+  }
+
+  window.portraitHeroList = portraitHeroList;
+
   function renderRoleList() {
     const box = els.roleList || document.getElementById('role-list');
     if (!box) return;
-    const heroes = getHeroList();
+    const heroes = portraitHeroList(getHeroList());
     const activeHero = resolveHero(GameState.state && GameState.state.heroId);
     box.innerHTML = '';
 

@@ -50,7 +50,7 @@ const RESTORED_PORTRAITS = {
 };
 const YUESHI_HD_SHA256 = 'b6f93fb86082210f3cec22cb5d01b1cdcfe49d6b064886132e9a580ac4637d16';
 const YUESHI_POSTER_SHA256 = '2a48c81b71ff91632dab463fffdf56cf10fe527fd28e07789a6b51fa8216fb4d';
-const YUESHI_AVATAR_SHA256 = 'a1bb1a7cbad2f17385fae6117876d7825d1758450190cde3fae4cf2f010a6c99';
+const YUESHI_AVATAR_SHA256 = 'adf089e3454c08b198c72c8ee97de3368b37f828dfc1830134ed46f167d7c09f';
 const NEW_FOUR_HEROES = {
   ziling: {
     name: '紫绫影姬',
@@ -113,6 +113,7 @@ const PREVIOUS_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetm
 const ALL_13_IDS = PREVIOUS_IDS.concat(['yueshi', 'ziling', 'honglian', 'molan', 'qinglan']);
 const ALL_15_IDS = ALL_13_IDS.concat(['fenxiao', 'shuangchen']);
 const MAIN = '6c873b5cbed5270ffde62175d059a16521d2bd24';
+const MERGED = '926d09b2171352fe91be532a21b0b737b86678d9';
 const FREE_ADDED = ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen'];
 const ASSET_UNCHANGED_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui', 'honglian', 'molan', 'qinglan'];
 const KICK_ZILING_SHA256 = '1f84886ecbebb4717193dba4622394254220779f3af788ac6611d6be48431cf6';
@@ -370,7 +371,9 @@ assert.strictEqual(yueshi.skill.mainMult, 1.2);
 assert.strictEqual(yueshi.skill.splashMult, 0);
 assert.strictEqual(yueshi.img, 'assets/hero_yueshi_hd.jpg?v=2');
 assert.strictEqual(yueshi.poster, 'assets/hero_yueshi_poster.jpg?v=2');
-assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=3');
+assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=4');
+assert.strictEqual(yueshi.avatarPos, '50% 22%');
+assert.strictEqual(yueshi.avatarScale, 2.6);
 assert.strictEqual(read(stripQuery(yueshi.img)).length, 524264);
 assert.ok(!Object.prototype.hasOwnProperty.call(yueshi.skill, 'shield'));
 assert.ok(EXISTING_SKILL_KINDS.has(yueshi.skill.kind));
@@ -378,6 +381,83 @@ assert.deepStrictEqual(currentConfig.HERO_SKILLS.yueshi, yueshi.skill);
 
 const xianIds = heroes.filter((hero) => hero.quality === 'xian').map((hero) => hero.id);
 assert.deepStrictEqual(xianIds, ['lanyi', 'cloak', 'fenxiao', 'shuangchen']);
+
+const mergedConfig = loadConfigSource(git(['show', `${MERGED}:js/config.js`]));
+assert.deepStrictEqual(ids, mergedConfig.HEROES.map((hero) => hero.id), 'HEROES 全局顺序应与 main 一致');
+assert.deepStrictEqual(currentConfig.HERO_SKILLS, mergedConfig.HERO_SKILLS);
+let assetChecks = 0;
+heroes.forEach((hero) => {
+  const prev = mergedConfig.HEROES.find((item) => item.id === hero.id);
+  ['img', 'poster', 'avatar'].forEach((key) => {
+    const rel = stripQuery(hero[key]);
+    const sameBlob = git(['hash-object', '--', rel]).trim() === git(['rev-parse', `${MERGED}:${rel}`]).trim();
+    if (hero.id === 'yueshi' && key === 'avatar') {
+      assert.strictEqual(sameBlob, false, '月誓头像应已扶正');
+      assert.strictEqual(hero.img, prev.img);
+      assert.strictEqual(hero.poster, prev.poster);
+      const kept = Object.assign({}, hero);
+      const oldHero = Object.assign({}, prev);
+      delete kept.avatar;
+      delete oldHero.avatar;
+      assert.deepStrictEqual(kept, oldHero);
+      return;
+    }
+    assert.strictEqual(sameBlob, true, `相对 main 素材被改动：${rel}`);
+    assert.strictEqual(hero[key], prev[key], `${hero.id}.${key} 引用被改动`);
+    assetChecks += 1;
+  });
+});
+assert.strictEqual(assetChecks, 44, '15 组 HD/poster 与其余 14 张头像应与 main 字节一致');
+
+function loadPortraitHeroList() {
+  const sandbox = {
+    window: {},
+    console,
+    performance: { now() { return 0; } },
+    requestAnimationFrame() {},
+    document: {
+      readyState: 'loading',
+      addEventListener() {},
+      getElementById() { return null; },
+      querySelector() { return null; },
+      querySelectorAll() { return []; }
+    }
+  };
+  vm.runInNewContext(text('js/config.js'), sandbox);
+  vm.runInNewContext(text('js/game.js'), sandbox);
+  return sandbox.window.portraitHeroList;
+}
+
+const portraitHeroList = loadPortraitHeroList();
+const portraitIds = Array.from(portraitHeroList(heroes, currentConfig.QUALITIES), (hero) => String(hero.id));
+assert.deepStrictEqual(portraitIds, [
+  'lanyi', 'cloak', 'fenxiao', 'shuangchen',
+  'saintess', 'shuanghua', 'qingkui', 'yueshi',
+  'miko', 'jianghua', 'ziling', 'honglian',
+  'sweetmaid', 'molan', 'qinglan'
+]);
+const beforeOrder = heroes.map((hero) => hero.id);
+portraitHeroList(heroes, currentConfig.QUALITIES);
+assert.deepStrictEqual(heroes.map((hero) => hero.id), beforeOrder);
+const sameTier = [
+  { id: 'late-xian', quality: 'xian' },
+  { id: 'di-a', quality: 'di' },
+  { id: 'early-xian', quality: 'xian' },
+  { id: 'tian-a', quality: 'tian' },
+  { id: 'di-b', quality: 'di' }
+];
+assert.deepStrictEqual(
+  Array.from(portraitHeroList(sameTier, currentConfig.QUALITIES), (hero) => String(hero.id)),
+  ['late-xian', 'early-xian', 'tian-a', 'di-a', 'di-b']
+);
+assert.deepStrictEqual(sameTier.map((hero) => hero.id), ['late-xian', 'di-a', 'early-xian', 'tian-a', 'di-b']);
+assert.ok(text('js/game.js').includes('portraitHeroList(getHeroList())'));
+assert.ok(!text('js/stage-ui.js').includes('portraitHeroList'));
+assert.ok(!text('js/gear.js').includes('portraitHeroList'));
+currentConfig.QUALITIES.forEach((quality, index) => {
+  if (index === 0) return;
+  assert.ok(quality.mult > currentConfig.QUALITIES[index - 1].mult);
+});
 const baseQualities = {};
 baseConfig.HEROES.forEach((hero) => {
   baseQualities[hero.id] = hero.quality;
@@ -773,15 +853,17 @@ assert.ok(css.includes('object-position: center top'));
 assert.match(css, /\.ult-hero-media\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.match(css, /\.role-card-img\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.ok(css.includes('MaShanZheng-Role.woff2?v=12'));
-['js/game.js', 'js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
+['js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
   assert.strictEqual(git(['diff', '--stat', BASE, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
+assert.strictEqual(git(['diff', '--stat', MERGED, '--', 'css/style.css', 'js/state.js', 'js/battle.js']).trim(), '');
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=82'));
-assert.ok(index.includes('js/config.js?v=66'));
+assert.ok(index.includes('js/config.js?v=67'));
 assert.ok(index.includes('js/state.js?v=31'));
 assert.ok(index.includes('js/battle.js?v=34'));
+assert.ok(index.includes('js/game.js?v=44'));
 const battleDiff = git(['diff', '-U0', MAIN, '--', 'js/battle.js']);
 const battleBody = battleDiff.split('\n').filter((line) => (
   (line.startsWith('+') || line.startsWith('-')) && !line.startsWith('+++') && !line.startsWith('---')
