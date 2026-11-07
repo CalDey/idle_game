@@ -971,7 +971,7 @@
         name: '晴葵灵姬',
         quality: 'tian',
         unlockCond: '踏入仙途（初始免费解锁）',
-        avatar: 'assets/battle/avatars/qingkui.webp?v=3',
+        avatar: 'assets/battle/avatars/qingkui.webp?v=4',
         avatarPos: '58% 13%',
         avatarScale: 2.6,
         img: 'assets/hero_qingkui_hd.jpg?v=2',
