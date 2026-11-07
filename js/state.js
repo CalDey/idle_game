@@ -2,6 +2,71 @@
 (function () {
   const SAVE_KEY = 'xiuxian_idle_save_v1';
   const SAVE_BACKUP_KEY = 'xiuxian_idle_save_v1_bak';
+  const MAX_SQUAD_SIZE = 6;
+
+  function isHeroUnlockedInState(heroId, s) {
+    if (!heroId || typeof heroId !== 'string') return false;
+    const heroes = (window.GameConfig && Array.isArray(window.GameConfig.HEROES) && window.GameConfig.HEROES) || [];
+    const hero = heroes.find((h) => h && h.id === heroId);
+    if (!hero) return false;
+    if (s && Array.isArray(s.lockedHeroes) && s.lockedHeroes.includes(heroId)) return false;
+    if (s && Array.isArray(s.unlockedHeroes)) {
+      return s.unlockedHeroes.includes(heroId) && !hero.locked;
+    }
+    return !hero.locked;
+  }
+
+  function computeDefaultSquadIds(s) {
+    const heroes = (window.GameConfig && Array.isArray(window.GameConfig.HEROES) && window.GameConfig.HEROES) || [];
+    const unlocked = heroes.filter((h) => h && isHeroUnlockedInState(h.id, s));
+    if (unlocked.length === 0) return [];
+    const mainId = (s && typeof s.heroId === 'string' && s.heroId) || unlocked[0].id;
+    const out = [];
+    if (unlocked.some((h) => h.id === mainId)) {
+      out.push(mainId);
+    }
+    for (let i = 0; i < unlocked.length && out.length < MAX_SQUAD_SIZE; i++) {
+      const id = unlocked[i].id;
+      if (!out.includes(id)) out.push(id);
+    }
+    return out.slice(0, MAX_SQUAD_SIZE);
+  }
+
+  function normalizeSavedSquad(saved, heroId) {
+    const refState = {
+      ...(saved || {}),
+      heroId: heroId || (saved && saved.heroId) || 'lanyi'
+    };
+    let raw = null;
+    if (saved && Array.isArray(saved.squad)) {
+      raw = saved.squad;
+    } else if (saved && saved.stage && Array.isArray(saved.stage.squad)) {
+      raw = saved.stage.squad;
+    } else if (saved && Array.isArray(saved.heroOrder)) {
+      raw = saved.heroOrder;
+    } else if (saved && Array.isArray(saved.team)) {
+      raw = saved.team;
+    } else if (saved && Array.isArray(saved.lineup)) {
+      raw = saved.lineup;
+    }
+
+    if (Array.isArray(raw)) {
+      const seen = new Set();
+      const filtered = [];
+      for (let i = 0; i < raw.length; i++) {
+        const id = raw[i];
+        if (typeof id !== 'string' || !id || seen.has(id)) continue;
+        if (!isHeroUnlockedInState(id, refState)) continue;
+        seen.add(id);
+        filtered.push(id);
+        if (filtered.length >= MAX_SQUAD_SIZE) break;
+      }
+      if (filtered.length > 0 || raw.length === 0) {
+        return filtered;
+      }
+    }
+    return computeDefaultSquadIds(refState);
+  }
 
   function createDefaultState() {
     const gongfaLevels = {};
@@ -22,9 +87,15 @@
     });
 
     const now = Date.now();
+    const defaultSquad = computeDefaultSquadIds({ heroId: 'lanyi' });
+    const v2Fields = window.Equip.defaultV2Fields(now);
+    if (v2Fields.stage) {
+      v2Fields.stage.squad = [...defaultSquad];
+    }
     return {
       version: 3,
       heroId: 'lanyi',
+      squad: [...defaultSquad],
       realmIndex: 0, // 0 = 搬血初
       qi: 0,
       stones: 25,
@@ -48,7 +119,7 @@
       login: { last: '', streak: 0 },
       dayTaps: { date: '', count: 0 },
       titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
-      ...window.Equip.defaultV2Fields(now)
+      ...v2Fields
     };
   }
 
@@ -305,9 +376,12 @@
         if (key in saved.equip) equip[key] = saved.equip[key];
       });
     }
+    const heroId = (saved && typeof saved.heroId === 'string' && saved.heroId) ? saved.heroId : 'lanyi';
+    const squad = normalizeSavedSquad(saved, heroId);
     const mergedStage = {
       ...def.stage,
       ...(saved.stage || {}),
+      squad: [...squad],
       sweep: { ...def.stage.sweep, ...((saved.stage && saved.stage.sweep) || {}) }
     };
     if (mergedStage.best > 0 && mergedStage.cur <= mergedStage.best && mergedStage.best < 300) {
@@ -317,7 +391,8 @@
       ...def,
       ...saved,
       version: 3,
-      heroId: (saved && typeof saved.heroId === 'string' && saved.heroId) ? saved.heroId : 'lanyi',
+      heroId,
+      squad: [...squad],
       gongfa: { ...def.gongfa, ...(saved.gongfa || {}) },
       dongfu: { ...def.dongfu, ...(saved.dongfu || {}) },
       home: {
@@ -476,6 +551,9 @@
     const keepPeaches = (state.tree && state.tree.peaches) || 0;
     const keepHome = JSON.parse(JSON.stringify(state.home || {}));
 
+    const keepSquad = normalizeSavedSquad(state, state.heroId);
+    const keepFormation = state.formation ? JSON.parse(JSON.stringify(state.formation)) : undefined;
+
     const fresh = createDefaultState();
     fresh.home = {
       ...fresh.home,
@@ -483,6 +561,8 @@
       maxTier: { ...fresh.home.maxTier, ...((keepHome && keepHome.maxTier) || {}) }
     };
     fresh.heroId = state.heroId || 'lanyi';
+    fresh.squad = [...keepSquad];
+    if (keepFormation) fresh.formation = keepFormation;
     fresh.reincarnationCount = keepReincarnations;
     fresh.daoGuo = keepDaoGuo;
     fresh.totalDaoGuo = keepTotalDaoGuo;
@@ -505,6 +585,7 @@
       losses: prevStage.losses || 0,
       streak: 0,
       maxStreak: prevStage.maxStreak || 0,
+      squad: [...keepSquad],
       sweep: { ...((prevStage && prevStage.sweep) || { date: '', used: 0 }) }
     };
     fresh.equip = window.Equip.emptyEquip();
@@ -529,6 +610,79 @@
     return { ok: true, gain, refund };
   }
 
+  function getSquad() {
+    if (window.Battle && typeof window.Battle.getSquadIds === 'function') {
+      return window.Battle.getSquadIds(state);
+    }
+    return normalizeSavedSquad(state, state.heroId);
+  }
+
+  function setSquad(heroIds) {
+    if (window.Battle && typeof window.Battle.setSquad === 'function') {
+      const res = window.Battle.setSquad(state, heroIds);
+      if (res && res.ok) {
+        saveGame();
+      }
+      return res;
+    }
+    if (!Array.isArray(heroIds)) {
+      return { ok: false, reason: 'INVALID_INPUT', squad: getSquad() };
+    }
+    const seen = new Set();
+    const valid = [];
+    for (let i = 0; i < heroIds.length; i++) {
+      const id = heroIds[i];
+      if (typeof id !== 'string' || !id || seen.has(id)) {
+        return { ok: false, reason: 'DUPLICATE_ID', squad: getSquad() };
+      }
+      if (!isHeroUnlockedInState(id, state)) {
+        return { ok: false, reason: 'LOCKED_OR_INVALID_ID', squad: getSquad() };
+      }
+      seen.add(id);
+      valid.push(id);
+    }
+    if (valid.length > MAX_SQUAD_SIZE) {
+      return { ok: false, reason: 'MAX_EXCEEDED', squad: getSquad() };
+    }
+    if (valid.length < 1) {
+      return { ok: false, reason: 'EMPTY_SQUAD', squad: getSquad() };
+    }
+    state.squad = [...valid];
+    if (state.stage) state.stage.squad = [...valid];
+    saveGame();
+    return { ok: true, reason: null, squad: [...valid] };
+  }
+
+  function unlockHero(heroId) {
+    if (!heroId || typeof heroId !== 'string') return false;
+    const heroes = (window.GameConfig && Array.isArray(window.GameConfig.HEROES) && window.GameConfig.HEROES) || [];
+    const hero = heroes.find((h) => h && h.id === heroId);
+    if (!hero) return false;
+    if (hero.locked) {
+      hero.locked = false;
+    }
+    if (Array.isArray(state.lockedHeroes)) {
+      state.lockedHeroes = state.lockedHeroes.filter((id) => id !== heroId);
+    }
+    if (Array.isArray(state.unlockedHeroes) && !state.unlockedHeroes.includes(heroId)) {
+      state.unlockedHeroes.push(heroId);
+    }
+    const curSquad = Array.isArray(state.squad) ? [...state.squad] : computeDefaultSquadIds(state);
+    // 解锁新角色不得自动加到满 6 人以上
+    if (curSquad.length < MAX_SQUAD_SIZE && !curSquad.includes(heroId)) {
+      curSquad.push(heroId);
+    }
+    state.squad = curSquad.slice(0, MAX_SQUAD_SIZE);
+    if (state.stage && typeof state.stage === 'object') {
+      state.stage.squad = [...state.squad];
+    }
+    if (window.Battle && typeof window.Battle.ensureFormation === 'function') {
+      window.Battle.ensureFormation(state);
+    }
+    saveGame();
+    return true;
+  }
+
   function tickTimers(now) {
     grantPeachGift();
     const leveled = finishTreeUpgrade(now);
@@ -540,6 +694,7 @@
     get state() {
       return state;
     },
+    MAX_SQUAD_SIZE,
     getCurrentStage,
     getDaoGuoQiMultiplier,
     getDaoGuoStoneMultiplier,
@@ -555,6 +710,9 @@
     getTalentCost,
     getBreakthroughSuccessRate,
     getPendingDaoGuo,
+    getSquad,
+    setSquad,
+    unlockHero,
     saveGame,
     loadGame,
     resetGame,

@@ -4,6 +4,8 @@
 
   const BOARD_COLS = 6;
   const BOARD_ROWS = 8;
+  const MAX_SQUAD_SIZE = 6;
+  const MIN_SQUAD_SIZE = 1;
 
   // 默认我方阵型：前排 3 个（第 5 行 r=4），后排 3 个（第 7 行 r=6）
   const DEFAULT_PLAYER_SLOTS = [
@@ -91,54 +93,16 @@
     };
   }
 
-  function playerStats(state) {
-    if (state && typeof state.atk === 'number' && typeof state.hp === 'number' && !state.equip) {
-      const cd = state.critDmg || state.cd || 1.5;
-      const crit = state.crit != null ? state.crit : 0.05;
-      const cp =
-        state.cp != null
-          ? state.cp
-          : (state.atk * 10 + state.hp + state.def * 8 + state.spd * 2) * (1 + crit * (cd - 1));
-      return {
-        atk: state.atk,
-        hp: state.hp,
-        def: state.def,
-        spd: state.spd,
-        crit,
-        critDmg: cd,
-        cd,
-        cp,
-        heroId: state.heroId,
-        formation: state.formation
-      };
-    }
-    const E = root.Equip || (typeof window !== 'undefined' && window.Equip);
-    const T = root.Titles || (typeof window !== 'undefined' && window.Titles);
-    const attr = E.attributes(state);
-    const mult = T && typeof T.factor === 'function' ? T.factor(state, 'cp') : 1;
-    const atk = attr.atk * mult;
-    const hp = attr.hp * mult;
-    const def = attr.def * mult;
-    const spd = attr.spd;
-    const crit = attr.crit;
-    const critDmg = attr.critDmg;
-    const cp = (atk * 10 + hp + def * 8 + spd * 2) * (1 + crit * (critDmg - 1));
-    return {
-      atk,
-      hp,
-      def,
-      spd,
-      crit,
-      critDmg,
-      cd: critDmg,
-      cp,
-      heroId: state && state.heroId,
-      formation: state && state.formation
-    };
-  }
-
   function resolveStateRef(stateOrPlayer) {
-    if (stateOrPlayer && (stateOrPlayer.equip || stateOrPlayer.formation || stateOrPlayer.heroId)) {
+    if (
+      stateOrPlayer &&
+      (stateOrPlayer.equip ||
+        stateOrPlayer.formation ||
+        stateOrPlayer.heroId ||
+        Array.isArray(stateOrPlayer.squad) ||
+        Array.isArray(stateOrPlayer.unlockedHeroes) ||
+        Array.isArray(stateOrPlayer.lockedHeroes))
+    ) {
       return stateOrPlayer;
     }
     if (root.GameState && root.GameState.state) return root.GameState.state;
@@ -148,21 +112,42 @@
     return stateOrPlayer || {};
   }
 
+  function getAllConfigHeroes() {
+    const C = cfg();
+    return (
+      (C && Array.isArray(C.HEROES) && C.HEROES) || [
+        {
+          id: 'lanyi',
+          name: '清冷剑仙',
+          img: 'assets/hero_v21_new_hd.jpg?v=3',
+          poster: 'assets/hero_v21_new_poster.jpg?v=3'
+        }
+      ]
+    );
+  }
+
+  function isHeroUnlocked(heroId, state) {
+    if (!heroId || typeof heroId !== 'string') return false;
+    const rawList = getAllConfigHeroes();
+    const hero = rawList.find((h) => h && h.id === heroId);
+    if (!hero) return false;
+    const s = resolveStateRef(state);
+    if (s && Array.isArray(s.lockedHeroes) && s.lockedHeroes.includes(heroId)) {
+      return false;
+    }
+    if (s && Array.isArray(s.unlockedHeroes)) {
+      return s.unlockedHeroes.includes(heroId) && !hero.locked;
+    }
+    return !hero.locked;
+  }
+
   // 获取所有已解锁主角，当前主角（state.heroId）排在第一个
   function unlockedHeroes(state) {
-    const C = cfg();
-    const rawList = (C && Array.isArray(C.HEROES) && C.HEROES) || [
-      {
-        id: 'lanyi',
-        name: '清冷剑仙',
-        img: 'assets/hero_v21_new_hd.jpg?v=3',
-        poster: 'assets/hero_v21_new_poster.jpg?v=3'
-      }
-    ];
-    const unlocked = rawList.filter((h) => h && !h.locked);
-    if (unlocked.length === 0) return rawList.slice(0, 1);
-
+    const rawList = getAllConfigHeroes();
     const s = resolveStateRef(state);
+    const unlocked = rawList.filter((h) => h && isHeroUnlocked(h.id, s));
+    if (unlocked.length === 0) return [];
+
     const mainId = (s && s.heroId) || unlocked[0].id;
     const ordered = [];
     const mainHero = unlocked.find((h) => h.id === mainId);
@@ -173,6 +158,170 @@
       }
     }
     return ordered;
+  }
+
+  function sanitizeSquadIds(rawIds, state) {
+    if (!Array.isArray(rawIds)) return [];
+    const s = resolveStateRef(state);
+    const seen = new Set();
+    const out = [];
+    for (let i = 0; i < rawIds.length; i++) {
+      const id = rawIds[i];
+      if (typeof id !== 'string' || !id) continue;
+      if (seen.has(id)) continue;
+      if (!isHeroUnlocked(id, s)) continue;
+      seen.add(id);
+      out.push(id);
+      if (out.length >= MAX_SQUAD_SIZE) break;
+    }
+    return out;
+  }
+
+  function defaultSquadIds(state) {
+    const unlocked = unlockedHeroes(state);
+    return unlocked.slice(0, MAX_SQUAD_SIZE).map((h) => h.id);
+  }
+
+  function getSquadIds(state) {
+    const s = resolveStateRef(state);
+    if (s && Array.isArray(s.squad)) {
+      return sanitizeSquadIds(s.squad, s);
+    }
+    if (s && s.stage && Array.isArray(s.stage.squad)) {
+      return sanitizeSquadIds(s.stage.squad, s);
+    }
+    if (s && Array.isArray(s.heroOrder)) {
+      const fromOrder = sanitizeSquadIds(s.heroOrder, s);
+      if (fromOrder.length > 0) return fromOrder;
+    }
+    return defaultSquadIds(s);
+  }
+
+  function squadHeroes(state) {
+    const s = resolveStateRef(state);
+    const rawList = getAllConfigHeroes();
+    const heroMap = {};
+    for (let i = 0; i < rawList.length; i++) {
+      const h = rawList[i];
+      if (h && h.id) heroMap[h.id] = h;
+    }
+    const ids = getSquadIds(s);
+    const list = [];
+    for (let i = 0; i < ids.length; i++) {
+      const h = heroMap[ids[i]];
+      if (h && isHeroUnlocked(h.id, s)) {
+        list.push(h);
+      }
+    }
+    return list.slice(0, MAX_SQUAD_SIZE);
+  }
+
+  function canStartBattle(state) {
+    const heroes = squadHeroes(state);
+    const ids = heroes.map((h) => h.id);
+    if (ids.length < MIN_SQUAD_SIZE) {
+      return {
+        ok: false,
+        reason: 'EMPTY_SQUAD',
+        message: '请至少选择 1 名上阵角色',
+        count: 0,
+        squad: []
+      };
+    }
+    return {
+      ok: true,
+      reason: null,
+      message: '',
+      count: ids.length,
+      squad: ids
+    };
+  }
+
+  function playerStats(state) {
+    const s = resolveStateRef(state);
+    const activeSquad = squadHeroes(s);
+    const squadIds = activeSquad.map((h) => h.id);
+    const hasExplicitSquad = Boolean(
+      s && (Array.isArray(s.squad) || (s.stage && Array.isArray(s.stage.squad)) || Array.isArray(s.heroOrder))
+    );
+    const squadCount = hasExplicitSquad ? squadIds.length : Math.min(MAX_SQUAD_SIZE, squadIds.length || MAX_SQUAD_SIZE);
+    const squadScale = Math.max(0, Math.min(1, squadCount / MAX_SQUAD_SIZE));
+
+    if (state && typeof state.atk === 'number' && typeof state.hp === 'number' && !state.equip) {
+      if (state._fromPlayerStats) {
+        return {
+          ...state,
+          squad: Array.isArray(state.squad) ? state.squad.slice(0, MAX_SQUAD_SIZE) : squadIds
+        };
+      }
+      const cd = state.critDmg || state.cd || 1.5;
+      const crit = state.crit != null ? state.crit : 0.05;
+      const scale = Array.isArray(state.squad) ? squadScale : 1;
+      const atk = state.atk * scale;
+      const hp = state.hp * scale;
+      const def = state.def * scale;
+      const spd = state.spd;
+      const baseCp =
+        state.cp != null
+          ? state.cp
+          : (state.atk * 10 + state.hp + state.def * 8 + state.spd * 2) * (1 + crit * (cd - 1));
+      const cp = baseCp * scale;
+      return {
+        _fromPlayerStats: true,
+        baseAtk: state.atk,
+        baseHp: state.hp,
+        baseDef: state.def,
+        baseCp,
+        atk,
+        hp,
+        def,
+        spd,
+        crit,
+        critDmg: cd,
+        cd,
+        cp,
+        heroId: state.heroId,
+        formation: state.formation,
+        squad: Array.isArray(state.squad) ? squadIds : defaultSquadIds(state),
+        unlockedHeroes: state.unlockedHeroes,
+        lockedHeroes: state.lockedHeroes
+      };
+    }
+    const E = root.Equip || (typeof window !== 'undefined' && window.Equip);
+    const T = root.Titles || (typeof window !== 'undefined' && window.Titles);
+    const attr = E.attributes(s);
+    const mult = T && typeof T.factor === 'function' ? T.factor(s, 'cp') : 1;
+    const baseAtk = attr.atk * mult;
+    const baseHp = attr.hp * mult;
+    const baseDef = attr.def * mult;
+    const spd = attr.spd;
+    const crit = attr.crit;
+    const critDmg = attr.critDmg;
+    const baseCp = (baseAtk * 10 + baseHp + baseDef * 8 + spd * 2) * (1 + crit * (critDmg - 1));
+    const atk = baseAtk * squadScale;
+    const hp = baseHp * squadScale;
+    const def = baseDef * squadScale;
+    const cp = squadCount === 0 ? 0 : baseCp * squadScale;
+    return {
+      _fromPlayerStats: true,
+      baseAtk,
+      baseHp,
+      baseDef,
+      baseCp,
+      atk,
+      hp,
+      def,
+      spd,
+      crit,
+      critDmg,
+      cd: critDmg,
+      cp,
+      heroId: s && s.heroId,
+      formation: s && s.formation,
+      squad: squadIds,
+      unlockedHeroes: s && s.unlockedHeroes,
+      lockedHeroes: s && s.lockedHeroes
+    };
   }
 
   function isValidPlayerCell(c, r) {
@@ -186,15 +335,16 @@
     );
   }
 
-  // 确保 state.formation 有效且包含所有已解锁角色（兼容旧存档与新解锁角色）
-  function ensureFormation(state) {
+  // 确保 state.formation 有效且仅包含当前上阵小队（最多 6 人，兼容旧存档与换阵继承槽位）
+  function ensureFormation(state, prevFormation) {
     const s = resolveStateRef(state);
-    const heroes = unlockedHeroes(s);
+    const heroes = squadHeroes(s);
     const rawForm = s && s.formation && typeof s.formation === 'object' ? s.formation : {};
+    const prevForm = prevFormation && typeof prevFormation === 'object' ? prevFormation : rawForm;
     const nextForm = {};
     const used = new Set();
 
-    // 1. 保留已存在的合法坐标
+    // 1. 保留当前上阵角色已存在的合法坐标
     for (let i = 0; i < heroes.length; i++) {
       const h = heroes[i];
       const pos = rawForm[h.id];
@@ -207,12 +357,39 @@
       }
     }
 
-    // 2. 未分配坐标的角色依次放入默认阵型或我方半区空格
+    // 收集被换下阵角色的空出坐标，供新换上阵的角色优先继承
+    const vacatedSlots = [];
+    const prevKeys = Object.keys(prevForm);
+    for (let i = 0; i < prevKeys.length; i++) {
+      const oldId = prevKeys[i];
+      if (!nextForm[oldId]) {
+        const pos = prevForm[oldId];
+        if (pos && isValidPlayerCell(pos.c, pos.r)) {
+          const key = `${pos.c},${pos.r}`;
+          if (!used.has(key)) {
+            vacatedSlots.push({ c: pos.c, r: pos.r });
+          }
+        }
+      }
+    }
+
+    // 2. 未分配坐标的上阵角色依次放入继承槽位、默认阵型或我方半区空格
     for (let i = 0; i < heroes.length; i++) {
       const h = heroes[i];
       if (nextForm[h.id]) continue;
       let placed = false;
-      for (let j = 0; j < DEFAULT_PLAYER_SLOTS.length; j++) {
+
+      while (vacatedSlots.length > 0 && !placed) {
+        const vSlot = vacatedSlots.shift();
+        const vKey = `${vSlot.c},${vSlot.r}`;
+        if (!used.has(vKey)) {
+          used.add(vKey);
+          nextForm[h.id] = { c: vSlot.c, r: vSlot.r };
+          placed = true;
+        }
+      }
+
+      for (let j = 0; j < DEFAULT_PLAYER_SLOTS.length && !placed; j++) {
         const slot = DEFAULT_PLAYER_SLOTS[j];
         const key = `${slot.c},${slot.r}`;
         if (!used.has(key)) {
@@ -240,6 +417,53 @@
       s.formation = nextForm;
     }
     return nextForm;
+  }
+
+  function setSquad(state, rawIds) {
+    const s = resolveStateRef(state);
+    if (!Array.isArray(rawIds)) {
+      return { ok: false, reason: 'INVALID_INPUT', message: '无效的队伍列表', squad: getSquadIds(s) };
+    }
+    const validIds = [];
+    const seen = new Set();
+    for (let i = 0; i < rawIds.length; i++) {
+      const id = rawIds[i];
+      if (typeof id !== 'string' || !id) continue;
+      if (seen.has(id)) {
+        return { ok: false, reason: 'DUPLICATE_ID', message: '队伍中不能包含重复角色', squad: getSquadIds(s) };
+      }
+      if (!isHeroUnlocked(id, s)) {
+        return { ok: false, reason: 'LOCKED_OR_INVALID_ID', message: '包含未解锁或无效角色', squad: getSquadIds(s) };
+      }
+      seen.add(id);
+      validIds.push(id);
+    }
+    if (validIds.length > MAX_SQUAD_SIZE) {
+      return {
+        ok: false,
+        reason: 'MAX_EXCEEDED',
+        message: `最多只能上阵 ${MAX_SQUAD_SIZE} 名角色`,
+        squad: getSquadIds(s)
+      };
+    }
+    if (validIds.length < MIN_SQUAD_SIZE) {
+      return {
+        ok: false,
+        reason: 'EMPTY_SQUAD',
+        message: '请至少选择 1 名角色上阵',
+        squad: getSquadIds(s)
+      };
+    }
+
+    const prevForm = s && s.formation ? { ...s.formation } : {};
+    if (s && typeof s === 'object') {
+      s.squad = [...validIds];
+      if (s.stage && typeof s.stage === 'object') {
+        s.stage.squad = [...validIds];
+      }
+      ensureFormation(s, prevForm);
+    }
+    return { ok: true, reason: null, message: '', squad: [...validIds] };
   }
 
   const FALLBACK_HERO_SKILLS = {
@@ -362,14 +586,20 @@
   function buildPlayerUnits(stateOrPlayer) {
     const pStats = playerStats(stateOrPlayer);
     const s = resolveStateRef(stateOrPlayer);
-    const heroes = unlockedHeroes(s);
+    const heroes = squadHeroes(s).slice(0, MAX_SQUAD_SIZE);
+    if (heroes.length < MIN_SQUAD_SIZE) {
+      return [];
+    }
     const formation = ensureFormation(s);
-    const count = Math.max(1, heroes.length);
+    const count = heroes.length;
     const B = (cfg() && cfg().BATTLE) || {};
     const maxRage = B.RAGE_MAX || 100;
-    const share = 1 / count;
+    const share = 1 / MAX_SQUAD_SIZE;
+    const unitPortion = 1 / count;
     // 补偿 6 人分散站位与后排走位损耗，配合 PLAYER_DMG_FACTOR 使同战力胜率落在 0.45~0.55
     const playerAtkComp = 1.09;
+    const mainHeroId = s && s.heroId;
+    const hasMainInSquad = Boolean(mainHeroId && heroes.some((h) => h.id === mainHeroId));
 
     return heroes.map((h, idx) => {
       const pos = formation[h.id] || DEFAULT_PLAYER_SLOTS[idx % DEFAULT_PLAYER_SLOTS.length] || { c: idx % BOARD_COLS, r: 5 };
@@ -384,15 +614,15 @@
         skill: Object.assign({ heroId: h.id }, skillCfg),
         skillId: skillCfg.id,
         isBoss: false,
-        isLeader: idx === 0,
+        isLeader: hasMainInSquad ? h.id === mainHeroId : idx === 0,
         c: pos.c,
         r: pos.r,
         share,
         formMult: playerAtkComp,
-        atk: pStats.atk * share,
-        hp: pStats.hp * share,
-        maxHp: pStats.hp * share,
-        def: pStats.def * share,
+        atk: pStats.atk * unitPortion,
+        hp: pStats.hp * unitPortion,
+        maxHp: pStats.hp * unitPortion,
+        def: pStats.def * unitPortion,
         spd: pStats.spd,
         crit: pStats.crit != null ? pStats.crit : 0.05,
         critDmg: pStats.critDmg || pStats.cd || 1.5,
@@ -577,7 +807,8 @@
 
     let round = 0;
     let actorQueue = [];
-    let finished = false;
+    const emptySquad = playerUnits.length < MIN_SQUAD_SIZE;
+    let finished = emptySquad;
     let win = false;
     let timeout = false;
     const events = [];
@@ -1309,6 +1540,7 @@
       get timeout() {
         return timeout;
       },
+      emptySquad,
       events,
       units,
       playerUnits,
@@ -1394,6 +1626,8 @@
   }
 
   function winRate(state, n, runs = 50) {
+    const check = canStartBattle(state);
+    if (!check.ok) return 0;
     const total = Math.max(1, Math.floor(runs || 50));
     const p = playerStats(state);
     const e = typeof n === 'object' && n !== null ? n : enemyFor(n);
@@ -1441,11 +1675,20 @@
   const Battle = {
     BOARD_COLS,
     BOARD_ROWS,
+    MAX_SQUAD_SIZE,
+    MIN_SQUAD_SIZE,
     DEFAULT_PLAYER_SLOTS,
     mulberry32,
     enemyFor,
     playerStats,
+    isHeroUnlocked,
     unlockedHeroes,
+    sanitizeSquadIds,
+    defaultSquadIds,
+    getSquadIds,
+    squadHeroes,
+    canStartBattle,
+    setSquad,
     ensureFormation,
     buildPlayerUnits,
     buildEnemyUnits,

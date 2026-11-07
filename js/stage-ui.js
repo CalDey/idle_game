@@ -47,6 +47,8 @@
   let preloadedRegionIdx = -1;
   let preloadRegionBgImg = null;
   let resultOverlayTimer = 0;
+  let squadModalOpen = false;
+  let draftSquad = [];
 
   function $(id) {
     return document.getElementById(id);
@@ -117,6 +119,11 @@
     if (s.stage.speed !== 1 && s.stage.speed !== 2) s.stage.speed = 2;
     if (s.stage.auto === undefined) s.stage.auto = true;
     if (!s.stage.idleAt) s.stage.idleAt = Date.now();
+    const squadIds = window.Battle.getSquadIds(s);
+    if (!Array.isArray(s.squad) || s.squad.length > window.Battle.MAX_SQUAD_SIZE) {
+      s.squad = [...squadIds];
+    }
+    s.stage.squad = [...squadIds];
     window.Battle.ensureFormation(s);
     return s.stage;
   }
@@ -160,7 +167,8 @@
 
   function getCachedWinRate(state, stageNum, playerCp) {
     const formStr = serializeFormation(state && state.formation);
-    const key = `${stageNum}:${Math.round(playerCp)}:${state && state.heroId}:${formStr}`;
+    const squadStr = window.Battle.getSquadIds(state).join(',');
+    const key = `${stageNum}:${Math.round(playerCp)}:${state && state.heroId}:${squadStr}:${formStr}`;
     if (key !== cachedWinRateKey) {
       cachedWinRateKey = key;
       cachedWinRateVal = window.Battle.winRate(state, stageNum, 40);
@@ -788,7 +796,8 @@
   function renderPreBattleBoard(s, enemy) {
     if (isPlaying || dragState) return;
     const formStr = serializeFormation(s.formation);
-    const key = `${enemy.n}:${s.heroId}:${formStr}`;
+    const squadStr = window.Battle.getSquadIds(s).join(',');
+    const key = `${enemy.n}:${s.heroId}:${squadStr}:${formStr}`;
     const container = $('battle-units');
     if (key === previewBoardKey && container && container.children.length > 0) {
       return;
@@ -817,6 +826,8 @@
     const stageNum = st.cur;
     const enemy = isPlaying && currentEnemy ? currentEnemy : window.Battle.enemyFor(stageNum);
     const player = isPlaying && currentPlayer ? currentPlayer : window.Battle.playerStats(s);
+    const activeSquadIds = window.Battle.getSquadIds(s);
+    const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
 
     renderChapterBar(enemy, st.best || 0);
 
@@ -841,8 +852,10 @@
     if (formHintEl) {
       if (isPlaying) {
         formHintEl.textContent = st.auto ? '自动释放大招中' : '怒气满点击头像放大招';
+      } else if (activeSquadIds.length === 0) {
+        formHintEl.textContent = '请先点击【队伍】选择上阵角色';
       } else {
-        formHintEl.textContent = '战前可拖动我方角色布阵';
+        formHintEl.textContent = `上阵 ${activeSquadIds.length}/${maxSquad} · 拖动角色布阵`;
       }
     }
 
@@ -865,11 +878,21 @@
       winrateEl.dataset.level = rate >= 0.6 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
     }
 
+    const btnSquad = $('btn-stage-squad');
+    const squadCountEl = $('stage-squad-count');
     const btnChallenge = $('btn-stage-challenge');
     const btnAuto = $('btn-stage-auto');
     const btnSpeed = $('btn-stage-speed');
+    if (squadCountEl) {
+      squadCountEl.textContent = `${activeSquadIds.length}/${maxSquad}`;
+    }
+    if (btnSquad) {
+      btnSquad.classList.toggle('is-empty', activeSquadIds.length === 0);
+      btnSquad.title = isPlaying ? '编辑队伍（下一场生效）' : `编辑队伍（当前 ${activeSquadIds.length}/${maxSquad}）`;
+    }
     if (btnChallenge) {
       btnChallenge.textContent = isPlaying ? '跳 过' : '挑 战';
+      btnChallenge.classList.toggle('is-disabled', !isPlaying && activeSquadIds.length === 0);
     }
     if (btnAuto) {
       const autoOn = Boolean(st.auto);
@@ -882,6 +905,9 @@
     }
 
     renderIdleCard();
+    if (squadModalOpen) {
+      renderSquadModal();
+    }
   }
 
   function finishBattle() {
@@ -956,13 +982,8 @@
       onChange();
       render();
 
-      if (st.auto && stageNum < 300 && !document.hidden) {
-        clearTimeout(autoNextTimer);
-        autoNextTimer = setTimeout(() => {
-          if (st.auto && !isPlaying && unlocked()) {
-            startBattle(false);
-          }
-        }, 1000);
+      if (stageNum < 300) {
+        scheduleAutoNextIfAllowed();
       }
     } else {
       st.fails = (st.fails || 0) + 1;
@@ -1122,14 +1143,31 @@
   }
 
   function startBattle(manual) {
-    if (!unlocked()) return;
+    if (!unlocked()) return false;
     if (isPlaying) {
       if (manual) skipBattle();
-      return;
+      return false;
     }
 
     if (dragState) {
       cancelDrag();
+    }
+
+    const s = window.GameState.state;
+    const st = ensureStageState();
+    const squadCheck = window.Battle.canStartBattle(s);
+    if (!squadCheck.ok) {
+      clearTimeout(autoNextTimer);
+      autoNextTimer = 0;
+      const logLine = $('battle-log-line');
+      if (logLine) {
+        logLine.textContent = '队伍为空，请先点击【队伍】选择至少 1 名角色上阵';
+      }
+      if (manual) {
+        log('出战队伍为空，请先在闯关【队伍】中选择至少 1 名角色上阵。', 'warn');
+      }
+      render();
+      return false;
     }
 
     clearTimeout(autoNextTimer);
@@ -1139,8 +1177,6 @@
     clearBattleFloats();
     hideResultOverlay();
 
-    const s = window.GameState.state;
-    const st = ensureStageState();
     const stageNum = st.cur;
     const player = window.Battle.playerStats(s);
     const enemy = window.Battle.enemyFor(stageNum);
@@ -1148,6 +1184,14 @@
     s.seq = (s.seq || 0) + 1;
     const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x9e3779b1)) >>> 0;
     const session = window.Battle.createSession(s, enemy, seed);
+    if (!session || session.emptySquad || session.playerUnits.length < 1) {
+      const logLine = $('battle-log-line');
+      if (logLine) {
+        logLine.textContent = '队伍为空，请先点击【队伍】选择至少 1 名角色上阵';
+      }
+      render();
+      return false;
+    }
 
     isPlaying = true;
     currentSession = session;
@@ -1165,6 +1209,7 @@
     render();
 
     playTimer = setTimeout(stepPlayback, getMoveDelay());
+    return true;
   }
 
   function toggleAuto() {
@@ -1440,6 +1485,314 @@
     }
   }
 
+  function setSquadFeedback(text, tone = 'info') {
+    const el = $('squad-modal-feedback');
+    if (!el) return;
+    el.textContent = text;
+    el.dataset.tone = tone;
+  }
+
+  function getAllHeroesList() {
+    if (window.GameConfig && Array.isArray(window.GameConfig.HEROES)) {
+      return window.GameConfig.HEROES;
+    }
+    return [];
+  }
+
+  function renderSquadModal() {
+    const modal = $('squad-modal');
+    if (!modal) return;
+    const s = window.GameState.state;
+    const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
+    const heroes = getAllHeroesList();
+    const heroMap = {};
+    for (let i = 0; i < heroes.length; i++) {
+      const h = heroes[i];
+      if (h && h.id) heroMap[h.id] = h;
+    }
+
+    draftSquad = window.Battle.sanitizeSquadIds(draftSquad, s);
+    const curCount = draftSquad.length;
+    const isFull = curCount >= maxSquad;
+    const isEmpty = curCount < 1;
+
+    const countEl = $('squad-modal-count');
+    if (countEl) {
+      countEl.textContent = `已上阵 ${curCount}/${maxSquad}`;
+      countEl.classList.toggle('is-full', isFull);
+      countEl.classList.toggle('is-empty', isEmpty);
+    }
+
+    const slotsEl = $('squad-active-slots');
+    if (slotsEl) {
+      let slotsHtml = '';
+      for (let i = 0; i < maxSquad; i++) {
+        const hid = draftSquad[i];
+        const h = hid ? heroMap[hid] : null;
+        if (h) {
+          const av = h.avatar || h.img || '';
+          slotsHtml += `
+            <button type="button" class="squad-slot-item is-filled" data-slot-hero-id="${h.id}" title="点击移出【${h.name}】" aria-label="移出 ${h.name}">
+              <span class="squad-slot-avatar-wrap">
+                <img class="squad-slot-avatar" src="${av}" alt="${h.name}" decoding="async" />
+                <span class="squad-slot-remove" aria-hidden="true">×</span>
+                <span class="squad-slot-idx">${i + 1}</span>
+              </span>
+              <span class="squad-slot-name">${h.name}</span>
+            </button>
+          `;
+        } else {
+          slotsHtml += `
+            <div class="squad-slot-item is-empty" aria-label="空槽位 ${i + 1}">
+              <span class="squad-slot-avatar-wrap">
+                <span class="squad-slot-plus" aria-hidden="true">+</span>
+                <span class="squad-slot-idx">${i + 1}</span>
+              </span>
+              <span class="squad-slot-name">空位</span>
+            </div>
+          `;
+        }
+      }
+      slotsEl.innerHTML = slotsHtml;
+    }
+
+    const listEl = $('squad-hero-list');
+    if (listEl) {
+      let listHtml = '';
+      for (let i = 0; i < heroes.length; i++) {
+        const h = heroes[i];
+        if (!h || !h.id) continue;
+        const isUnlockedHero = window.Battle.isHeroUnlocked(h.id, s);
+        const selIdx = draftSquad.indexOf(h.id);
+        const isSelected = selIdx !== -1;
+        const av = h.avatar || h.img || '';
+        const skillName = (h.skill && h.skill.name) || '破妄神通';
+
+        if (!isUnlockedHero) {
+          listHtml += `
+            <button type="button" class="squad-hero-card is-locked" data-squad-hero-id="${h.id}" aria-disabled="true">
+              <div class="squad-hero-avatar-box is-locked">
+                <span class="squad-hero-lock-icon" aria-hidden="true">🔒</span>
+              </div>
+              <div class="squad-hero-info">
+                <div class="squad-hero-name-row">
+                  <span class="squad-hero-name">${h.name || '未解锁角色'}</span>
+                </div>
+                <div class="squad-hero-skill">绝技 · ${skillName}</div>
+                <div class="squad-hero-status is-locked">未解锁</div>
+              </div>
+            </button>
+          `;
+        } else {
+          const stateCls = isSelected ? 'is-selected' : isFull ? 'is-full-disabled' : 'is-available';
+          const badgeHtml = isSelected
+            ? `<span class="squad-hero-order">#${selIdx + 1}</span>`
+            : '';
+          const statusText = isSelected
+            ? '✓ 已上阵 · 点击移出'
+            : isFull
+              ? '待命 · 已满 6/6'
+              : '+ 待命 · 点击上阵';
+          listHtml += `
+            <button type="button" class="squad-hero-card ${stateCls}" data-squad-hero-id="${h.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
+              <div class="squad-hero-avatar-box q-xian">
+                ${av ? `<img class="squad-hero-avatar" src="${av}" alt="${h.name}" decoding="async" />` : `<span class="squad-hero-fallback">${(h.name || '?').slice(0, 1)}</span>`}
+                ${badgeHtml}
+              </div>
+              <div class="squad-hero-info">
+                <div class="squad-hero-name-row">
+                  <span class="squad-hero-name">${h.name}</span>
+                </div>
+                <div class="squad-hero-skill">绝技 · ${skillName}</div>
+                <div class="squad-hero-status">${statusText}</div>
+              </div>
+            </button>
+          `;
+        }
+      }
+      listEl.innerHTML = listHtml;
+    }
+
+    const btnSave = $('btn-squad-save');
+    if (btnSave) {
+      btnSave.disabled = isEmpty;
+      btnSave.classList.toggle('is-disabled', isEmpty);
+      btnSave.textContent = isEmpty ? '至少选 1 人' : `保存 (${curCount}/${maxSquad})`;
+    }
+  }
+
+  function scheduleAutoNextIfAllowed() {
+    clearTimeout(autoNextTimer);
+    autoNextTimer = 0;
+    const s = window.GameState.state;
+    const st = ensureStageState();
+    if (!unlocked() || isPlaying || squadModalOpen || document.hidden) return false;
+    if (!st.auto || haltedByLoss || (st.best || 0) >= 300) return false;
+    if (!window.Battle.canStartBattle(s).ok) return false;
+
+    autoNextTimer = setTimeout(() => {
+      autoNextTimer = 0;
+      const curState = window.GameState.state;
+      const curSt = ensureStageState();
+      if (
+        curSt.auto &&
+        !isPlaying &&
+        unlocked() &&
+        !squadModalOpen &&
+        !haltedByLoss &&
+        window.Battle.canStartBattle(curState).ok
+      ) {
+        startBattle(false);
+      }
+    }, 1000);
+    return true;
+  }
+
+  function openSquadModal() {
+    const modal = $('squad-modal');
+    if (!modal) return false;
+    if (dragState) cancelDrag();
+    clearTimeout(autoNextTimer);
+    autoNextTimer = 0;
+
+    const s = window.GameState.state;
+    draftSquad = [...window.Battle.getSquadIds(s)];
+    squadModalOpen = true;
+    renderSquadModal();
+    if (isPlaying) {
+      setSquadFeedback('战斗进行中，保存队伍后将在下一场生效', 'info');
+    } else if (draftSquad.length === 0) {
+      setSquadFeedback('当前队伍为空（0/6），请至少选择 1 名角色上阵', 'warn');
+    } else {
+      setSquadFeedback(`点击角色卡上阵或移出（当前 ${draftSquad.length}/${window.Battle.MAX_SQUAD_SIZE || 6}，最多 6 人）`, 'info');
+    }
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    return true;
+  }
+
+  function closeSquadModal(options) {
+    const modal = $('squad-modal');
+    const wasOpen = squadModalOpen;
+    squadModalOpen = false;
+    draftSquad = [...window.Battle.getSquadIds(window.GameState.state)];
+
+    // 关闭并标记 aria-hidden 前，先将焦点安全交还给「队伍」触发按钮，避免 aria-hidden 后代保留焦点告警
+    const activeEl = document.activeElement;
+    if (modal && activeEl && typeof modal.contains === 'function' && modal.contains(activeEl)) {
+      if (typeof activeEl.blur === 'function') activeEl.blur();
+    }
+    const triggerBtn = $('btn-stage-squad');
+    if (triggerBtn && typeof triggerBtn.focus === 'function') {
+      try {
+        triggerBtn.focus({ preventScroll: true });
+      } catch (err) {
+        triggerBtn.focus();
+      }
+    }
+
+    if (modal) {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    const skipResume = Boolean(options && typeof options === 'object' && options.skipResumeAuto);
+    if (wasOpen && !skipResume) {
+      scheduleAutoNextIfAllowed();
+    }
+  }
+
+  function getDraftSquad() {
+    return [...draftSquad];
+  }
+
+  function toggleDraftHero(heroId) {
+    const s = window.GameState.state;
+    const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
+    const heroes = getAllHeroesList();
+    const hero = heroes.find((h) => h && h.id === heroId);
+    const heroName = (hero && hero.name) || heroId || '角色';
+
+    const existingIdx = draftSquad.indexOf(heroId);
+    if (existingIdx !== -1) {
+      draftSquad.splice(existingIdx, 1);
+      renderSquadModal();
+      if (draftSquad.length === 0) {
+        setSquadFeedback(`已移出【${heroName}】（0/${maxSquad}）· 请至少选择 1 名角色上阵`, 'warn');
+      } else {
+        setSquadFeedback(`已移出【${heroName}】（${draftSquad.length}/${maxSquad}）`, 'info');
+      }
+      return {
+        ok: true,
+        action: 'removed',
+        reason: null,
+        count: draftSquad.length,
+        squad: [...draftSquad]
+      };
+    }
+
+    if (!window.Battle.isHeroUnlocked(heroId, s)) {
+      setSquadFeedback(`【${heroName}】尚未解锁，无法编入队伍`, 'error');
+      return {
+        ok: false,
+        action: 'rejected',
+        reason: 'LOCKED_OR_INVALID_ID',
+        count: draftSquad.length,
+        squad: [...draftSquad]
+      };
+    }
+
+    if (draftSquad.length >= maxSquad) {
+      setSquadFeedback(`队伍已满（${maxSquad}/${maxSquad}），请先移出 1 名成员再更换`, 'warn');
+      return {
+        ok: false,
+        action: 'rejected',
+        reason: 'MAX_REACHED',
+        count: draftSquad.length,
+        squad: [...draftSquad]
+      };
+    }
+
+    draftSquad.push(heroId);
+    renderSquadModal();
+    setSquadFeedback(`已上阵【${heroName}】（${draftSquad.length}/${maxSquad}）`, 'success');
+    return {
+      ok: true,
+      action: 'added',
+      reason: null,
+      count: draftSquad.length,
+      squad: [...draftSquad]
+    };
+  }
+
+  function saveSquad(customIds) {
+    const s = window.GameState.state;
+    const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
+    const targetIds = Array.isArray(customIds) ? customIds : draftSquad;
+    const res = window.Battle.setSquad(s, targetIds);
+    if (!res.ok) {
+      setSquadFeedback(res.message || '请至少选择 1 名角色上阵', 'error');
+      return res;
+    }
+
+    draftSquad = [...res.squad];
+    window.GameState.saveGame();
+    cachedWinRateKey = '';
+    previewBoardKey = '';
+    haltedByLoss = false;
+
+    closeSquadModal();
+    const logLine = $('battle-log-line');
+    if (logLine) {
+      logLine.textContent = isPlaying
+        ? `队伍已保存（${res.squad.length}/${maxSquad}），将在下一场战斗生效`
+        : `出战队伍已更新（${res.squad.length}/${maxSquad}）· 可拖动角色调整站位`;
+    }
+    onChange();
+    render();
+    return res;
+  }
+
   function tick() {
     const now = Date.now();
     if (unlocked() !== lastUnlocked) {
@@ -1463,6 +1816,7 @@
 
   function onHide() {
     if (dragState) cancelDrag();
+    if (squadModalOpen) closeSquadModal({ skipResumeAuto: true });
     if (isPlaying) {
       skipBattle();
     }
@@ -1478,12 +1832,61 @@
     ensureGridCells();
     initBoardInteraction();
 
+    const btnSquad = $('btn-stage-squad');
     const btnChallenge = $('btn-stage-challenge');
     const btnAuto = $('btn-stage-auto');
     const btnSpeed = $('btn-stage-speed');
     const btnClaim = $('btn-stage-claim');
     const btnGotoPeach = $('btn-goto-peach');
     const btnGotoGongfa = $('btn-goto-gongfa');
+    const squadModal = $('squad-modal');
+    const btnSquadClose = $('btn-squad-close');
+    const btnSquadCancel = $('btn-squad-cancel');
+    const btnSquadSave = $('btn-squad-save');
+    const squadHeroList = $('squad-hero-list');
+    const squadActiveSlots = $('squad-active-slots');
+
+    if (btnSquad) {
+      btnSquad.addEventListener('click', () => openSquadModal());
+    }
+    if (btnSquadClose) {
+      btnSquadClose.addEventListener('click', () => closeSquadModal());
+    }
+    if (btnSquadCancel) {
+      btnSquadCancel.addEventListener('click', () => closeSquadModal());
+    }
+    if (btnSquadSave) {
+      btnSquadSave.addEventListener('click', () => saveSquad());
+    }
+    if (squadModal) {
+      squadModal.addEventListener('click', (e) => {
+        if (e.target === squadModal) {
+          closeSquadModal();
+        }
+      });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e && e.key === 'Escape' && squadModalOpen) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        closeSquadModal();
+      }
+    });
+    if (squadHeroList) {
+      squadHeroList.addEventListener('click', (e) => {
+        const card = e.target.closest('[data-squad-hero-id]');
+        if (!card) return;
+        const heroId = card.getAttribute('data-squad-hero-id');
+        if (heroId) toggleDraftHero(heroId);
+      });
+    }
+    if (squadActiveSlots) {
+      squadActiveSlots.addEventListener('click', (e) => {
+        const slot = e.target.closest('[data-slot-hero-id]');
+        if (!slot) return;
+        const heroId = slot.getAttribute('data-slot-hero-id');
+        if (heroId) toggleDraftHero(heroId);
+      });
+    }
 
     if (btnChallenge) {
       btnChallenge.addEventListener('click', () => startBattle(true));
@@ -1549,6 +1952,11 @@
     onShow,
     onHide,
     startBattle,
-    skipBattle
+    skipBattle,
+    openSquadModal,
+    closeSquadModal,
+    getDraftSquad,
+    toggleDraftHero,
+    saveSquad
   };
 })();

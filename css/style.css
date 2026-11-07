@@ -299,8 +299,6 @@ body {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(230, 201, 138, 0.35) transparent;
   animation: paneIn 0.36s cubic-bezier(0.22, 0.8, 0.28, 1);
 }
 
@@ -4063,4 +4061,480 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   min-height: 36px;
   padding: 5px 8px;
   font-size: 12px;
+}
+
+/* === 闯关小队入口与编成弹窗 (Squad Editor) === */
+.stage-action-row {
+  gap: 7px;
+}
+
+.stage-btn-squad {
+  flex: 0 0 auto;
+  min-width: 78px;
+  min-height: 40px;
+  height: 40px;
+  padding: 4px 9px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-color: rgba(230, 201, 138, 0.52);
+  color: var(--accent-gold-bright);
+  white-space: nowrap;
+}
+
+.stage-btn-squad .stage-squad-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  background: rgba(125, 222, 192, 0.16);
+  border: 1px solid rgba(125, 222, 192, 0.45);
+  color: var(--accent-jade);
+}
+
+.stage-btn-squad.is-empty {
+  border-color: #f07167;
+  color: #ffb3ab;
+}
+
+.stage-btn-squad.is-empty .stage-squad-count {
+  background: rgba(240, 113, 103, 0.2);
+  border-color: rgba(240, 113, 103, 0.65);
+  color: #ff9b85;
+}
+
+#squad-modal {
+  padding: 12px;
+}
+
+.squad-dialog {
+  max-width: 366px;
+  max-height: calc(100dvh - 24px);
+  padding: 12px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.squad-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.squad-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.squad-count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgba(125, 222, 192, 0.15);
+  border: 1px solid rgba(125, 222, 192, 0.45);
+  color: var(--accent-jade);
+}
+
+.squad-count-pill.is-full {
+  background: rgba(245, 199, 106, 0.16);
+  border-color: rgba(245, 199, 106, 0.55);
+  color: var(--accent-gold-bright);
+}
+
+.squad-count-pill.is-empty {
+  background: rgba(240, 113, 103, 0.18);
+  border-color: rgba(240, 113, 103, 0.6);
+  color: #ff9b85;
+}
+
+.squad-active-slots {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  padding: 7px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(10, 8, 24, 0.62);
+  border: 1px solid rgba(230, 201, 138, 0.24);
+}
+
+.squad-slot-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 2px;
+  border-radius: 7px;
+  border: 1px solid rgba(230, 201, 138, 0.35);
+  background: rgba(28, 23, 52, 0.78);
+  color: var(--text-main);
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 0;
+  transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.squad-slot-item.is-filled:active {
+  transform: scale(0.95);
+}
+
+.squad-slot-item.is-empty {
+  border-style: dashed;
+  border-color: rgba(230, 201, 138, 0.22);
+  background: rgba(14, 12, 28, 0.45);
+  cursor: default;
+}
+
+.squad-slot-idx {
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: rgba(12, 10, 26, 0.92);
+  border: 1px solid rgba(230, 201, 138, 0.55);
+  font-size: 9px;
+  line-height: 12px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+  z-index: 2;
+}
+
+.squad-slot-remove {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(24, 14, 34, 0.95);
+  border: 1px solid rgba(240, 113, 103, 0.75);
+  color: #ff9b85;
+  font-size: 10px;
+  line-height: 12px;
+  text-align: center;
+  font-weight: 700;
+  z-index: 2;
+}
+
+.squad-slot-avatar-wrap {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-gold);
+  background: radial-gradient(circle at 50% 35%, #2a2448 0%, #110e22 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.squad-slot-item.is-empty .squad-slot-avatar-wrap {
+  border-style: dashed;
+  border-color: rgba(230, 201, 138, 0.28);
+  background: rgba(12, 10, 24, 0.5);
+}
+
+.squad-slot-plus {
+  color: rgba(183, 173, 154, 0.48);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.squad-slot-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  border-radius: 50%;
+  display: block;
+}
+
+.squad-slot-name {
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.15;
+  color: var(--text-main);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.squad-slot-item.is-empty .squad-slot-name {
+  color: var(--text-muted);
+  opacity: 0.65;
+}
+
+.squad-feedback-bar {
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+  background: rgba(14, 12, 30, 0.72);
+  border: 1px solid rgba(230, 201, 138, 0.22);
+  color: var(--text-muted);
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.squad-feedback-bar[data-tone="ok"],
+.squad-feedback-bar[data-tone="success"] {
+  background: rgba(24, 56, 52, 0.48);
+  border-color: rgba(125, 222, 192, 0.48);
+  color: var(--accent-jade);
+}
+
+.squad-feedback-bar[data-tone="warn"],
+.squad-feedback-bar[data-tone="error"] {
+  background: rgba(68, 24, 28, 0.56);
+  border-color: rgba(240, 113, 103, 0.65);
+  color: #ffb3ab;
+}
+
+.squad-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  max-height: 310px;
+  padding: 2px 1px;
+}
+
+.squad-hero-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(230, 201, 138, 0.24);
+  background: rgba(18, 15, 36, 0.82);
+  color: var(--text-main);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+}
+
+.squad-hero-card:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.squad-hero-card.is-selected {
+  border-color: var(--accent-jade);
+  background: linear-gradient(155deg, rgba(28, 52, 56, 0.72) 0%, rgba(18, 20, 42, 0.92) 100%);
+  box-shadow:
+    inset 0 0 10px rgba(125, 222, 192, 0.18),
+    0 0 8px rgba(125, 222, 192, 0.16);
+}
+
+.squad-hero-card.is-full-disabled {
+  border-color: rgba(230, 201, 138, 0.18);
+  background: rgba(15, 13, 30, 0.72);
+  opacity: 0.78;
+}
+
+.squad-hero-card.is-locked {
+  opacity: 0.48;
+  filter: grayscale(0.65);
+  cursor: not-allowed;
+}
+
+.squad-hero-avatar-box {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--border-gold);
+  background: radial-gradient(circle at 50% 35%, #2a2448 0%, #110e22 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.squad-hero-card.is-selected .squad-hero-avatar-box {
+  border-color: var(--accent-jade);
+  box-shadow: 0 0 6px rgba(125, 222, 192, 0.45);
+}
+
+.squad-hero-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  border-radius: 50%;
+  display: block;
+}
+
+.squad-hero-order {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  padding: 0 4px;
+  min-width: 18px;
+  height: 15px;
+  border-radius: 999px;
+  background: rgba(14, 42, 38, 0.95);
+  border: 1px solid var(--accent-jade);
+  color: var(--accent-jade);
+  font-size: 9px;
+  line-height: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.squad-hero-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.squad-hero-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.squad-hero-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.squad-hero-skill {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.squad-hero-status {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(230, 201, 138, 0.22);
+  color: var(--text-muted);
+}
+
+.squad-hero-card.is-selected .squad-hero-status {
+  background: rgba(125, 222, 192, 0.18);
+  border-color: rgba(125, 222, 192, 0.55);
+  color: var(--accent-jade);
+}
+
+.squad-hero-status.is-locked {
+  background: rgba(240, 113, 103, 0.15);
+  border-color: rgba(240, 113, 103, 0.45);
+  color: #f0a07a;
+}
+
+.squad-modal-actions {
+  margin-top: 2px;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.squad-modal-actions .btn {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* === 隐藏侧边原生滚动条，保留触摸/滚轮/键盘原生滚动 (Squad Roster & Scrollable Panels) === */
+.squad-hero-grid,
+.home-modal-scroll,
+.role-grid,
+.log-box,
+.settings-dialog,
+.title-dialog,
+.tab-pane.active {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-gutter: auto;
+}
+
+.squad-hero-grid::-webkit-scrollbar,
+.home-modal-scroll::-webkit-scrollbar,
+.role-grid::-webkit-scrollbar,
+.log-box::-webkit-scrollbar,
+.settings-dialog::-webkit-scrollbar,
+.title-dialog::-webkit-scrollbar,
+.tab-pane.active::-webkit-scrollbar,
+.squad-hero-grid::-webkit-scrollbar-button,
+.home-modal-scroll::-webkit-scrollbar-button,
+.role-grid::-webkit-scrollbar-button,
+.log-box::-webkit-scrollbar-button,
+.settings-dialog::-webkit-scrollbar-button,
+.title-dialog::-webkit-scrollbar-button,
+.tab-pane.active::-webkit-scrollbar-button,
+.squad-hero-grid::-webkit-scrollbar-track,
+.home-modal-scroll::-webkit-scrollbar-track,
+.role-grid::-webkit-scrollbar-track,
+.log-box::-webkit-scrollbar-track,
+.settings-dialog::-webkit-scrollbar-track,
+.title-dialog::-webkit-scrollbar-track,
+.tab-pane.active::-webkit-scrollbar-track,
+.squad-hero-grid::-webkit-scrollbar-thumb,
+.home-modal-scroll::-webkit-scrollbar-thumb,
+.role-grid::-webkit-scrollbar-thumb,
+.log-box::-webkit-scrollbar-thumb,
+.settings-dialog::-webkit-scrollbar-thumb,
+.title-dialog::-webkit-scrollbar-thumb,
+.tab-pane.active::-webkit-scrollbar-thumb,
+.squad-hero-grid::-webkit-scrollbar-corner,
+.home-modal-scroll::-webkit-scrollbar-corner,
+.role-grid::-webkit-scrollbar-corner,
+.log-box::-webkit-scrollbar-corner,
+.settings-dialog::-webkit-scrollbar-corner,
+.title-dialog::-webkit-scrollbar-corner,
+.tab-pane.active::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }

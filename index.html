@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=74" />
+  <link rel="stylesheet" href="css/style.css?v=77" />
 </head>
 
 <body>
@@ -251,6 +251,7 @@
           </div>
 
           <div class="stage-action-row">
+            <button id="btn-stage-squad" class="btn stage-btn-toggle stage-btn-squad" type="button" aria-label="编辑出战队伍"><span>队伍</span><span id="stage-squad-count" class="stage-squad-count">6/6</span></button>
             <button id="btn-stage-challenge" class="btn btn-primary stage-btn-main" type="button">挑 战</button>
             <button id="btn-stage-auto" class="btn stage-btn-toggle" type="button" aria-pressed="true">自动</button>
             <button id="btn-stage-speed" class="btn stage-btn-toggle" type="button">2×</button>
@@ -344,6 +345,25 @@
         <div id="role-list" class="role-grid"></div>
         <div class="modal-actions">
           <button id="btn-close-role" class="btn" type="button">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="squad-modal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal-dialog squad-dialog" role="dialog" aria-modal="true" aria-labelledby="squad-modal-title">
+        <div class="card-header squad-modal-header">
+          <div class="squad-title-wrap">
+            <span id="squad-modal-title" class="card-title"><img class="gi" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true">出战队伍</span>
+            <span id="squad-modal-count" class="squad-count-pill">已上阵 6/6</span>
+          </div>
+          <button id="btn-squad-close" class="home-modal-close" type="button" aria-label="关闭">✕</button>
+        </div>
+        <div id="squad-active-slots" class="squad-active-slots" aria-label="当前上阵槽位"></div>
+        <div id="squad-modal-feedback" class="squad-feedback-bar" data-tone="info">点击角色卡上阵或移出（最少 1 人，最多 6 人）</div>
+        <div id="squad-hero-list" class="squad-hero-grid" aria-label="已解锁角色列表"></div>
+        <div class="modal-actions squad-modal-actions">
+          <button id="btn-squad-cancel" class="btn" type="button">取消</button>
+          <button id="btn-squad-save" class="btn btn-primary" type="button">保存 (6/6)</button>
         </div>
       </div>
     </div>
@@ -557,11 +577,11 @@
   <script src="js/no-zoom.js?v=22"></script>
   <script src="js/config.js?v=54"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=25"></script>
+  <script src="js/state.js?v=26"></script>
   <script src="js/titles.js?v=23"></script>
-  <script src="js/battle.js?v=29"></script>
+  <script src="js/battle.js?v=30"></script>
   <script src="js/gear.js?v=30"></script>
-  <script src="js/stage-ui.js?v=45"></script>
+  <script src="js/stage-ui.js?v=47"></script>
   <script src="js/game.js?v=42"></script>
 </body>
 
