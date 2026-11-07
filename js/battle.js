@@ -623,6 +623,32 @@
       rowMult: 0,
       buffAtkMult: 1,
       buffHits: 0
+    },
+    // 与配置一致：焚霄贯阵走现有横排群攻，不新增灼烧。
+    fenxiao: {
+      id: 'fenxiao_guanzhen',
+      name: '焚霄贯阵',
+      kind: 'row',
+      mainMult: 1.4,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 1.4,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    // 与配置一致：霜宸映愈走现有单体伤害加队友回复，不新增冻结。
+    shuangchen: {
+      id: 'shuangchen_yingyu',
+      name: '霜宸映愈',
+      kind: 'damage_heal_allies',
+      mainMult: 1.45,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0.09,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
     }
   };
 

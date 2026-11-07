@@ -381,7 +381,7 @@
       const lockedSet = new Set(Array.isArray(saved.lockedHeroes) ? saved.lockedHeroes : []);
       const cfgHeroes = (window.GameConfig && Array.isArray(window.GameConfig.HEROES) && window.GameConfig.HEROES) || [];
       unlockedHeroes = [...unlockedHeroes];
-      // 免费角色只补名单里缺的晴葵、月誓、紫绫、红莲、墨兰、晴岚。显式 lockedHeroes 或配置 locked 不解锁，也不补其他旧角色。
+      // 免费角色只补名单里缺的晴葵、月誓、紫绫、红莲、墨兰、晴岚、焚霄、霜宸。显式 lockedHeroes 或配置 locked 不解锁，也不补其他旧角色。
       const grantFreeHero = (heroId) => {
         const hero = cfgHeroes.find((h) => h && h.id === heroId);
         if (hero && !hero.locked && !lockedSet.has(heroId) && !unlockedHeroes.includes(heroId)) {
@@ -394,6 +394,8 @@
       grantFreeHero('honglian');
       grantFreeHero('molan');
       grantFreeHero('qinglan');
+      grantFreeHero('fenxiao');
+      grantFreeHero('shuangchen');
     }
     const heroId = (saved && typeof saved.heroId === 'string' && saved.heroId) ? saved.heroId : 'lanyi';
     const squad = normalizeSavedSquad(saved, heroId);
