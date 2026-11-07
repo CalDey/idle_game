@@ -809,6 +809,20 @@
         rowMult: 0,
         buffAtkMult: 1,
         buffHits: 0
+      },
+      // 月誓灵佑：防御辅助，沿用现有 damage_heal_allies。不是护盾。
+      // 对主目标造成 mainMult 倍绝技伤害，每名存活我方回复 ceil(自身 maxHp × healAllyMaxHpRatio)，不超过 maxHp。
+      yueshi: {
+        id: 'yueshi_lingyou',
+        name: '月誓灵佑',
+        kind: 'damage_heal_allies',
+        mainMult: 1.2,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0.08,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
       }
     },
     HEROES: [
@@ -984,6 +998,29 @@
           splashMult: 0.35,
           healSelfOfMainDmg: 0,
           healAllyMaxHpRatio: 0.07,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'yueshi',
+        name: '月誓灵姝',
+        quality: 'tian',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/yueshi.webp?v=1',
+        avatarPos: '50% 22%',
+        avatarScale: 2.6,
+        img: 'assets/hero_yueshi_hd.jpg?v=1',
+        poster: 'assets/hero_yueshi_poster.jpg?v=1',
+        skill: {
+          id: 'yueshi_lingyou',
+          name: '月誓灵佑',
+          kind: 'damage_heal_allies',
+          mainMult: 1.2,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0.08,
           rowMult: 0,
           buffAtkMult: 1,
           buffHits: 0

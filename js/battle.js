@@ -562,6 +562,19 @@
       rowMult: 0,
       buffAtkMult: 1,
       buffHits: 0
+    },
+    // 与配置一致：月誓灵佑走现有队友回复，不新增护盾。
+    yueshi: {
+      id: 'yueshi_lingyou',
+      name: '月誓灵佑',
+      kind: 'damage_heal_allies',
+      mainMult: 1.2,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0.08,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
     }
   };
 
@@ -1131,7 +1144,7 @@
         });
       }
 
-      // 圣王女：所有存活我方单位各回复自身 maxHp × 8%（向上取整至少 1，不超过 maxHp）
+      // 现有队友回复（圣裁光翼 / 红袖缠心 / 花影回春 / 月誓灵佑）：存活我方各回复自身 maxHp × healAllyMaxHpRatio，向上取整至少 1，不超过 maxHp。不是护盾。
       if (skillKind === 'damage_heal_allies' || skill.healAllyMaxHpRatio > 0) {
         const ratio = skill.healAllyMaxHpRatio || 0.08;
         for (let i = 0; i < playerUnits.length; i++) {
