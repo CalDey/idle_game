@@ -10,8 +10,44 @@ const { execFileSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
 const BASE = 'e7f15be2488d74323763a478e9f63c66a62c64a8';
-const LANYI_HD_SHA256 = '562f3686fb503df7c612d02c835d142a3b4e11736dd9085c8137d8fbd8232b0c';
-const LANYI_POSTER_SHA256 = '5fd371cef7ea6c83ecc272af9561945b3f2cd4beaeba7766f021014da8137314';
+const RESTORED_PORTRAITS = {
+  lanyi: {
+    img: 'assets/hero_v21_new_hd.jpg?v=4',
+    poster: 'assets/hero_v21_new_poster.jpg?v=4',
+    hdSha256: '562f3686fb503df7c612d02c835d142a3b4e11736dd9085c8137d8fbd8232b0c',
+    posterSha256: '5fd371cef7ea6c83ecc272af9561945b3f2cd4beaeba7766f021014da8137314'
+  },
+  cloak: {
+    img: 'assets/hero_mlg_dawn_hd.jpg?v=4',
+    poster: 'assets/hero_mlg_dawn_poster.jpg?v=4',
+    hdSha256: '4b6773a1f7de6ef9453137fa98b3e60efc3019d126d0477abb80aebc5cd2f868',
+    posterSha256: 'b80c752e5db38f70dd65593eba5f798b4ef4f97a0c7219bcd650b5d3065a796e'
+  },
+  saintess: {
+    img: 'assets/hero_saintess_v4b_hd.jpg?v=4',
+    poster: 'assets/hero_saintess_v4b_poster.jpg?v=4',
+    hdSha256: '1240c33e67b1dc9e67b9bb3e926bbcc462d2dd14ca9f048b4ff9ce583224d4a9',
+    posterSha256: '237fddd52a9b7f9624c8bd6a01d403390d673eea8f01dc6b333883a37acb899c'
+  },
+  shuanghua: {
+    img: 'assets/hero_shuanghua_hd.jpg?v=4',
+    poster: 'assets/hero_shuanghua_poster.jpg?v=4',
+    hdSha256: '1d8403bd594d3852159015dd3777be118635ed2feefe1779926eef474e2ece0d',
+    posterSha256: '7f9563857bbb783e67932f54fe87937f082a5d48a316b16bc4ea301481a983d7'
+  },
+  sweetmaid: {
+    img: 'assets/hero_sweetmaid_hd.jpg?v=4',
+    poster: 'assets/hero_sweetmaid_poster.jpg?v=4',
+    hdSha256: '7faaf2d8fe5d2038047a1123d0ee758e538e5f77c3bca43d46ea27ee4d7f28cb',
+    posterSha256: 'db61561b42aaa4fb66f1a95004e26d47425ace34f2a4a92fa9768e6da24c01e8'
+  },
+  jianghua: {
+    img: 'assets/hero_jianghua_hd.jpg?v=2',
+    poster: 'assets/hero_jianghua_poster.jpg?v=2',
+    hdSha256: '1fcd357a0d9744249cab91c429cc64fe11101f3879cc6212a35121a5e3175b8a',
+    posterSha256: 'f4ba6aba72ec17205073bec6dfd4e108037e2bb980a0c3c021e2cde78652b8af'
+  }
+};
 const YUESHI_HD_SHA256 = '4020bc0d7c047bdad251a2ee4584c5c8abd55dcfc437a2f115511749d8014fd0';
 const YUESHI_POSTER_SHA256 = 'ea2ab6aa6798065cc6f51ab321f21fb4e0c5ab3263402f126ef6cbaf7e5bf303';
 const YUESHI_AVATAR_SHA256 = 'c44bf4759d4c46e828792a3d8ee4cac4edf983755b03536432cd19b281780af2';
@@ -201,11 +237,12 @@ PREVIOUS_IDS.forEach((id) => {
   assert.strictEqual(now.quality, prev.quality);
   assert.strictEqual(now.avatar, prev.avatar);
   assert.deepStrictEqual(now.skill, prev.skill);
-  if (id === 'lanyi') {
-    assert.strictEqual(now.img, 'assets/hero_v21_new_hd.jpg?v=4');
-    assert.strictEqual(now.poster, 'assets/hero_v21_new_poster.jpg?v=4');
-    assert.strictEqual(sha256(read(stripQuery(now.img))), LANYI_HD_SHA256);
-    assert.strictEqual(sha256(read(stripQuery(now.poster))), LANYI_POSTER_SHA256);
+  if (Object.prototype.hasOwnProperty.call(RESTORED_PORTRAITS, id)) {
+    const exp = RESTORED_PORTRAITS[id];
+    assert.strictEqual(now.img, exp.img);
+    assert.strictEqual(now.poster, exp.poster);
+    assert.strictEqual(sha256(read(stripQuery(now.img))), exp.hdSha256);
+    assert.strictEqual(sha256(read(stripQuery(now.poster))), exp.posterSha256);
     assert.deepStrictEqual(imageSize(stripQuery(now.img)), { width: 1008, height: 1792 });
     assert.deepStrictEqual(imageSize(stripQuery(now.poster)), { width: 1008, height: 1792 });
     const avatarRel = stripQuery(prev.avatar);
@@ -428,7 +465,7 @@ assert.ok(css.includes('MaShanZheng-Role.woff2?v=10'));
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=80'));
-assert.ok(index.includes('js/config.js?v=61'));
+assert.ok(index.includes('js/config.js?v=62'));
 assert.ok(index.includes('js/state.js?v=29'));
 assert.ok(index.includes('js/battle.js?v=32'));
 
