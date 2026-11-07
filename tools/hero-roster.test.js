@@ -12,7 +12,7 @@ const root = path.join(__dirname, '..');
 const BASE = 'e7f15be2488d74323763a478e9f63c66a62c64a8';
 const YUESHI_HD_SHA256 = '4020bc0d7c047bdad251a2ee4584c5c8abd55dcfc437a2f115511749d8014fd0';
 const YUESHI_POSTER_SHA256 = 'ea2ab6aa6798065cc6f51ab321f21fb4e0c5ab3263402f126ef6cbaf7e5bf303';
-const YUESHI_AVATAR_SHA256 = '35ee6ccfb2b094f3bf844b6bda02be670604237fc14dfd5f42bb5a3b45d38ec3';
+const YUESHI_AVATAR_SHA256 = 'c44bf4759d4c46e828792a3d8ee4cac4edf983755b03536432cd19b281780af2';
 const PREVIOUS_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui'];
 const EXISTING_SKILL_KINDS = new Set([
   'single',
@@ -408,7 +408,7 @@ assert.ok(css.includes('MaShanZheng-Role.woff2?v=10'));
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=79'));
-assert.ok(index.includes('js/config.js?v=59'));
+assert.ok(index.includes('js/config.js?v=60'));
 assert.ok(index.includes('js/state.js?v=29'));
 assert.ok(index.includes('js/battle.js?v=32'));
 
