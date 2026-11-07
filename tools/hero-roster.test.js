@@ -50,7 +50,7 @@ const RESTORED_PORTRAITS = {
 };
 const YUESHI_HD_SHA256 = 'b6f93fb86082210f3cec22cb5d01b1cdcfe49d6b064886132e9a580ac4637d16';
 const YUESHI_POSTER_SHA256 = '2a48c81b71ff91632dab463fffdf56cf10fe527fd28e07789a6b51fa8216fb4d';
-const YUESHI_AVATAR_SHA256 = '569ffcce33262df10fb44536f225015254482eb198a8ed8ae73804999130d637';
+const YUESHI_AVATAR_SHA256 = '945208d7f98f19efb758ad456ed77c76b04e92654e56003ee1040fff6a505851';
 const NEW_FOUR_HEROES = {
   ziling: {
     name: '紫绫影姬',
@@ -371,7 +371,7 @@ assert.strictEqual(yueshi.skill.mainMult, 1.2);
 assert.strictEqual(yueshi.skill.splashMult, 0);
 assert.strictEqual(yueshi.img, 'assets/hero_yueshi_hd.jpg?v=2');
 assert.strictEqual(yueshi.poster, 'assets/hero_yueshi_poster.jpg?v=2');
-assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=6');
+assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=7');
 assert.strictEqual(yueshi.avatarPos, '50% 22%');
 assert.strictEqual(yueshi.avatarScale, 2.6);
 assert.strictEqual(read(stripQuery(yueshi.img)).length, 524264);
@@ -860,7 +860,7 @@ assert.strictEqual(git(['diff', '--stat', MERGED, '--', 'css/style.css', 'js/sta
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=82'));
-assert.ok(index.includes('js/config.js?v=69'));
+assert.ok(index.includes('js/config.js?v=70'));
 assert.ok(index.includes('js/state.js?v=31'));
 assert.ok(index.includes('js/battle.js?v=34'));
 assert.ok(index.includes('js/game.js?v=44'));

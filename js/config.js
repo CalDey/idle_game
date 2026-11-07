@@ -1086,7 +1086,7 @@
         name: '月誓灵姝',
         quality: 'tian',
         unlockCond: '踏入仙途（初始免费解锁）',
-        avatar: 'assets/battle/avatars/yueshi.webp?v=6',
+        avatar: 'assets/battle/avatars/yueshi.webp?v=7',
         avatarPos: '50% 22%',
         avatarScale: 2.6,
         img: 'assets/hero_yueshi_hd.jpg?v=2',
