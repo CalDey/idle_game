@@ -875,6 +875,32 @@
         rowMult: 0,
         buffAtkMult: 1,
         buffHits: 0
+      },
+      // 焚霄贯阵：仙品火焰群攻，沿用现有 row。对主目标所在横排每名敌人造成 1.4 倍绝技伤害。不含灼烧或持续伤害。
+      fenxiao: {
+        id: 'fenxiao_guanzhen',
+        name: '焚霄贯阵',
+        kind: 'row',
+        mainMult: 1.4,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 1.4,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      // 霜宸映愈：仙品冰晶单体支援，沿用现有 damage_heal_allies。主目标 1.45 倍伤害且不溅射；每名存活我方回复 ceil(自身 maxHp × 0.09)。不是冻结、护盾或持续伤害。
+      shuangchen: {
+        id: 'shuangchen_yingyu',
+        name: '霜宸映愈',
+        kind: 'damage_heal_allies',
+        mainMult: 1.45,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0.09,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
       }
     },
     HEROES: [
@@ -1060,11 +1086,11 @@
         name: '月誓灵姝',
         quality: 'tian',
         unlockCond: '踏入仙途（初始免费解锁）',
-        avatar: 'assets/battle/avatars/yueshi.webp?v=2',
+        avatar: 'assets/battle/avatars/yueshi.webp?v=3',
         avatarPos: '50% 22%',
         avatarScale: 2.6,
-        img: 'assets/hero_yueshi_hd.jpg?v=1',
-        poster: 'assets/hero_yueshi_poster.jpg?v=1',
+        img: 'assets/hero_yueshi_hd.jpg?v=2',
+        poster: 'assets/hero_yueshi_poster.jpg?v=2',
         skill: {
           id: 'yueshi_lingyou',
           name: '月誓灵佑',
@@ -1083,11 +1109,11 @@
         name: '紫绫影姬',
         quality: 'di',
         unlockCond: '踏入仙途（初始免费解锁）',
-        avatar: 'assets/battle/avatars/ziling.webp?v=2',
+        avatar: 'assets/battle/avatars/ziling.webp?v=3',
         avatarPos: '51% 12%',
         avatarScale: 2.6,
-        img: 'assets/hero_ziling_hd.jpg?v=2',
-        poster: 'assets/hero_ziling_poster.jpg?v=2',
+        img: 'assets/hero_ziling_hd.jpg?v=3',
+        poster: 'assets/hero_ziling_poster.jpg?v=3',
         skill: {
           id: 'duanying_zhuihun',
           name: '断影追魂',
@@ -1165,6 +1191,52 @@
           splashMult: 0,
           healSelfOfMainDmg: 0,
           healAllyMaxHpRatio: 0,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'fenxiao',
+        name: '焚霄炎姬',
+        quality: 'xian',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/fenxiao.webp?v=1',
+        avatarPos: '50% 50%',
+        avatarScale: 2.6,
+        img: 'assets/hero_fenxiao_hd.jpg?v=1',
+        poster: 'assets/hero_fenxiao_poster.jpg?v=1',
+        skill: {
+          id: 'fenxiao_guanzhen',
+          name: '焚霄贯阵',
+          kind: 'row',
+          mainMult: 1.4,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 1.4,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'shuangchen',
+        name: '霜宸冰璃',
+        quality: 'xian',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/shuangchen.webp?v=1',
+        avatarPos: '50% 50%',
+        avatarScale: 2.6,
+        img: 'assets/hero_shuangchen_hd.jpg?v=1',
+        poster: 'assets/hero_shuangchen_poster.jpg?v=1',
+        skill: {
+          id: 'shuangchen_yingyu',
+          name: '霜宸映愈',
+          kind: 'damage_heal_allies',
+          mainMult: 1.45,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0.09,
           rowMult: 0,
           buffAtkMult: 1,
           buffHits: 0
