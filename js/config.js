@@ -833,8 +833,8 @@
         avatar: 'assets/battle/avatars/lanyi.webp?v=4',
         avatarPos: '47% 17%',
         avatarScale: 2.6,
-        img: 'assets/hero_v21_new_hd.jpg?v=3',
-        poster: 'assets/hero_v21_new_poster.jpg?v=3',
+        img: 'assets/hero_v21_new_hd.jpg?v=4',
+        poster: 'assets/hero_v21_new_poster.jpg?v=4',
         skill: {
           id: 'jianyi_powang',
           name: '剑意斩 · 破妄',

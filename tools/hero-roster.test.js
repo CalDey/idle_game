@@ -10,6 +10,8 @@ const { execFileSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
 const BASE = 'e7f15be2488d74323763a478e9f63c66a62c64a8';
+const LANYI_HD_SHA256 = '562f3686fb503df7c612d02c835d142a3b4e11736dd9085c8137d8fbd8232b0c';
+const LANYI_POSTER_SHA256 = '5fd371cef7ea6c83ecc272af9561945b3f2cd4beaeba7766f021014da8137314';
 const YUESHI_HD_SHA256 = '4020bc0d7c047bdad251a2ee4584c5c8abd55dcfc437a2f115511749d8014fd0';
 const YUESHI_POSTER_SHA256 = 'ea2ab6aa6798065cc6f51ab321f21fb4e0c5ab3263402f126ef6cbaf7e5bf303';
 const YUESHI_AVATAR_SHA256 = 'c44bf4759d4c46e828792a3d8ee4cac4edf983755b03536432cd19b281780af2';
@@ -197,10 +199,22 @@ PREVIOUS_IDS.forEach((id) => {
   assert.ok(now, `缺少原英雄 ${id}`);
   assert.strictEqual(now.name, prev.name);
   assert.strictEqual(now.quality, prev.quality);
-  assert.strictEqual(now.img, prev.img);
-  assert.strictEqual(now.poster, prev.poster);
   assert.strictEqual(now.avatar, prev.avatar);
   assert.deepStrictEqual(now.skill, prev.skill);
+  if (id === 'lanyi') {
+    assert.strictEqual(now.img, 'assets/hero_v21_new_hd.jpg?v=4');
+    assert.strictEqual(now.poster, 'assets/hero_v21_new_poster.jpg?v=4');
+    assert.strictEqual(sha256(read(stripQuery(now.img))), LANYI_HD_SHA256);
+    assert.strictEqual(sha256(read(stripQuery(now.poster))), LANYI_POSTER_SHA256);
+    assert.deepStrictEqual(imageSize(stripQuery(now.img)), { width: 1008, height: 1792 });
+    assert.deepStrictEqual(imageSize(stripQuery(now.poster)), { width: 1008, height: 1792 });
+    const avatarRel = stripQuery(prev.avatar);
+    assert.strictEqual(git(['hash-object', '--', avatarRel]).trim(), git(['rev-parse', `${BASE}:${avatarRel}`]).trim());
+    assert.deepStrictEqual(imageSize(avatarRel), { width: 512, height: 512 });
+    return;
+  }
+  assert.strictEqual(now.img, prev.img);
+  assert.strictEqual(now.poster, prev.poster);
   ['img', 'poster', 'avatar'].forEach((key) => {
     const rel = stripQuery(prev[key]);
     const baseBlob = git(['rev-parse', `${BASE}:${rel}`]).trim();
@@ -414,13 +428,28 @@ assert.ok(css.includes('MaShanZheng-Role.woff2?v=10'));
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=80'));
-assert.ok(index.includes('js/config.js?v=60'));
+assert.ok(index.includes('js/config.js?v=61'));
 assert.ok(index.includes('js/state.js?v=29'));
 assert.ok(index.includes('js/battle.js?v=32'));
 
 const fontCheck = [
+  'import ctypes, subprocess, sys, types',
+  'try:',
+  '  import brotli',
+  'except ImportError:',
+  '  _lib = ctypes.CDLL("libbrotlidec.so.1")',
+  '  _lib.BrotliDecoderDecompress.argtypes = [ctypes.c_size_t, ctypes.c_char_p, ctypes.POINTER(ctypes.c_size_t), ctypes.c_char_p]',
+  '  _lib.BrotliDecoderDecompress.restype = ctypes.c_int',
+  '  def _dec(d):',
+  '    c = max(len(d) * 8, 65536)',
+  '    b = ctypes.create_string_buffer(c)',
+  '    s = ctypes.c_size_t(c)',
+  '    assert _lib.BrotliDecoderDecompress(len(d), d, ctypes.byref(s), b) == 1',
+  '    return b.raw[:s.value]',
+  '  _m = types.ModuleType("brotli")',
+  '  _m.decompress = _dec',
+  '  sys.modules["brotli"] = _m',
   'from fontTools.ttLib import TTFont',
-  'import subprocess, sys',
   `old = subprocess.check_output(['git','show','${BASE}:assets/fonts/MaShanZheng-Role.woff2'])`,
   "open('/tmp/role-font-base.woff2','wb').write(old)",
   "base = TTFont('/tmp/role-font-base.woff2').getBestCmap()",
