@@ -823,6 +823,58 @@
         rowMult: 0,
         buffAtkMult: 1,
         buffHits: 0
+      },
+      // 断影追魂：单体爆发，沿用现有 single。
+      ziling: {
+        id: 'duanying_zhuihun',
+        name: '断影追魂',
+        kind: 'single',
+        mainMult: 1.85,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      // 红莲灼心：群攻，沿用现有 row（同行群攻），不含虚构灼烧/持续伤害。
+      honglian: {
+        id: 'honglian_zhuoxin',
+        name: '红莲灼心',
+        kind: 'row',
+        mainMult: 1.15,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 1.15,
+        buffAtkMult: 1,
+        buffHits: 0
+      },
+      // 玄筹破阵：攻击辅助，沿用现有 damage_buff_ally（强化我方最高攻单位下次普攻）。
+      molan: {
+        id: 'xuanchou_pozhen',
+        name: '玄筹破阵',
+        kind: 'damage_buff_ally',
+        mainMult: 1.2,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1.35,
+        buffHits: 2
+      },
+      // 流风逐影：单体攻击，沿用现有 single，不含虚构多段连击。
+      qinglan: {
+        id: 'liufeng_zhuying',
+        name: '流风逐影',
+        kind: 'single',
+        mainMult: 1.75,
+        splashMult: 0,
+        healSelfOfMainDmg: 0,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
       }
     },
     HEROES: [
@@ -1021,6 +1073,98 @@
           splashMult: 0,
           healSelfOfMainDmg: 0,
           healAllyMaxHpRatio: 0.08,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'ziling',
+        name: '紫绫影姬',
+        quality: 'di',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/ziling.webp?v=1',
+        avatarPos: '51% 12%',
+        avatarScale: 2.6,
+        img: 'assets/hero_ziling_hd.jpg?v=1',
+        poster: 'assets/hero_ziling_poster.jpg?v=1',
+        skill: {
+          id: 'duanying_zhuihun',
+          name: '断影追魂',
+          kind: 'single',
+          mainMult: 1.85,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'honglian',
+        name: '红莲妖姬',
+        quality: 'di',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/honglian.webp?v=1',
+        avatarPos: '44% 10%',
+        avatarScale: 2.6,
+        img: 'assets/hero_honglian_hd.jpg?v=1',
+        poster: 'assets/hero_honglian_poster.jpg?v=1',
+        skill: {
+          id: 'honglian_zhuoxin',
+          name: '红莲灼心',
+          kind: 'row',
+          mainMult: 1.15,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 1.15,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'molan',
+        name: '墨兰执事',
+        quality: 'xuan',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/molan.webp?v=1',
+        avatarPos: '42% 12%',
+        avatarScale: 2.6,
+        img: 'assets/hero_molan_hd.jpg?v=1',
+        poster: 'assets/hero_molan_poster.jpg?v=1',
+        skill: {
+          id: 'xuanchou_pozhen',
+          name: '玄筹破阵',
+          kind: 'damage_buff_ally',
+          mainMult: 1.2,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
+          rowMult: 0,
+          buffAtkMult: 1.35,
+          buffHits: 2
+        }
+      },
+      {
+        id: 'qinglan',
+        name: '晴岚游侠',
+        quality: 'xuan',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/qinglan.webp?v=1',
+        avatarPos: '44% 15%',
+        avatarScale: 2.6,
+        img: 'assets/hero_qinglan_hd.jpg?v=1',
+        poster: 'assets/hero_qinglan_poster.jpg?v=1',
+        skill: {
+          id: 'liufeng_zhuying',
+          name: '流风逐影',
+          kind: 'single',
+          mainMult: 1.75,
+          splashMult: 0,
+          healSelfOfMainDmg: 0,
+          healAllyMaxHpRatio: 0,
           rowMult: 0,
           buffAtkMult: 1,
           buffHits: 0

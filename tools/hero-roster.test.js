@@ -51,7 +51,61 @@ const RESTORED_PORTRAITS = {
 const YUESHI_HD_SHA256 = '4020bc0d7c047bdad251a2ee4584c5c8abd55dcfc437a2f115511749d8014fd0';
 const YUESHI_POSTER_SHA256 = 'ea2ab6aa6798065cc6f51ab321f21fb4e0c5ab3263402f126ef6cbaf7e5bf303';
 const YUESHI_AVATAR_SHA256 = 'c44bf4759d4c46e828792a3d8ee4cac4edf983755b03536432cd19b281780af2';
+const NEW_FOUR_HEROES = {
+  ziling: {
+    name: '紫绫影姬',
+    quality: 'di',
+    skillId: 'duanying_zhuihun',
+    skillName: '断影追魂',
+    skillKind: 'single',
+    mainMult: 1.85,
+    size: { width: 1008, height: 1792 },
+    hdSha256: 'badfcd7e7f652da398d37e1c85dcf8c82e94af39d8c3a5e86068cfebc825ebf7',
+    posterSha256: 'e3b7bcfe45be82770035d4194f10f559fd6511ecbb7d20331666f26f08410bb0',
+    avatarSha256: '83c72a4e8ea8b491b338a35641613b50db14fea2b8a7497d2ddf888e0824a51f'
+  },
+  honglian: {
+    name: '红莲妖姬',
+    quality: 'di',
+    skillId: 'honglian_zhuoxin',
+    skillName: '红莲灼心',
+    skillKind: 'row',
+    mainMult: 1.15,
+    rowMult: 1.15,
+    size: { width: 1008, height: 1792 },
+    hdSha256: '1395be8b191bd281a7466128295189c699a3615cdbcb706ee2189d918cad69bf',
+    posterSha256: '7a3620b6b26e7b8da9d83e50b312d76eb1836d9695921e5b01557a7e30014bdd',
+    avatarSha256: 'baec78c1b47d4ec864775619623dd5f1036878e1abc0f50b97dd61c0031fe058'
+  },
+  molan: {
+    name: '墨兰执事',
+    quality: 'xuan',
+    skillId: 'xuanchou_pozhen',
+    skillName: '玄筹破阵',
+    skillKind: 'damage_buff_ally',
+    mainMult: 1.2,
+    buffAtkMult: 1.35,
+    buffHits: 2,
+    size: { width: 1080, height: 1920 },
+    hdSha256: '48f25ae020a0ad8d3aa894a093cb93a7634adbac46aebbd9def09c6fa814bc58',
+    posterSha256: '1f3b2279f3a12ba5441ae5cbdac9f7610cae91fd0e1ba83a6f44bc8b6864bd76',
+    avatarSha256: 'b3e7f8d7f60ab16856eef7fe897b21b556ed56c5e410ad8eed3eb5dd72d9ec78'
+  },
+  qinglan: {
+    name: '晴岚游侠',
+    quality: 'xuan',
+    skillId: 'liufeng_zhuying',
+    skillName: '流风逐影',
+    skillKind: 'single',
+    mainMult: 1.75,
+    size: { width: 1080, height: 1920 },
+    hdSha256: '884a7e73786ae83131f6db035bf8f5b5f29834c2bafa3e0c1dbfac6dfda8923d',
+    posterSha256: '6f88c34fceccf44f67a2c2f545574131f66879e29852484de883031b9c48a4d9',
+    avatarSha256: 'f130cf669cbc1e8c621c94f482cd4566ba135e2752427c4e4ca378f90726752d'
+  }
+};
 const PREVIOUS_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui'];
+const ALL_13_IDS = PREVIOUS_IDS.concat(['yueshi', 'ziling', 'honglian', 'molan', 'qinglan']);
 const EXISTING_SKILL_KINDS = new Set([
   'single',
   'splash_lifesteal',
@@ -220,10 +274,9 @@ const heroes = currentConfig.HEROES;
 const ids = heroes.map((hero) => hero.id);
 
 assert.strictEqual(baseConfig.HEROES.length, 8, '基线 e7f15be 应是 8 名英雄；这不是当前人数断言');
-assert.strictEqual(new Set(ids).size, 9, '当前应有 9 个唯一英雄 ID');
-assert.strictEqual(ids.length, 9);
-assert.deepStrictEqual(ids.slice(0, 8), PREVIOUS_IDS);
-assert.strictEqual(ids[8], 'yueshi');
+assert.strictEqual(new Set(ids).size, 13, '当前应有 13 个唯一英雄 ID');
+assert.strictEqual(ids.length, 13);
+assert.deepStrictEqual(ids, ALL_13_IDS);
 
 const baseById = {};
 baseConfig.HEROES.forEach((hero) => {
@@ -306,6 +359,34 @@ assert.deepStrictEqual(imageSize(stripQuery(yueshi.avatar)), { width: 512, heigh
 assert.ok(read(stripQuery(yueshi.img)).length > 100000);
 assert.notStrictEqual(sha256(read(stripQuery(yueshi.poster))), YUESHI_HD_SHA256);
 
+Object.keys(NEW_FOUR_HEROES).forEach((hid) => {
+  const exp = NEW_FOUR_HEROES[hid];
+  const hero = heroes.find((item) => item.id === hid);
+  assert.ok(hero, `缺少新英雄 ${hid}`);
+  assert.strictEqual(hero.name, exp.name);
+  assert.strictEqual(hero.quality, exp.quality);
+  assert.notStrictEqual(hero.quality, 'xian');
+  assert.ok(!hero.locked);
+  assert.strictEqual(hero.skill.id, exp.skillId);
+  assert.strictEqual(hero.skill.name, exp.skillName);
+  assert.strictEqual(hero.skill.kind, exp.skillKind);
+  assert.strictEqual(hero.skill.mainMult, exp.mainMult);
+  assert.ok(EXISTING_SKILL_KINDS.has(hero.skill.kind));
+  assert.deepStrictEqual(currentConfig.HERO_SKILLS[hid], hero.skill);
+  ['img', 'poster', 'avatar'].forEach((key) => {
+    const rel = stripQuery(hero[key]);
+    assert.ok(fs.existsSync(path.join(root, rel)), rel);
+    assert.ok(text('js/config.js').includes(path.basename(rel)), `部署引用缺失 ${rel}`);
+  });
+  assert.strictEqual(sha256(read(stripQuery(hero.img))), exp.hdSha256);
+  assert.strictEqual(sha256(read(stripQuery(hero.poster))), exp.posterSha256);
+  assert.strictEqual(sha256(read(stripQuery(hero.avatar))), exp.avatarSha256);
+  assert.deepStrictEqual(imageSize(stripQuery(hero.img)), exp.size);
+  assert.deepStrictEqual(imageSize(stripQuery(hero.poster)), exp.size);
+  assert.deepStrictEqual(imageSize(stripQuery(hero.avatar)), { width: 512, height: 512 });
+  assert.notStrictEqual(sha256(read(stripQuery(hero.poster))), exp.hdSha256);
+});
+
 const fresh = loadRuntime(memoryStorage());
 const freshLoad = fresh.GameState.loadGame();
 assert.strictEqual(freshLoad.isNew, true);
@@ -324,13 +405,15 @@ assert.strictEqual(migratedLoad.isNew, false);
 assert.ok(!migratedLoad.offlineReport, '测试存档不应触发离线结算');
 const migratedState = hostValue(migrated.GameState.state);
 assertProgressKept(oldSave, migratedState);
-assert.ok(migratedState.unlockedHeroes.includes('yueshi'));
+['yueshi', 'ziling', 'honglian', 'molan', 'qinglan'].forEach((hid) => {
+  assert.ok(migratedState.unlockedHeroes.includes(hid));
+  assert.ok(!migratedState.squad.includes(hid));
+  assert.strictEqual(migrated.Battle.isHeroUnlocked(hid, migrated.GameState.state), true);
+});
 assert.deepStrictEqual(
-  migratedState.unlockedHeroes.filter((id) => id !== 'yueshi'),
+  migratedState.unlockedHeroes.filter((id) => !['yueshi', 'ziling', 'honglian', 'molan', 'qinglan'].includes(id)),
   oldSave.unlockedHeroes
 );
-assert.ok(!migratedState.squad.includes('yueshi'));
-assert.strictEqual(migrated.Battle.isHeroUnlocked('yueshi', migrated.GameState.state), true);
 
 const lockedSave = JSON.parse(saveRaw({
   heroId: 'saintess',
@@ -338,7 +421,7 @@ const lockedSave = JSON.parse(saveRaw({
   stage: { cur: 8, best: 7, idleAt: Date.now(), squad: ['saintess', 'lanyi'] },
   formation: { lanyi: { c: 2, r: 4 }, saintess: { c: 1, r: 4 } },
   unlockedHeroes: ['lanyi', 'cloak', 'saintess'],
-  lockedHeroes: ['yueshi', 'sweetmaid']
+  lockedHeroes: ['yueshi', 'sweetmaid', 'ziling', 'honglian', 'molan', 'qinglan']
 }));
 const lockedRt = loadRuntime(memoryStorage({ xiuxian_idle_save_v1: JSON.stringify(lockedSave) }));
 lockedRt.GameState.loadGame();
@@ -347,6 +430,10 @@ assert.strictEqual(lockedState.heroId, 'saintess');
 assert.deepStrictEqual(lockedState.squad, ['saintess', 'lanyi']);
 assert.ok(!lockedState.unlockedHeroes.includes('yueshi'));
 assert.ok(!lockedState.unlockedHeroes.includes('sweetmaid'));
+['ziling', 'honglian', 'molan', 'qinglan'].forEach((hid) => {
+  assert.ok(!lockedState.unlockedHeroes.includes(hid));
+  assert.strictEqual(lockedRt.Battle.isHeroUnlocked(hid, lockedRt.GameState.state), false);
+});
 assert.ok(lockedState.unlockedHeroes.includes('qingkui'), '既有晴葵免费迁移应保留');
 assert.ok(lockedState.unlockedHeroes.includes('lanyi'));
 assert.ok(lockedState.unlockedHeroes.includes('cloak'));
@@ -357,7 +444,7 @@ assert.strictEqual(lockedState.stage.best, 7);
 
 const implicitSave = JSON.parse(saveRaw({
   unlockedHeroes: undefined,
-  lockedHeroes: ['yueshi'],
+  lockedHeroes: ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan'],
   squad: ['cloak'],
   heroId: 'cloak',
   stage: { cur: 4, best: 3, idleAt: Date.now(), squad: ['cloak'] }
@@ -370,6 +457,9 @@ assert.ok(!Array.isArray(implicitState.unlockedHeroes));
 assert.deepStrictEqual(implicitState.squad, ['cloak']);
 assert.strictEqual(implicitState.heroId, 'cloak');
 assert.strictEqual(implicitRt.Battle.isHeroUnlocked('yueshi', implicitRt.GameState.state), false);
+['ziling', 'honglian', 'molan', 'qinglan'].forEach((hid) => {
+  assert.strictEqual(implicitRt.Battle.isHeroUnlocked(hid, implicitRt.GameState.state), false);
+});
 assert.strictEqual(implicitRt.Battle.isHeroUnlocked('lanyi', implicitRt.GameState.state), true);
 
 const battleState = {
@@ -421,6 +511,53 @@ const ratio = yueshi.skill.healAllyMaxHpRatio;
 assert.ok(!ult.heals.some((item) => item.unitId === dead.id));
 assert.strictEqual(dead.hp, 0);
 
+// 验证新增四位角色（ziling, honglian, molan, qinglan）真实绝技释放
+const newFourSession = fresh.Battle.createSession({
+  atk: 900,
+  hp: 6000,
+  def: 240,
+  spd: 120,
+  crit: 0,
+  critDmg: 1.5,
+  heroId: 'ziling',
+  squad: ['ziling', 'honglian', 'molan', 'qinglan', 'lanyi', 'cloak']
+}, 80, 19);
+newFourSession.enemyUnits.forEach((e) => {
+  e.hp = 999999;
+  e.maxHp = 999999;
+});
+assert.strictEqual(newFourSession.playerUnits.length, 6);
+const uZiling = newFourSession.playerUnits.find((u) => u.heroId === 'ziling');
+const uHonglian = newFourSession.playerUnits.find((u) => u.heroId === 'honglian');
+const uMolan = newFourSession.playerUnits.find((u) => u.heroId === 'molan');
+const uQinglan = newFourSession.playerUnits.find((u) => u.heroId === 'qinglan');
+
+uZiling.rage = 100;
+const evZiling = newFourSession.castUlt(uZiling.id).find((e) => e.type === 'ult');
+assert.ok(evZiling && evZiling.skillId === 'duanying_zhuihun' && evZiling.skillKind === 'single');
+assert.strictEqual(evZiling.targets.length, 1);
+assert.ok(evZiling.dmg > 0);
+
+uHonglian.rage = 100;
+const evHonglian = newFourSession.castUlt(uHonglian.id).find((e) => e.type === 'ult');
+assert.ok(evHonglian && evHonglian.skillId === 'honglian_zhuoxin' && evHonglian.skillKind === 'row');
+assert.ok(evHonglian.targets.length >= 1);
+assert.ok(evHonglian.dmg > 0);
+
+uMolan.rage = 100;
+const evMolan = newFourSession.castUlt(uMolan.id).find((e) => e.type === 'ult');
+assert.ok(evMolan && evMolan.skillId === 'xuanchou_pozhen' && evMolan.skillKind === 'damage_buff_ally');
+assert.ok(evMolan.buffTargetId);
+const buffedUnit = newFourSession.unitMap[evMolan.buffTargetId];
+assert.strictEqual(buffedUnit.atkBuffMult, 1.35);
+assert.strictEqual(buffedUnit.atkBuffHits, 2);
+
+uQinglan.rage = 100;
+const evQinglan = newFourSession.castUlt(uQinglan.id).find((e) => e.type === 'ult');
+assert.ok(evQinglan && evQinglan.skillId === 'liufeng_zhuying' && evQinglan.skillKind === 'single');
+assert.strictEqual(evQinglan.targets.length, 1);
+assert.ok(evQinglan.dmg > 0);
+
 const seven = PREVIOUS_IDS.slice(0, 6).concat('yueshi');
 const capped = fresh.Battle.buildPlayerUnits({
   atk: 500,
@@ -448,7 +585,7 @@ const cssBody = cssDiff.split('\n').filter((line) => (
 ));
 assert.deepStrictEqual(cssBody, [
   '-  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=9") format("woff2");',
-  '+  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=10") format("woff2");',
+  '+  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=11") format("woff2");',
   '-  object-position: 50% 15%;',
   '+  object-position: center top;',
   '-  object-position: center 16%;',
@@ -458,16 +595,16 @@ assert.ok(css.includes('scrollbar-width: none'));
 assert.ok(css.includes('object-position: center top'));
 assert.match(css, /\.ult-hero-media\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.match(css, /\.role-card-img\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
-assert.ok(css.includes('MaShanZheng-Role.woff2?v=10'));
+assert.ok(css.includes('MaShanZheng-Role.woff2?v=11'));
 ['js/game.js', 'js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
   assert.strictEqual(git(['diff', '--stat', BASE, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=80'));
-assert.ok(index.includes('js/config.js?v=62'));
-assert.ok(index.includes('js/state.js?v=29'));
-assert.ok(index.includes('js/battle.js?v=32'));
+assert.ok(index.includes('css/style.css?v=81'));
+assert.ok(index.includes('js/config.js?v=63'));
+assert.ok(index.includes('js/state.js?v=30'));
+assert.ok(index.includes('js/battle.js?v=33'));
 
 const fontCheck = [
   'import ctypes, subprocess, sys, types',
@@ -491,7 +628,7 @@ const fontCheck = [
   "open('/tmp/role-font-base.woff2','wb').write(old)",
   "base = TTFont('/tmp/role-font-base.woff2').getBestCmap()",
   "cur = TTFont('assets/fonts/MaShanZheng-Role.woff2').getBestCmap()",
-  "need = [ord(ch) for ch in '月誓灵姝佑']",
+  "need = [ord(ch) for ch in '月誓灵姝佑紫绫影姬断追魂红莲妖灼心墨兰执事玄筹破阵晴岚游侠流风逐']",
   "missing_old = [cp for cp in base if cp not in cur]",
   "missing_new = [cp for cp in need if cp not in cur]",
   "print('missing_old', ''.join(chr(cp) for cp in missing_old))",
@@ -500,4 +637,4 @@ const fontCheck = [
 ].join('\n');
 execFileSync('python3', ['-c', fontCheck], { cwd: root, stdio: 'inherit' });
 
-console.log('hero-roster.test.js ok: 9 unique heroes, yueshi tian support heal, max squad 6');
+console.log('hero-roster.test.js ok: 13 unique heroes, 4 new heroes verified, max squad 6');

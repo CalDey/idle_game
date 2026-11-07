@@ -575,6 +575,54 @@
       rowMult: 0,
       buffAtkMult: 1,
       buffHits: 0
+    },
+    ziling: {
+      id: 'duanying_zhuihun',
+      name: '断影追魂',
+      kind: 'single',
+      mainMult: 1.85,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    honglian: {
+      id: 'honglian_zhuoxin',
+      name: '红莲灼心',
+      kind: 'row',
+      mainMult: 1.15,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 1.15,
+      buffAtkMult: 1,
+      buffHits: 0
+    },
+    molan: {
+      id: 'xuanchou_pozhen',
+      name: '玄筹破阵',
+      kind: 'damage_buff_ally',
+      mainMult: 1.2,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1.35,
+      buffHits: 2
+    },
+    qinglan: {
+      id: 'liufeng_zhuying',
+      name: '流风逐影',
+      kind: 'single',
+      mainMult: 1.75,
+      splashMult: 0,
+      healSelfOfMainDmg: 0,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
     }
   };
 
