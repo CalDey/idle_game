@@ -59,10 +59,13 @@ const NEW_FOUR_HEROES = {
     skillName: '断影追魂',
     skillKind: 'single',
     mainMult: 1.85,
+    img: 'assets/hero_ziling_hd.jpg?v=2',
+    poster: 'assets/hero_ziling_poster.jpg?v=2',
+    avatar: 'assets/battle/avatars/ziling.webp?v=2',
     size: { width: 1008, height: 1792 },
-    hdSha256: 'badfcd7e7f652da398d37e1c85dcf8c82e94af39d8c3a5e86068cfebc825ebf7',
-    posterSha256: 'e3b7bcfe45be82770035d4194f10f559fd6511ecbb7d20331666f26f08410bb0',
-    avatarSha256: '83c72a4e8ea8b491b338a35641613b50db14fea2b8a7497d2ddf888e0824a51f'
+    hdSha256: '2c0ae150dbed46fe824b0c79855e6444ef88fb97c9136ab61bb1910c2a074485',
+    posterSha256: '14cea94b0eb2f85beb057f4af19945614658a4f03b9c83a68663e3918cb3b6d4',
+    avatarSha256: 'c829131237095b04cfd6892fe54a6cfa9f9bab2ad12d831e7a0dad3986cf8b7c'
   },
   honglian: {
     name: '红莲妖姬',
@@ -374,6 +377,7 @@ Object.keys(NEW_FOUR_HEROES).forEach((hid) => {
   assert.ok(EXISTING_SKILL_KINDS.has(hero.skill.kind));
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[hid], hero.skill);
   ['img', 'poster', 'avatar'].forEach((key) => {
+    if (exp[key]) assert.strictEqual(hero[key], exp[key]);
     const rel = stripQuery(hero[key]);
     assert.ok(fs.existsSync(path.join(root, rel)), rel);
     assert.ok(text('js/config.js').includes(path.basename(rel)), `部署引用缺失 ${rel}`);
@@ -602,7 +606,7 @@ assert.ok(css.includes('MaShanZheng-Role.woff2?v=11'));
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=81'));
-assert.ok(index.includes('js/config.js?v=63'));
+assert.ok(index.includes('js/config.js?v=64'));
 assert.ok(index.includes('js/state.js?v=30'));
 assert.ok(index.includes('js/battle.js?v=33'));
 
