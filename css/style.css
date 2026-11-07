@@ -134,10 +134,7 @@ body {
 
 /* Top bar */
 .top-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  flex: none;
   height: 48px;
   box-sizing: border-box;
   padding: 4px 12px;
@@ -212,24 +209,11 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  margin: 6px 0 6px;
+  margin: 4px 0 4px;
   z-index: 6;
   pointer-events: none;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-}
-
-.app-container[data-tab="tab-cultivate"] .resource-grid,
-.app-container:has(#tab-cultivate.active) .resource-grid,
-.main-content:has(#tab-cultivate.active) > .resource-grid,
-#meditation-zone .resource-grid {
-  position: absolute;
-  top: 54px;
-  left: 10px;
-  right: 10px;
-  margin: 0;
-  z-index: 6;
-  pointer-events: none;
 }
 
 .res-item {
@@ -297,18 +281,9 @@ body {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  padding: 48px 12px 8px;
+  padding: 0 12px 8px;
   display: flex;
   flex-direction: column;
-}
-
-.app-container[data-tab="tab-cultivate"] .main-content,
-.main-content:has(#tab-cultivate.active) {
-  padding-top: 0;
-}
-
-.app-container[data-tab]:not([data-tab="tab-cultivate"]) .main-content {
-  padding-top: 48px;
 }
 
 .tab-pane {
@@ -464,7 +439,7 @@ body {
 }
 
 .hero-stage .hero-portrait {
-  animation: heroFloat 5.2s ease-in-out infinite;
+  animation: none;
 }
 
 @keyframes heroFloat {
@@ -475,7 +450,7 @@ body {
   }
 
   50% {
-    transform: translateY(-5px);
+    transform: translateY(0);
   }
 }
 
@@ -518,13 +493,13 @@ body {
   z-index: 3;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(1, 9, 32, 0.26) 0%, rgba(1, 9, 32, 0) 11%, rgba(1, 9, 32, 0) 68%, rgba(1, 9, 32, 0.58) 84%, var(--bg-stage) 100%),
+    linear-gradient(180deg, rgba(1, 9, 32, 0) 0%, rgba(1, 9, 32, 0) 68%, rgba(1, 9, 32, 0.58) 84%, var(--bg-stage) 100%),
     radial-gradient(ellipse 90% 84% at 50% 42%, transparent 58%, rgba(1, 9, 32, 0.22) 78%, rgba(1, 9, 32, 0.78) 100%);
 }
 
 .realm-title-plate {
   position: absolute;
-  top: 96px;
+  top: 10px;
   left: 12px;
   transform: none;
   z-index: 6;
