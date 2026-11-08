@@ -425,10 +425,12 @@ function loadPortraitHeroList() {
   };
   vm.runInNewContext(text('js/config.js'), sandbox);
   vm.runInNewContext(text('js/game.js'), sandbox);
-  return sandbox.window.portraitHeroList;
+  return sandbox.window;
 }
 
-const portraitHeroList = loadPortraitHeroList();
+const gameApi = loadPortraitHeroList();
+const portraitHeroList = gameApi.portraitHeroList;
+const sandboxRoleCard = gameApi.roleCardClassName;
 const portraitIds = Array.from(portraitHeroList(heroes, currentConfig.QUALITIES), (hero) => String(hero.id));
 assert.deepStrictEqual(portraitIds, [
   'lanyi', 'cloak', 'fenxiao', 'shuangchen',
@@ -454,6 +456,15 @@ assert.deepStrictEqual(sameTier.map((hero) => hero.id), ['late-xian', 'di-a', 'e
 assert.ok(text('js/game.js').includes('portraitHeroList(getHeroList())'));
 assert.ok(!text('js/stage-ui.js').includes('portraitHeroList'));
 assert.ok(!text('js/gear.js').includes('portraitHeroList'));
+assert.strictEqual(sandboxRoleCard({ id: 'lanyi', quality: 'xian' }, false), 'role-card role-q-xian');
+assert.strictEqual(sandboxRoleCard({ id: 'yueshi', quality: 'tian' }, true), 'role-card role-q-tian is-active');
+assert.strictEqual(sandboxRoleCard({ id: 'honglian', quality: 'di' }, false), 'role-card role-q-di');
+assert.strictEqual(sandboxRoleCard({ id: 'qinglan', quality: 'xuan' }, false), 'role-card role-q-xuan');
+assert.strictEqual(sandboxRoleCard({ id: 'unknown', quality: 'myth' }, true), 'role-card is-active');
+assert.ok(text('js/game.js').includes('roleCardClassName(hero, isActive)'));
+assert.ok(text('js/game.js').includes("roleCardClassName(hero, false) + ' is-locked'"));
+assert.ok(!text('js/stage-ui.js').includes('role-q-'));
+assert.ok(!text('js/gear.js').includes('role-q-'));
 currentConfig.QUALITIES.forEach((quality, index) => {
   if (index === 0) return;
   assert.ok(quality.mult > currentConfig.QUALITIES[index - 1].mult);
@@ -840,14 +851,16 @@ const cssDiff = git(['diff', '-U0', BASE, '--', 'css/style.css']);
 const cssBody = cssDiff.split('\n').filter((line) => (
   (line.startsWith('+') || line.startsWith('-')) && !line.startsWith('+++') && !line.startsWith('---')
 ));
-assert.deepStrictEqual(cssBody, [
+[
   '-  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=9") format("woff2");',
   '+  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=12") format("woff2");',
   '-  object-position: 50% 15%;',
   '+  object-position: center top;',
   '-  object-position: center 16%;',
   '+  object-position: center top;'
-]);
+].forEach((line) => {
+  assert.ok(cssBody.includes(line), `历史样式差异应保留: ${line}`);
+});
 assert.ok(css.includes('scrollbar-width: none'));
 assert.ok(css.includes('object-position: center top'));
 assert.match(css, /\.ult-hero-media\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
@@ -856,14 +869,32 @@ assert.ok(css.includes('MaShanZheng-Role.woff2?v=12'));
 ['js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
   assert.strictEqual(git(['diff', '--stat', BASE, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
-assert.strictEqual(git(['diff', '--stat', MERGED, '--', 'css/style.css', 'js/state.js', 'js/battle.js']).trim(), '');
+assert.strictEqual(git(['diff', '--stat', MERGED, '--', 'js/state.js', 'js/battle.js']).trim(), '');
+const ROLE_BORDER_BASE = 'ab9cd8d2f0891e788aa5bda263cf73f5283b14d2';
+const roleTouched = git(['diff', '--name-only', ROLE_BORDER_BASE]).trim().split('\n').filter(Boolean).sort();
+assert.deepStrictEqual(roleTouched, ['css/style.css', 'index.html', 'js/game.js', 'tools/hero-roster.test.js']);
+const roleCssDiff = git(['diff', '-U0', ROLE_BORDER_BASE, '--', 'css/style.css']);
+assert.ok(roleCssDiff.includes('.role-card.role-q-xian'));
+assert.ok(roleCssDiff.includes('.role-card.role-q-tian'));
+assert.ok(roleCssDiff.includes('.role-card.role-q-di'));
+assert.ok(roleCssDiff.includes('.role-card.role-q-xuan'));
+['.squad-', '.unit-avatar', '.role-card-img', 'object-position', 'scrollbar-width'].forEach((token) => {
+  assert.ok(!roleCssDiff.includes(token), `品阶边框不应改到 ${token}`);
+});
+assert.match(css, /\.role-card\.role-q-tian:not\(\.is-active\) \{ border-color: #f5c76a; \}/);
+assert.match(css, /\.role-card\.role-q-di:not\(\.is-active\) \{ border-color: #c084fc; \}/);
+assert.match(css, /\.role-card\.role-q-xuan:not\(\.is-active\) \{ border-color: #67c6e3; \}/);
+assert.match(css, /\.role-card\.role-q-ling:not\(\.is-active\) \{ border-color: #7ddea0; \}/);
+assert.match(css, /\.role-card\.role-q-fan:not\(\.is-active\) \{ border-color: #e7e2d6; \}/);
+assert.match(css, /\.role-card\.role-q-xian:not\(\.is-active\) \{[^}]*#f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5/);
+assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[^{]*\{[^}]*animation\s*:/.test(css));
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=82'));
+assert.ok(index.includes('css/style.css?v=83'));
 assert.ok(index.includes('js/config.js?v=70'));
 assert.ok(index.includes('js/state.js?v=31'));
 assert.ok(index.includes('js/battle.js?v=34'));
-assert.ok(index.includes('js/game.js?v=44'));
+assert.ok(index.includes('js/game.js?v=45'));
 const battleDiff = git(['diff', '-U0', MAIN, '--', 'js/battle.js']);
 const battleBody = battleDiff.split('\n').filter((line) => (
   (line.startsWith('+') || line.startsWith('-')) && !line.startsWith('+++') && !line.startsWith('---')
