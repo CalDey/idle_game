@@ -1367,6 +1367,18 @@
 
   window.portraitHeroList = portraitHeroList;
 
+  // 更换角色立绘卡的品阶类。只认 QUALITIES 里已有的 id，不另造品阶。
+  function roleCardClassName(hero, active) {
+    const classes = ['role-card'];
+    const qualityId = hero && hero.quality;
+    const known = (QUALITIES || []).some((item) => item && item.id === qualityId);
+    if (known) classes.push('role-q-' + qualityId);
+    if (active) classes.push('is-active');
+    return classes.join(' ');
+  }
+
+  window.roleCardClassName = roleCardClassName;
+
   function renderRoleList() {
     const box = els.roleList || document.getElementById('role-list');
     if (!box) return;
@@ -1381,7 +1393,7 @@
       btn.setAttribute('data-hero-id', hero.id);
 
       if (isHeroLocked(hero)) {
-        btn.className = 'role-card is-locked';
+        btn.className = roleCardClassName(hero, false) + ' is-locked';
         btn.disabled = true;
         btn.setAttribute('aria-disabled', 'true');
         btn.innerHTML = `
@@ -1403,7 +1415,7 @@
         `;
       } else {
         const isActive = hero.id === activeHero.id;
-        btn.className = 'role-card' + (isActive ? ' is-active' : '');
+        btn.className = roleCardClassName(hero, isActive);
         btn.innerHTML = `
           <img class="role-card-img" src="${hero.img}" alt="${hero.name}" loading="lazy" />
           ${isActive ? '<span class="role-card-badge">使用中</span>' : ''}

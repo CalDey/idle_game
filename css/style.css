@@ -3361,8 +3361,13 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   padding-top: 133.3333%;
 }
 
-.role-card:hover:not(.is-locked):not(:disabled) {
+.role-card:hover:not(.is-locked):not(:disabled):not(.role-q-fan):not(.role-q-ling):not(.role-q-xuan):not(.role-q-di):not(.role-q-tian):not(.role-q-xian) {
   border-color: var(--accent-gold);
+}
+
+.role-card:focus-visible {
+  outline: 2px solid var(--accent-gold-bright);
+  outline-offset: 2px;
 }
 
 .role-card:active:not(.is-locked):not(:disabled) {
@@ -3375,6 +3380,76 @@ body:has(.modal-backdrop.active) .tab-pane.active {
     0 0 0 1px rgba(255, 231, 176, 0.35),
     0 0 16px rgba(230, 201, 138, 0.45),
     inset 0 0 14px rgba(230, 201, 138, 0.22);
+}
+
+/* 更换角色立绘卡品阶边框。凡灵玄地天用 QUALITIES 原色；仙品用既有彩虹细边。宽度保持 1px，不改立绘裁切。 */
+.role-card.role-q-fan:not(.is-active) { border-color: #e7e2d6; }
+.role-card.role-q-ling:not(.is-active) { border-color: #7ddea0; }
+.role-card.role-q-xuan:not(.is-active) { border-color: #67c6e3; }
+.role-card.role-q-di:not(.is-active) { border-color: #c084fc; }
+.role-card.role-q-tian:not(.is-active) { border-color: #f5c76a; }
+
+.role-card.role-q-xian:not(.is-active) {
+  border-color: transparent;
+  background:
+    linear-gradient(180deg, #17142d 0%, #0b0919 100%) padding-box,
+    linear-gradient(120deg, #f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5, #f4a3a3) border-box;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    0 0 8px rgba(198, 168, 245, 0.16),
+    0 0 12px rgba(159, 216, 239, 0.1);
+}
+
+.role-card.role-q-fan.is-active { border-color: #e7e2d6; }
+.role-card.role-q-ling.is-active { border-color: #7ddea0; }
+.role-card.role-q-xuan.is-active { border-color: #67c6e3; }
+.role-card.role-q-di.is-active { border-color: #c084fc; }
+.role-card.role-q-tian.is-active { border-color: #f5c76a; }
+
+.role-card.role-q-xian.is-active {
+  border-color: transparent;
+  background:
+    linear-gradient(180deg, #17142d 0%, #0b0919 100%) padding-box,
+    linear-gradient(120deg, #f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5, #f4a3a3) border-box;
+  box-shadow:
+    0 0 0 1px rgba(255, 231, 176, 0.35),
+    0 0 16px rgba(230, 201, 138, 0.45),
+    inset 0 0 14px rgba(230, 201, 138, 0.22),
+    0 0 8px rgba(198, 168, 245, 0.16);
+}
+
+.role-card.role-q-fan:hover:not(.is-locked):not(:disabled):not(.is-active),
+.role-card.role-q-ling:hover:not(.is-locked):not(:disabled):not(.is-active),
+.role-card.role-q-xuan:hover:not(.is-locked):not(:disabled):not(.is-active),
+.role-card.role-q-di:hover:not(.is-locked):not(:disabled):not(.is-active),
+.role-card.role-q-tian:hover:not(.is-locked):not(:disabled):not(.is-active) {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 8px rgba(230, 201, 138, 0.28);
+}
+
+.role-card.role-q-xian:hover:not(.is-locked):not(:disabled):not(.is-active) {
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    0 0 8px rgba(198, 168, 245, 0.28),
+    0 0 12px rgba(159, 216, 239, 0.16);
+}
+
+.role-card.is-locked.role-q-fan,
+.role-card:disabled.role-q-fan { border-color: #e7e2d6; }
+.role-card.is-locked.role-q-ling,
+.role-card:disabled.role-q-ling { border-color: #7ddea0; }
+.role-card.is-locked.role-q-xuan,
+.role-card:disabled.role-q-xuan { border-color: #67c6e3; }
+.role-card.is-locked.role-q-di,
+.role-card:disabled.role-q-di { border-color: #c084fc; }
+.role-card.is-locked.role-q-tian,
+.role-card:disabled.role-q-tian { border-color: #f5c76a; }
+
+.role-card.is-locked.role-q-xian,
+.role-card:disabled.role-q-xian {
+  border-color: transparent;
+  background:
+    radial-gradient(ellipse at 50% 42%, #1a1634 0%, #090814 78%) padding-box,
+    linear-gradient(120deg, #f4a3a3, #f5d58a, #a8e6b8, #9fd8ef, #c6a8f5, #f4a3a3) border-box;
 }
 
 .role-card.is-locked,
