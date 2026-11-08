@@ -1,4 +1,4 @@
-// 15 名唯一英雄、4 仙、旧存档迁移、显式锁定、6 人上限、资产字节保护、字体缓存。
+// 16 名唯一英雄、5 仙、旧存档迁移、显式锁定、6 人上限、资产字节保护、字体缓存。
 // 用法：node tools/hero-roster.test.js
 // 字体字形检查需要 Python fontTools（pip install fonttools brotli）。
 const assert = require('assert');
@@ -112,9 +112,11 @@ const NEW_FOUR_HEROES = {
 const PREVIOUS_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui'];
 const ALL_13_IDS = PREVIOUS_IDS.concat(['yueshi', 'ziling', 'honglian', 'molan', 'qinglan']);
 const ALL_15_IDS = ALL_13_IDS.concat(['fenxiao', 'shuangchen']);
+const ALL_16_IDS = ALL_15_IDS.concat(['youming']);
 const MAIN = '6c873b5cbed5270ffde62175d059a16521d2bd24';
 const MERGED = '926d09b2171352fe91be532a21b0b737b86678d9';
-const FREE_ADDED = ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen'];
+const YOUMING_BASE = '5251f0d17f609a05b0de8ae71398ae453f46159c';
+const FREE_ADDED = ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming'];
 const ASSET_UNCHANGED_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui', 'honglian', 'molan', 'qinglan'];
 const KICK_ZILING_SHA256 = '1f84886ecbebb4717193dba4622394254220779f3af788ac6611d6be48431cf6';
 const EXISTING_SKILL_KINDS = new Set([
@@ -287,9 +289,9 @@ const ids = heroes.map((hero) => hero.id);
 
 assert.strictEqual(baseConfig.HEROES.length, 8, '基线 e7f15be 应是 8 名英雄；这不是当前人数断言');
 assert.strictEqual(mainConfig.HEROES.length, 13);
-assert.strictEqual(new Set(ids).size, 15, '当前应有 15 个唯一英雄 ID');
-assert.strictEqual(ids.length, 15);
-assert.deepStrictEqual(ids, ALL_15_IDS);
+assert.strictEqual(new Set(ids).size, 16, '当前应有 16 个唯一英雄 ID');
+assert.strictEqual(ids.length, 16);
+assert.deepStrictEqual(ids, ALL_16_IDS);
 
 function withoutAssets(hero) {
   const copy = Object.assign({}, hero);
@@ -380,13 +382,15 @@ assert.ok(EXISTING_SKILL_KINDS.has(yueshi.skill.kind));
 assert.deepStrictEqual(currentConfig.HERO_SKILLS.yueshi, yueshi.skill);
 
 const xianIds = heroes.filter((hero) => hero.quality === 'xian').map((hero) => hero.id);
-assert.deepStrictEqual(xianIds, ['lanyi', 'cloak', 'fenxiao', 'shuangchen']);
+assert.deepStrictEqual(xianIds, ['lanyi', 'cloak', 'fenxiao', 'shuangchen', 'youming']);
 
 const mergedConfig = loadConfigSource(git(['show', `${MERGED}:js/config.js`]));
-assert.deepStrictEqual(ids, mergedConfig.HEROES.map((hero) => hero.id), 'HEROES 全局顺序应与 main 一致');
-assert.deepStrictEqual(currentConfig.HERO_SKILLS, mergedConfig.HERO_SKILLS);
+assert.deepStrictEqual(ids.slice(0, 15), mergedConfig.HEROES.map((hero) => hero.id), '前 15 名 HEROES 全局顺序应与 main 一致');
+const skillsWithoutYouming = Object.assign({}, currentConfig.HERO_SKILLS);
+delete skillsWithoutYouming.youming;
+assert.deepStrictEqual(skillsWithoutYouming, mergedConfig.HERO_SKILLS);
 let assetChecks = 0;
-heroes.forEach((hero) => {
+heroes.slice(0, 15).forEach((hero) => {
   const prev = mergedConfig.HEROES.find((item) => item.id === hero.id);
   ['img', 'poster', 'avatar'].forEach((key) => {
     const rel = stripQuery(hero[key]);
@@ -408,6 +412,25 @@ heroes.forEach((hero) => {
   });
 });
 assert.strictEqual(assetChecks, 44, '15 组 HD/poster 与其余 14 张头像应与 main 字节一致');
+
+const youmingBaseConfig = loadConfigSource(git(['show', `${YOUMING_BASE}:js/config.js`]));
+assert.strictEqual(youmingBaseConfig.HEROES.length, 15);
+let base15AssetChecks = 0;
+youmingBaseConfig.HEROES.forEach((prev) => {
+  const now = heroes.find((item) => item.id === prev.id);
+  assert.deepStrictEqual(now, prev, `${prev.id} 相对基线 ${YOUMING_BASE} 配置被改动`);
+  assert.deepStrictEqual(currentConfig.HERO_SKILLS[prev.id], youmingBaseConfig.HERO_SKILLS[prev.id]);
+  ['img', 'poster', 'avatar'].forEach((key) => {
+    const rel = stripQuery(now[key]);
+    assert.strictEqual(
+      git(['hash-object', '--', rel]).trim(),
+      git(['rev-parse', `${YOUMING_BASE}:${rel}`]).trim(),
+      `${prev.id}.${key} 相对基线 ${YOUMING_BASE} 字节被改动`
+    );
+    base15AssetChecks += 1;
+  });
+});
+assert.strictEqual(base15AssetChecks, 45, '旧 15 位角色全部 45 个 HD/poster/avatar 资产字节不可改动');
 
 function loadPortraitHeroList() {
   const sandbox = {
@@ -433,7 +456,7 @@ const portraitHeroList = gameApi.portraitHeroList;
 const sandboxRoleCard = gameApi.roleCardClassName;
 const portraitIds = Array.from(portraitHeroList(heroes, currentConfig.QUALITIES), (hero) => String(hero.id));
 assert.deepStrictEqual(portraitIds, [
-  'lanyi', 'cloak', 'fenxiao', 'shuangchen',
+  'lanyi', 'cloak', 'fenxiao', 'shuangchen', 'youming',
   'saintess', 'shuanghua', 'qingkui', 'yueshi',
   'miko', 'jianghua', 'ziling', 'honglian',
   'sweetmaid', 'molan', 'qinglan'
@@ -559,6 +582,21 @@ const XIAN_PAIR = {
     hdSha256: '6a4585cd9b698a2ee1468da30e9f8ed2f11a07c4f2174d4df6c2a9ab272c9c5c',
     posterSha256: '2374722c27455cc82bb977a3f5eb0ec5e0a41ca35ccf6e0b8bde76a909b26ccf',
     avatarSha256: '68df445368b794eb03b2681d0f278cd798b29fea2f0e2b3f8890ca29d67d02a0'
+  },
+  youming: {
+    name: '幽冥鬼后',
+    skillId: 'mingdeng_shehun',
+    skillName: '冥灯摄魂',
+    skillKind: 'single',
+    mainMult: 1.8,
+    healSelfOfMainDmg: 0.3,
+    splashMult: 0,
+    img: 'assets/hero_youming_hd.jpg?v=1',
+    poster: 'assets/hero_youming_poster.jpg?v=1',
+    avatar: 'assets/battle/avatars/youming.webp?v=1',
+    hdSha256: '535382db5946b30eff8074532a2da6cae30e20a50a1181a95fb12b829255ff23',
+    posterSha256: 'cf3ebc00543b9d69248c125b3016282f91b4a903493b8ca465a9b96b47316f72',
+    avatarSha256: '2bc61a3a3d6f7d38399931f5d99a58c7449763d9d06b76bb00223ce16c03b6aa'
   }
 };
 Object.keys(XIAN_PAIR).forEach((hid) => {
@@ -575,6 +613,7 @@ Object.keys(XIAN_PAIR).forEach((hid) => {
   assert.strictEqual(hero.skill.splashMult, exp.splashMult || 0);
   if (exp.rowMult) assert.strictEqual(hero.skill.rowMult, exp.rowMult);
   if (exp.healAllyMaxHpRatio) assert.strictEqual(hero.skill.healAllyMaxHpRatio, exp.healAllyMaxHpRatio);
+  if (exp.healSelfOfMainDmg) assert.strictEqual(hero.skill.healSelfOfMainDmg, exp.healSelfOfMainDmg);
   assert.ok(EXISTING_SKILL_KINDS.has(hero.skill.kind));
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[hid], hero.skill);
   assert.strictEqual(hero.img, exp.img);
@@ -599,8 +638,10 @@ assert.deepStrictEqual(freshState.squad, PREVIOUS_IDS.slice(0, 6));
 assert.ok(!freshState.squad.includes('yueshi'));
 assert.ok(!freshState.squad.includes('fenxiao'));
 assert.ok(!freshState.squad.includes('shuangchen'));
+assert.ok(!freshState.squad.includes('youming'));
 assert.strictEqual(fresh.Battle.isHeroUnlocked('fenxiao', fresh.GameState.state), true);
 assert.strictEqual(fresh.Battle.isHeroUnlocked('shuangchen', fresh.GameState.state), true);
+assert.strictEqual(fresh.Battle.isHeroUnlocked('youming', fresh.GameState.state), true);
 assert.strictEqual(freshState.squad.length, 6);
 assert.strictEqual(fresh.Battle.isHeroUnlocked('yueshi', fresh.GameState.state), true);
 assert.strictEqual(fresh.Battle.MAX_SQUAD_SIZE, 6);
@@ -629,7 +670,7 @@ const lockedSave = JSON.parse(saveRaw({
   stage: { cur: 8, best: 7, idleAt: Date.now(), squad: ['saintess', 'lanyi'] },
   formation: { lanyi: { c: 2, r: 4 }, saintess: { c: 1, r: 4 } },
   unlockedHeroes: ['lanyi', 'cloak', 'saintess'],
-  lockedHeroes: ['yueshi', 'sweetmaid', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen']
+  lockedHeroes: ['yueshi', 'sweetmaid', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming']
 }));
 const lockedRt = loadRuntime(memoryStorage({ xiuxian_idle_save_v1: JSON.stringify(lockedSave) }));
 lockedRt.GameState.loadGame();
@@ -638,7 +679,7 @@ assert.strictEqual(lockedState.heroId, 'saintess');
 assert.deepStrictEqual(lockedState.squad, ['saintess', 'lanyi']);
 assert.ok(!lockedState.unlockedHeroes.includes('yueshi'));
 assert.ok(!lockedState.unlockedHeroes.includes('sweetmaid'));
-['ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen'].forEach((hid) => {
+['ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming'].forEach((hid) => {
   assert.ok(!lockedState.unlockedHeroes.includes(hid));
   assert.strictEqual(lockedRt.Battle.isHeroUnlocked(hid, lockedRt.GameState.state), false);
 });
@@ -652,7 +693,7 @@ assert.strictEqual(lockedState.stage.best, 7);
 
 const implicitSave = JSON.parse(saveRaw({
   unlockedHeroes: undefined,
-  lockedHeroes: ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen'],
+  lockedHeroes: ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming'],
   squad: ['cloak'],
   heroId: 'cloak',
   stage: { cur: 4, best: 3, idleAt: Date.now(), squad: ['cloak'] }
@@ -665,7 +706,7 @@ assert.ok(!Array.isArray(implicitState.unlockedHeroes));
 assert.deepStrictEqual(implicitState.squad, ['cloak']);
 assert.strictEqual(implicitState.heroId, 'cloak');
 assert.strictEqual(implicitRt.Battle.isHeroUnlocked('yueshi', implicitRt.GameState.state), false);
-['ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen'].forEach((hid) => {
+['ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming'].forEach((hid) => {
   assert.strictEqual(implicitRt.Battle.isHeroUnlocked(hid, implicitRt.GameState.state), false);
 });
 assert.strictEqual(implicitRt.Battle.isHeroUnlocked('lanyi', implicitRt.GameState.state), true);
@@ -826,6 +867,39 @@ assert.ok(!evIce.freezeTargetId);
 });
 assert.ok(!evIce.heals.some((item) => item.unitId === iceDead.id));
 
+const youmingSession = fresh.Battle.createSession({
+  atk: 900,
+  hp: 6000,
+  def: 240,
+  spd: 120,
+  crit: 0,
+  critDmg: 1.5,
+  heroId: 'youming',
+  squad: ['youming', 'lanyi', 'cloak']
+}, 80, 19);
+youmingSession.enemyUnits.forEach((enemy) => {
+  enemy.hp = 999999;
+  enemy.maxHp = 999999;
+});
+const uYouming = youmingSession.playerUnits.find((unit) => unit.heroId === 'youming');
+const uYoumingAlly = youmingSession.playerUnits.find((unit) => unit.heroId === 'lanyi');
+uYouming.hp = Math.floor(uYouming.maxHp * 0.4);
+uYoumingAlly.hp = Math.floor(uYoumingAlly.maxHp * 0.4);
+const youmingHpBefore = uYouming.hp;
+const allyHpBefore = uYoumingAlly.hp;
+uYouming.rage = 100;
+const evYouming = youmingSession.castUlt(uYouming.id).find((event) => event.type === 'ult');
+assert.ok(evYouming && evYouming.skillId === 'mingdeng_shehun' && evYouming.skillKind === 'single');
+assert.strictEqual(evYouming.skillName, '冥灯摄魂');
+assert.strictEqual(evYouming.targets.length, 1);
+assert.ok(evYouming.dmg > 0);
+assert.strictEqual(evYouming.heals.length, 1);
+assert.strictEqual(evYouming.heals[0].unitId, uYouming.id);
+assert.strictEqual(evYouming.heals[0].amount, Math.max(1, Math.round(evYouming.dmg * 0.3)));
+assert.strictEqual(uYouming.hp, Math.min(uYouming.maxHp, youmingHpBefore + evYouming.heals[0].amount));
+assert.strictEqual(uYoumingAlly.hp, allyHpBefore);
+assert.ok(!evYouming.freezeTargetId && !evYouming.buffTargetId);
+
 const seven = PREVIOUS_IDS.slice(0, 6).concat('yueshi');
 const capped = fresh.Battle.buildPlayerUnits({
   atk: 500,
@@ -853,7 +927,7 @@ const cssBody = cssDiff.split('\n').filter((line) => (
 ));
 [
   '-  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=9") format("woff2");',
-  '+  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=12") format("woff2");',
+  '+  src: url("../assets/fonts/MaShanZheng-Role.woff2?v=13") format("woff2");',
   '-  object-position: 50% 15%;',
   '+  object-position: center top;',
   '-  object-position: center 16%;',
@@ -865,13 +939,13 @@ assert.ok(css.includes('scrollbar-width: none'));
 assert.ok(css.includes('object-position: center top'));
 assert.match(css, /\.ult-hero-media\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.match(css, /\.role-card-img\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
-assert.ok(css.includes('MaShanZheng-Role.woff2?v=12'));
+assert.ok(css.includes('MaShanZheng-Role.woff2?v=13'));
 ['js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
   assert.strictEqual(git(['diff', '--stat', BASE, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
-assert.strictEqual(git(['diff', '--stat', MERGED, '--', 'js/state.js', 'js/battle.js']).trim(), '');
+assert.strictEqual(git(['diff', '--stat', YOUMING_BASE, '--', 'js/game.js']).trim(), '');
 const ROLE_BORDER_BASE = 'ab9cd8d2f0891e788aa5bda263cf73f5283b14d2';
-const roleTouched = git(['diff', '--name-only', ROLE_BORDER_BASE]).trim().split('\n').filter(Boolean).sort();
+const roleTouched = git(['diff', '--name-only', ROLE_BORDER_BASE, YOUMING_BASE]).trim().split('\n').filter(Boolean).sort();
 assert.deepStrictEqual(roleTouched, ['css/style.css', 'index.html', 'js/game.js', 'tools/hero-roster.test.js']);
 const roleCssDiff = git(['diff', '-U0', ROLE_BORDER_BASE, '--', 'css/style.css']);
 assert.ok(roleCssDiff.includes('.role-card.role-q-xian'));
@@ -890,10 +964,10 @@ assert.match(css, /\.role-card\.role-q-xian:not\(\.is-active\) \{[^}]*#f4a3a3, #
 assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[^{]*\{[^}]*animation\s*:/.test(css));
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=83'));
-assert.ok(index.includes('js/config.js?v=70'));
-assert.ok(index.includes('js/state.js?v=31'));
-assert.ok(index.includes('js/battle.js?v=34'));
+assert.ok(index.includes('css/style.css?v=84'));
+assert.ok(index.includes('js/config.js?v=71'));
+assert.ok(index.includes('js/state.js?v=32'));
+assert.ok(index.includes('js/battle.js?v=35'));
 assert.ok(index.includes('js/game.js?v=45'));
 const battleDiff = git(['diff', '-U0', MAIN, '--', 'js/battle.js']);
 const battleBody = battleDiff.split('\n').filter((line) => (
@@ -902,6 +976,7 @@ const battleBody = battleDiff.split('\n').filter((line) => (
 assert.ok(battleBody.length > 0 && battleBody.every((line) => line.startsWith('+')), 'battle.js 只允许追加技能回退');
 assert.ok(battleBody.some((line) => line.includes('fenxiao_guanzhen')));
 assert.ok(battleBody.some((line) => line.includes('shuangchen_yingyu')));
+assert.ok(battleBody.some((line) => line.includes('mingdeng_shehun')));
 assert.ok(!battleBody.some((line) => line.includes('MAX_ROUNDS') || line.includes('function castUlt')));
 
 const fontCheck = [
@@ -926,7 +1001,7 @@ const fontCheck = [
   "open('/tmp/role-font-base.woff2','wb').write(old)",
   "base = TTFont('/tmp/role-font-base.woff2').getBestCmap()",
   "cur = TTFont('assets/fonts/MaShanZheng-Role.woff2').getBestCmap()",
-  "need = [ord(ch) for ch in '月誓灵姝佑紫绫影姬断追魂红莲妖灼心墨兰执事玄筹破阵晴岚游侠流风逐焚霄炎贯宸冰璃映愈']",
+  "need = [ord(ch) for ch in '月誓灵姝佑紫绫影姬断追魂红莲妖灼心墨兰执事玄筹破阵晴岚游侠流风逐焚霄炎贯宸冰璃映愈幽冥鬼后灯摄']",
   "missing_old = [cp for cp in base if cp not in cur]",
   "missing_new = [cp for cp in need if cp not in cur]",
   "print('missing_old', ''.join(chr(cp) for cp in missing_old))",
@@ -935,4 +1010,4 @@ const fontCheck = [
 ].join('\n');
 execFileSync('python3', ['-c', fontCheck], { cwd: root, stdio: 'inherit' });
 
-console.log('hero-roster.test.js ok: 15 unique heroes, 4 xian, max squad 6');
+console.log('hero-roster.test.js ok: 16 unique heroes, 5 xian, max squad 6');

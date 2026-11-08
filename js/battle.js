@@ -649,6 +649,19 @@
       rowMult: 0,
       buffAtkMult: 1,
       buffHits: 0
+    },
+    // 与配置一致：冥灯摄魂走现有单体伤害加自身回复，不新增恐惧、复活或召唤。
+    youming: {
+      id: 'mingdeng_shehun',
+      name: '冥灯摄魂',
+      kind: 'single',
+      mainMult: 1.8,
+      splashMult: 0,
+      healSelfOfMainDmg: 0.3,
+      healAllyMaxHpRatio: 0,
+      rowMult: 0,
+      buffAtkMult: 1,
+      buffHits: 0
     }
   };
 

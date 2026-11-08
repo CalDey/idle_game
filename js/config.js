@@ -901,6 +901,19 @@
         rowMult: 0,
         buffAtkMult: 1,
         buffHits: 0
+      },
+      // 冥灯摄魂：仙品幽冥单体噬魂，沿用现有 single + healSelfOfMainDmg（单体攻击+治疗自身）。对主目标造成 1.8 倍绝技伤害且不溅射，自身回复本次主目标伤害的 30%（不超过 maxHp）。不含恐惧、复活或召唤。
+      youming: {
+        id: 'mingdeng_shehun',
+        name: '冥灯摄魂',
+        kind: 'single',
+        mainMult: 1.8,
+        splashMult: 0,
+        healSelfOfMainDmg: 0.3,
+        healAllyMaxHpRatio: 0,
+        rowMult: 0,
+        buffAtkMult: 1,
+        buffHits: 0
       }
     },
     HEROES: [
@@ -1237,6 +1250,29 @@
           splashMult: 0,
           healSelfOfMainDmg: 0,
           healAllyMaxHpRatio: 0.09,
+          rowMult: 0,
+          buffAtkMult: 1,
+          buffHits: 0
+        }
+      },
+      {
+        id: 'youming',
+        name: '幽冥鬼后',
+        quality: 'xian',
+        unlockCond: '踏入仙途（初始免费解锁）',
+        avatar: 'assets/battle/avatars/youming.webp?v=1',
+        avatarPos: '50% 50%',
+        avatarScale: 2.6,
+        img: 'assets/hero_youming_hd.jpg?v=1',
+        poster: 'assets/hero_youming_poster.jpg?v=1',
+        skill: {
+          id: 'mingdeng_shehun',
+          name: '冥灯摄魂',
+          kind: 'single',
+          mainMult: 1.8,
+          splashMult: 0,
+          healSelfOfMainDmg: 0.3,
+          healAllyMaxHpRatio: 0,
           rowMult: 0,
           buffAtkMult: 1,
           buffHits: 0
