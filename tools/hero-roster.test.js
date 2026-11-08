@@ -50,7 +50,7 @@ const RESTORED_PORTRAITS = {
 };
 const YUESHI_HD_SHA256 = 'b6f93fb86082210f3cec22cb5d01b1cdcfe49d6b064886132e9a580ac4637d16';
 const YUESHI_POSTER_SHA256 = '2a48c81b71ff91632dab463fffdf56cf10fe527fd28e07789a6b51fa8216fb4d';
-const YUESHI_AVATAR_SHA256 = '945208d7f98f19efb758ad456ed77c76b04e92654e56003ee1040fff6a505851';
+const YUESHI_AVATAR_SHA256 = '49eded27444a0883294daf0d725d05eb511c8442cdfd8cbfd7368fafd01cf7a6';
 const NEW_FOUR_HEROES = {
   ziling: {
     name: '紫绫影姬',
@@ -90,10 +90,11 @@ const NEW_FOUR_HEROES = {
     mainMult: 1.2,
     buffAtkMult: 1.35,
     buffHits: 2,
+    avatar: 'assets/battle/avatars/molan.webp?v=2',
     size: { width: 1080, height: 1920 },
     hdSha256: '48f25ae020a0ad8d3aa894a093cb93a7634adbac46aebbd9def09c6fa814bc58',
     posterSha256: '1f3b2279f3a12ba5441ae5cbdac9f7610cae91fd0e1ba83a6f44bc8b6864bd76',
-    avatarSha256: 'b3e7f8d7f60ab16856eef7fe897b21b556ed56c5e410ad8eed3eb5dd72d9ec78'
+    avatarSha256: 'af9248769566bb005a6f435c19ece0331f20d70ce761262b7986b3386bcb5c29'
   },
   qinglan: {
     name: '晴岚游侠',
@@ -102,11 +103,11 @@ const NEW_FOUR_HEROES = {
     skillName: '流风逐影',
     skillKind: 'single',
     mainMult: 1.75,
-    avatar: 'assets/battle/avatars/qinglan.webp?v=2',
+    avatar: 'assets/battle/avatars/qinglan.webp?v=3',
     size: { width: 1080, height: 1920 },
     hdSha256: '884a7e73786ae83131f6db035bf8f5b5f29834c2bafa3e0c1dbfac6dfda8923d',
     posterSha256: '6f88c34fceccf44f67a2c2f545574131f66879e29852484de883031b9c48a4d9',
-    avatarSha256: '65a6f948519feb9f3ec633448457f9db7f8d8b91ccf7810c3a9ae0bf53ef8c36'
+    avatarSha256: '80670236d6ac92706d05065378c5927ba57e72d84d13cc738953654cfd1b6d88'
   }
 };
 const PREVIOUS_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui'];
@@ -116,6 +117,25 @@ const ALL_16_IDS = ALL_15_IDS.concat(['youming']);
 const MAIN = '6c873b5cbed5270ffde62175d059a16521d2bd24';
 const MERGED = '926d09b2171352fe91be532a21b0b737b86678d9';
 const YOUMING_BASE = '5251f0d17f609a05b0de8ae71398ae453f46159c';
+const AVATAR_UNIFY_BASE = 'b92d7c4c0b1a5742aca529446e8336dafd178db0';
+const UNIFIED_AVATARS = {
+  lanyi:      { avatar: 'assets/battle/avatars/lanyi.webp?v=4',      sha256: '5bbdd44db2f2a8b4e1feebf25dee2ae76a2391efbc289abf6ee82dedf4fbbd9d', changedFromHead: false },
+  cloak:      { avatar: 'assets/battle/avatars/cloak.webp?v=5',      sha256: 'dca1e8aef606501a7857a9939bdc561456dcbe182b94c54d402279af1e0ec91d', changedFromHead: true },
+  saintess:   { avatar: 'assets/battle/avatars/saintess.webp?v=4',   sha256: 'a51bf16f3d849a481b31fc7da6de718309d68951c927b67003b97fda96932fa3', changedFromHead: false },
+  miko:       { avatar: 'assets/battle/avatars/miko.webp?v=6',       sha256: '79661b1a06afb08c527d6760a8c62c2e1a998aa744163c4a14d2aa748d4b0ea9', changedFromHead: true },
+  shuanghua:  { avatar: 'assets/battle/avatars/shuanghua.webp?v=4',  sha256: 'f1d70e63aae3d89c6c238c4588c94ce233b9e1232f3b5c91234d07c5c7866373', changedFromHead: false },
+  sweetmaid:  { avatar: 'assets/battle/avatars/sweetmaid.webp?v=4',  sha256: '9e966b302ff19d40145b38b71d458d9f2770b9ca941b7ef7d9a818da3006778d', changedFromHead: false },
+  jianghua:   { avatar: 'assets/battle/avatars/jianghua.webp?v=3',   sha256: '4133a6c62215943f7da89093f69768d167cbd39e61712b6dd3ea984e667d152a', changedFromHead: true },
+  qingkui:    { avatar: 'assets/battle/avatars/qingkui.webp?v=5',    sha256: 'f820c2a80ecfc86737b98f73fe6c396773ca09d4ccf893a73ee18f60f42a8e6a', changedFromHead: true },
+  yueshi:     { avatar: 'assets/battle/avatars/yueshi.webp?v=8',     sha256: '49eded27444a0883294daf0d725d05eb511c8442cdfd8cbfd7368fafd01cf7a6', changedFromHead: true },
+  ziling:     { avatar: 'assets/battle/avatars/ziling.webp?v=3',     sha256: '5aed69c2445b484544c71ed9aad03a71fc060f5d908e37888eb17f18ecca2676', changedFromHead: false },
+  honglian:   { avatar: 'assets/battle/avatars/honglian.webp?v=2',   sha256: '47cfa20d16c637ab70e80dae3e916388d915946529100cf4912568dbf15b35fa', changedFromHead: false },
+  molan:      { avatar: 'assets/battle/avatars/molan.webp?v=2',      sha256: 'af9248769566bb005a6f435c19ece0331f20d70ce761262b7986b3386bcb5c29', changedFromHead: true },
+  qinglan:    { avatar: 'assets/battle/avatars/qinglan.webp?v=3',    sha256: '80670236d6ac92706d05065378c5927ba57e72d84d13cc738953654cfd1b6d88', changedFromHead: true },
+  fenxiao:    { avatar: 'assets/battle/avatars/fenxiao.webp?v=2',    sha256: '03ad488f739ce0f54bad44991816db8ca68f24870051648e0b7829a967eae789', changedFromHead: true },
+  shuangchen: { avatar: 'assets/battle/avatars/shuangchen.webp?v=2', sha256: 'f24797645ea4ade5bb51a58af6a96e13404ab36f9ad419787c52832761ff316e', changedFromHead: true },
+  youming:    { avatar: 'assets/battle/avatars/youming.webp?v=2',    sha256: 'd8ac253f8da765fa7097993d83a87a5b4be53aa0954dc59f0c00439d62d595c1', changedFromHead: true }
+};
 const FREE_ADDED = ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming'];
 const ASSET_UNCHANGED_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui', 'honglian', 'molan', 'qinglan'];
 const KICK_ZILING_SHA256 = '1f84886ecbebb4717193dba4622394254220779f3af788ac6611d6be48431cf6';
@@ -308,14 +328,20 @@ mainConfig.HEROES.forEach((hero) => {
 ASSET_UNCHANGED_IDS.forEach((id) => {
   const now = heroes.find((hero) => hero.id === id);
   const prev = mainById[id];
-  assert.deepStrictEqual(now, prev, `${id} 完整配置被改动`);
+  const u = UNIFIED_AVATARS[id];
+  assert.deepStrictEqual(withoutAssets(now), withoutAssets(prev), `${id} 除头像外配置被改动`);
+  assert.strictEqual(now.img, prev.img);
+  assert.strictEqual(now.poster, prev.poster);
+  assert.strictEqual(now.avatar, u.avatar);
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[id], mainConfig.HERO_SKILLS[id], `${id} 技能被改动`);
-  ['img', 'poster', 'avatar'].forEach((key) => {
+  ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(prev[key]);
     const baseBlob = git(['rev-parse', `${MAIN}:${rel}`]).trim();
     const workBlob = git(['hash-object', '--', rel]).trim();
-    assert.strictEqual(workBlob, baseBlob, `无关角色资源被改动：${rel}`);
+    assert.strictEqual(workBlob, baseBlob, `无关角色立绘资源被改动：${rel}`);
   });
+  const avRel = stripQuery(now.avatar);
+  assert.strictEqual(sha256(read(avRel)), u.sha256);
 });
 ['yueshi', 'ziling'].forEach((id) => {
   const now = heroes.find((hero) => hero.id === id);
@@ -332,11 +358,15 @@ baseConfig.HEROES.forEach((hero) => {
 PREVIOUS_IDS.forEach((id) => {
   const now = heroes.find((hero) => hero.id === id);
   const prev = baseById[id];
+  const u = UNIFIED_AVATARS[id];
   assert.ok(now, `缺少原英雄 ${id}`);
   assert.strictEqual(now.name, prev.name);
   assert.strictEqual(now.quality, prev.quality);
-  assert.strictEqual(now.avatar, prev.avatar);
+  assert.strictEqual(now.avatar, u.avatar);
   assert.deepStrictEqual(now.skill, prev.skill);
+  const avatarRel = stripQuery(now.avatar);
+  assert.strictEqual(sha256(read(avatarRel)), u.sha256);
+  assert.deepStrictEqual(imageSize(avatarRel), { width: 512, height: 512 });
   if (Object.prototype.hasOwnProperty.call(RESTORED_PORTRAITS, id)) {
     const exp = RESTORED_PORTRAITS[id];
     assert.strictEqual(now.img, exp.img);
@@ -345,18 +375,15 @@ PREVIOUS_IDS.forEach((id) => {
     assert.strictEqual(sha256(read(stripQuery(now.poster))), exp.posterSha256);
     assert.deepStrictEqual(imageSize(stripQuery(now.img)), { width: 1008, height: 1792 });
     assert.deepStrictEqual(imageSize(stripQuery(now.poster)), { width: 1008, height: 1792 });
-    const avatarRel = stripQuery(prev.avatar);
-    assert.strictEqual(git(['hash-object', '--', avatarRel]).trim(), git(['rev-parse', `${BASE}:${avatarRel}`]).trim());
-    assert.deepStrictEqual(imageSize(avatarRel), { width: 512, height: 512 });
     return;
   }
   assert.strictEqual(now.img, prev.img);
   assert.strictEqual(now.poster, prev.poster);
-  ['img', 'poster', 'avatar'].forEach((key) => {
+  ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(prev[key]);
     const baseBlob = git(['rev-parse', `${BASE}:${rel}`]).trim();
     const workBlob = git(['hash-object', '--', rel]).trim();
-    assert.strictEqual(workBlob, baseBlob, `原英雄资源被改动：${rel}`);
+    assert.strictEqual(workBlob, baseBlob, `原英雄立绘资源被改动：${rel}`);
     const size = imageSize(rel);
     assert.ok(size.width > 0 && size.height > 0, rel);
   });
@@ -373,7 +400,7 @@ assert.strictEqual(yueshi.skill.mainMult, 1.2);
 assert.strictEqual(yueshi.skill.splashMult, 0);
 assert.strictEqual(yueshi.img, 'assets/hero_yueshi_hd.jpg?v=2');
 assert.strictEqual(yueshi.poster, 'assets/hero_yueshi_poster.jpg?v=2');
-assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=7');
+assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=8');
 assert.strictEqual(yueshi.avatarPos, '50% 22%');
 assert.strictEqual(yueshi.avatarScale, 2.6);
 assert.strictEqual(read(stripQuery(yueshi.img)).length, 524264);
@@ -389,48 +416,47 @@ assert.deepStrictEqual(ids.slice(0, 15), mergedConfig.HEROES.map((hero) => hero.
 const skillsWithoutYouming = Object.assign({}, currentConfig.HERO_SKILLS);
 delete skillsWithoutYouming.youming;
 assert.deepStrictEqual(skillsWithoutYouming, mergedConfig.HERO_SKILLS);
-let assetChecks = 0;
-heroes.slice(0, 15).forEach((hero) => {
-  const prev = mergedConfig.HEROES.find((item) => item.id === hero.id);
-  ['img', 'poster', 'avatar'].forEach((key) => {
-    const rel = stripQuery(hero[key]);
-    const sameBlob = git(['hash-object', '--', rel]).trim() === git(['rev-parse', `${MERGED}:${rel}`]).trim();
-    if (hero.id === 'yueshi' && key === 'avatar') {
-      assert.strictEqual(sameBlob, false, '月誓头像应已扶正');
-      assert.strictEqual(hero.img, prev.img);
-      assert.strictEqual(hero.poster, prev.poster);
-      const kept = Object.assign({}, hero);
-      const oldHero = Object.assign({}, prev);
-      delete kept.avatar;
-      delete oldHero.avatar;
-      assert.deepStrictEqual(kept, oldHero);
-      return;
-    }
-    assert.strictEqual(sameBlob, true, `相对 main 素材被改动：${rel}`);
-    assert.strictEqual(hero[key], prev[key], `${hero.id}.${key} 引用被改动`);
-    assetChecks += 1;
-  });
-});
-assert.strictEqual(assetChecks, 44, '15 组 HD/poster 与其余 14 张头像应与 main 字节一致');
 
-const youmingBaseConfig = loadConfigSource(git(['show', `${YOUMING_BASE}:js/config.js`]));
-assert.strictEqual(youmingBaseConfig.HEROES.length, 15);
-let base15AssetChecks = 0;
-youmingBaseConfig.HEROES.forEach((prev) => {
+const unifyBaseConfig = loadConfigSource(git(['show', `${AVATAR_UNIFY_BASE}:js/config.js`]));
+assert.strictEqual(unifyBaseConfig.HEROES.length, 16);
+assert.deepStrictEqual(currentConfig.HERO_SKILLS, unifyBaseConfig.HERO_SKILLS, '技能配置不应改动');
+let hdPosterChecks = 0;
+let unchangedAvatarChecks = 0;
+let updatedAvatarChecks = 0;
+unifyBaseConfig.HEROES.forEach((prev) => {
   const now = heroes.find((item) => item.id === prev.id);
-  assert.deepStrictEqual(now, prev, `${prev.id} 相对基线 ${YOUMING_BASE} 配置被改动`);
-  assert.deepStrictEqual(currentConfig.HERO_SKILLS[prev.id], youmingBaseConfig.HERO_SKILLS[prev.id]);
-  ['img', 'poster', 'avatar'].forEach((key) => {
+  const u = UNIFIED_AVATARS[prev.id];
+  assert.ok(u, `缺少头像规格配置：${prev.id}`);
+  const kept = Object.assign({}, now);
+  const oldHero = Object.assign({}, prev);
+  delete kept.avatar;
+  delete oldHero.avatar;
+  assert.deepStrictEqual(kept, oldHero, `${prev.id} 除 avatar 外配置不应改动`);
+  assert.strictEqual(now.avatar, u.avatar, `${prev.id} avatar 引用版本号不匹配`);
+  ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(now[key]);
     assert.strictEqual(
       git(['hash-object', '--', rel]).trim(),
-      git(['rev-parse', `${YOUMING_BASE}:${rel}`]).trim(),
-      `${prev.id}.${key} 相对基线 ${YOUMING_BASE} 字节被改动`
+      git(['rev-parse', `${AVATAR_UNIFY_BASE}:${rel}`]).trim(),
+      `${prev.id}.${key} 原图字节不可改动`
     );
-    base15AssetChecks += 1;
+    hdPosterChecks += 1;
   });
+  const avRel = stripQuery(now.avatar);
+  assert.strictEqual(sha256(read(avRel)), u.sha256, `${prev.id} avatar SHA-256 不匹配`);
+  assert.deepStrictEqual(imageSize(avRel), { width: 512, height: 512 });
+  const sameAvBlob = git(['hash-object', '--', avRel]).trim() === git(['rev-parse', `${AVATAR_UNIFY_BASE}:${avRel}`]).trim();
+  if (u.changedFromHead) {
+    assert.strictEqual(sameAvBlob, false, `${prev.id} 头像应已按统一视觉规格更新`);
+    updatedAvatarChecks += 1;
+  } else {
+    assert.strictEqual(sameAvBlob, true, `${prev.id} 已协调头像字节不应改动`);
+    unchangedAvatarChecks += 1;
+  }
 });
-assert.strictEqual(base15AssetChecks, 45, '旧 15 位角色全部 45 个 HD/poster/avatar 资产字节不可改动');
+assert.strictEqual(hdPosterChecks, 32, '全部 16 位角色共 32 张 HD/poster 字节不可改动');
+assert.strictEqual(unchangedAvatarChecks, 6, '6 位已协调头像字节应保持不变');
+assert.strictEqual(updatedAvatarChecks, 10, '10 位头像应已完成视觉规格统一');
 
 function loadPortraitHeroList() {
   const sandbox = {
@@ -563,10 +589,10 @@ const XIAN_PAIR = {
     rowMult: 1.4,
     img: 'assets/hero_fenxiao_hd.jpg?v=1',
     poster: 'assets/hero_fenxiao_poster.jpg?v=1',
-    avatar: 'assets/battle/avatars/fenxiao.webp?v=1',
+    avatar: 'assets/battle/avatars/fenxiao.webp?v=2',
     hdSha256: 'c37c0b370754cc939d4e8dda6717b559c9b6e1125a5d255402198ef988224314',
     posterSha256: 'a7d5549cf70e618eb0167a3f951dc21e333d2afeb7638a2fd2ef40b25deea70d',
-    avatarSha256: '00fc1637071b6364cf11724667502c11b8b0e5dc595ac711874a3343a538db94'
+    avatarSha256: '03ad488f739ce0f54bad44991816db8ca68f24870051648e0b7829a967eae789'
   },
   shuangchen: {
     name: '霜宸冰璃',
@@ -578,10 +604,10 @@ const XIAN_PAIR = {
     splashMult: 0,
     img: 'assets/hero_shuangchen_hd.jpg?v=1',
     poster: 'assets/hero_shuangchen_poster.jpg?v=1',
-    avatar: 'assets/battle/avatars/shuangchen.webp?v=1',
+    avatar: 'assets/battle/avatars/shuangchen.webp?v=2',
     hdSha256: '6a4585cd9b698a2ee1468da30e9f8ed2f11a07c4f2174d4df6c2a9ab272c9c5c',
     posterSha256: '2374722c27455cc82bb977a3f5eb0ec5e0a41ca35ccf6e0b8bde76a909b26ccf',
-    avatarSha256: '68df445368b794eb03b2681d0f278cd798b29fea2f0e2b3f8890ca29d67d02a0'
+    avatarSha256: 'f24797645ea4ade5bb51a58af6a96e13404ab36f9ad419787c52832761ff316e'
   },
   youming: {
     name: '幽冥鬼后',
@@ -593,10 +619,10 @@ const XIAN_PAIR = {
     splashMult: 0,
     img: 'assets/hero_youming_hd.jpg?v=1',
     poster: 'assets/hero_youming_poster.jpg?v=1',
-    avatar: 'assets/battle/avatars/youming.webp?v=1',
+    avatar: 'assets/battle/avatars/youming.webp?v=2',
     hdSha256: '535382db5946b30eff8074532a2da6cae30e20a50a1181a95fb12b829255ff23',
     posterSha256: 'cf3ebc00543b9d69248c125b3016282f91b4a903493b8ca465a9b96b47316f72',
-    avatarSha256: '2bc61a3a3d6f7d38399931f5d99a58c7449763d9d06b76bb00223ce16c03b6aa'
+    avatarSha256: 'd8ac253f8da765fa7097993d83a87a5b4be53aa0954dc59f0c00439d62d595c1'
   }
 };
 Object.keys(XIAN_PAIR).forEach((hid) => {
@@ -965,7 +991,7 @@ assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=84'));
-assert.ok(index.includes('js/config.js?v=71'));
+assert.ok(index.includes('js/config.js?v=72'));
 assert.ok(index.includes('js/state.js?v=32'));
 assert.ok(index.includes('js/battle.js?v=35'));
 assert.ok(index.includes('js/game.js?v=45'));
