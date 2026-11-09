@@ -90,11 +90,13 @@ const NEW_FOUR_HEROES = {
     mainMult: 1.2,
     buffAtkMult: 1.35,
     buffHits: 2,
-    avatar: 'assets/battle/avatars/molan.webp?v=2',
+    img: 'assets/hero_molan_hd.jpg?v=2',
+    poster: 'assets/hero_molan_poster.jpg?v=2',
+    avatar: 'assets/battle/avatars/molan.webp?v=3',
     size: { width: 1080, height: 1920 },
-    hdSha256: '48f25ae020a0ad8d3aa894a093cb93a7634adbac46aebbd9def09c6fa814bc58',
-    posterSha256: '1f3b2279f3a12ba5441ae5cbdac9f7610cae91fd0e1ba83a6f44bc8b6864bd76',
-    avatarSha256: 'af9248769566bb005a6f435c19ece0331f20d70ce761262b7986b3386bcb5c29'
+    hdSha256: '9124ee1eecf8ba4d4bc428f1aecb694908754b7046d021ae42a1d5fe7506722a',
+    posterSha256: 'c5a4620a5bb6802301a8127e446b04aabccd5ef3c85ea3746f90a021c8f572f2',
+    avatarSha256: '3ff43d5a85eaaee51276b807d4fe97b155126b5c211e70c96bb55dfbaa3fe01e'
   },
   qinglan: {
     name: '晴岚游侠',
@@ -130,14 +132,15 @@ const UNIFIED_AVATARS = {
   yueshi:     { avatar: 'assets/battle/avatars/yueshi.webp?v=8',     sha256: '49eded27444a0883294daf0d725d05eb511c8442cdfd8cbfd7368fafd01cf7a6', changedFromHead: true },
   ziling:     { avatar: 'assets/battle/avatars/ziling.webp?v=3',     sha256: '5aed69c2445b484544c71ed9aad03a71fc060f5d908e37888eb17f18ecca2676', changedFromHead: false },
   honglian:   { avatar: 'assets/battle/avatars/honglian.webp?v=2',   sha256: '47cfa20d16c637ab70e80dae3e916388d915946529100cf4912568dbf15b35fa', changedFromHead: false },
-  molan:      { avatar: 'assets/battle/avatars/molan.webp?v=2',      sha256: 'af9248769566bb005a6f435c19ece0331f20d70ce761262b7986b3386bcb5c29', changedFromHead: true },
+  molan:      { avatar: 'assets/battle/avatars/molan.webp?v=3',      sha256: '3ff43d5a85eaaee51276b807d4fe97b155126b5c211e70c96bb55dfbaa3fe01e', changedFromHead: true },
   qinglan:    { avatar: 'assets/battle/avatars/qinglan.webp?v=3',    sha256: '80670236d6ac92706d05065378c5927ba57e72d84d13cc738953654cfd1b6d88', changedFromHead: true },
   fenxiao:    { avatar: 'assets/battle/avatars/fenxiao.webp?v=2',    sha256: '03ad488f739ce0f54bad44991816db8ca68f24870051648e0b7829a967eae789', changedFromHead: true },
   shuangchen: { avatar: 'assets/battle/avatars/shuangchen.webp?v=2', sha256: 'f24797645ea4ade5bb51a58af6a96e13404ab36f9ad419787c52832761ff316e', changedFromHead: true },
   youming:    { avatar: 'assets/battle/avatars/youming.webp?v=2',    sha256: 'd8ac253f8da765fa7097993d83a87a5b4be53aa0954dc59f0c00439d62d595c1', changedFromHead: true }
 };
 const FREE_ADDED = ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming'];
-const ASSET_UNCHANGED_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui', 'honglian', 'molan', 'qinglan'];
+const ASSET_UNCHANGED_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui', 'honglian', 'qinglan'];
+const PORTRAIT_REPLACED_IDS = ['molan'];
 const KICK_ZILING_SHA256 = '1f84886ecbebb4717193dba4622394254220779f3af788ac6611d6be48431cf6';
 const EXISTING_SKILL_KINDS = new Set([
   'single',
@@ -431,10 +434,22 @@ unifyBaseConfig.HEROES.forEach((prev) => {
   const oldHero = Object.assign({}, prev);
   delete kept.avatar;
   delete oldHero.avatar;
-  assert.deepStrictEqual(kept, oldHero, `${prev.id} 除 avatar 外配置不应改动`);
+  if (PORTRAIT_REPLACED_IDS.includes(prev.id)) {
+    delete kept.img;
+    delete kept.poster;
+    delete kept.avatarPos;
+    delete oldHero.img;
+    delete oldHero.poster;
+    delete oldHero.avatarPos;
+  }
+  assert.deepStrictEqual(kept, oldHero, `${prev.id} 除 avatar/立绘替换字段外配置不应改动`);
   assert.strictEqual(now.avatar, u.avatar, `${prev.id} avatar 引用版本号不匹配`);
   ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(now[key]);
+    if (PORTRAIT_REPLACED_IDS.includes(prev.id)) {
+      assert.ok(fs.existsSync(path.join(root, rel)), `${prev.id}.${key} 缺失`);
+      return;
+    }
     assert.strictEqual(
       git(['hash-object', '--', rel]).trim(),
       git(['rev-parse', `${AVATAR_UNIFY_BASE}:${rel}`]).trim(),
@@ -454,7 +469,7 @@ unifyBaseConfig.HEROES.forEach((prev) => {
     unchangedAvatarChecks += 1;
   }
 });
-assert.strictEqual(hdPosterChecks, 32, '全部 16 位角色共 32 张 HD/poster 字节不可改动');
+assert.strictEqual(hdPosterChecks, 30, '未替换立绘的 15 位角色共 30 张 HD/poster 字节不可改动');
 assert.strictEqual(unchangedAvatarChecks, 6, '6 位已协调头像字节应保持不变');
 assert.strictEqual(updatedAvatarChecks, 10, '10 位头像应已完成视觉规格统一');
 
@@ -991,7 +1006,7 @@ assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=84'));
-assert.ok(index.includes('js/config.js?v=72'));
+assert.ok(index.includes('js/config.js?v=73'));
 assert.ok(index.includes('js/state.js?v=32'));
 assert.ok(index.includes('js/battle.js?v=35'));
 assert.ok(index.includes('js/game.js?v=45'));
