@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>清冷剑仙 · 动态立绘调试页 v5.2（整片长发随风 · 剑柄/手臂修复 · 闭眼修复）</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 顶部栏 -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <span class="badge-tag">V5.2 · 整片长发随风 · 剑柄竖线 / 手臂拉宽已修 · 闭眼外观已修 · 待视觉确认</span>
+        <h1>清冷剑仙 (Lanyi) · 角色立绘实时待机微动效原型 v5.2</h1>
+      </div>
+      <div class="meta-group">
+        <span class="meta-item">原始分辨率: <strong>1008 × 1792 (9:16)</strong></span>
+        <span class="meta-item">静态基线: <strong>t=0 与原图逐像素差 0</strong></span>
+        <span class="meta-item">本次改动: <strong>剑+手+手臂合成前遮挡层，头发整体平移；闭眼补丁覆盖整片上眼睑</strong></span>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <!-- 左侧：无遮挡画布舞台 -->
+      <section class="stage-column" aria-label="立绘预览舞台">
+        <div class="stage-status-bar">
+          <span id="mode-badge" class="status-pill static">加载中…</span>
+          <span id="fps-badge" class="fps-pill">0 FPS</span>
+          <span class="res-pill">1008×1792 · v5.2</span>
+        </div>
+
+        <div id="reduced-motion-banner" class="reduced-motion-banner hidden" role="status">
+          <span>当前已启用「减弱动态」，全部动效已静止（未播放）。</span>
+          <button id="btn-override-rm" type="button" class="btn-inline">关闭减弱动态</button>
+        </div>
+
+        <div class="canvas-frame">
+          <canvas id="portrait-canvas" width="1008" height="1792" aria-label="清冷剑仙角色立绘实时微动效画布"></canvas>
+        </div>
+        <div id="status-line" class="status-line">加载中…</div>
+      </section>
+
+      <!-- 右侧：控制与检验面板 -->
+      <aside class="control-column" aria-label="动效与图层检验控制面板">
+        <!-- 1. 播放与模式切换 -->
+        <section class="panel-card">
+          <h2 class="panel-title">预览模式与播放控制</h2>
+          <div class="mode-grid" role="group" aria-label="视图模式选择">
+            <button type="button" class="mode-btn active" data-mode="animated" aria-pressed="true">实时微动效</button>
+            <button type="button" class="mode-btn" data-mode="static" aria-pressed="false">静态重组 (t=0 验证)</button>
+            <button type="button" class="mode-btn" data-mode="original" aria-pressed="false">原图直出</button>
+            <button type="button" class="mode-btn" data-mode="split" aria-pressed="false">分屏对比（原图 | 当前帧）</button>
+            <button type="button" class="mode-btn" data-mode="diff" aria-pressed="false">误差放大图（当前帧 vs 原图）</button>
+          </div>
+
+          <div class="transport-row">
+            <button id="btn-pause" type="button" class="primary-btn" aria-pressed="false">⏸ 暂停动画</button>
+            <button id="btn-reset" type="button" class="secondary-btn">↺ 重置相位与默认幅度</button>
+          </div>
+
+          <div id="split-slider-wrap" class="slider-block hidden">
+            <div class="slider-header">
+              <label for="slider-split">原图 / 当前帧 分割线位置</label>
+              <span id="split-value" class="slider-val">50%</span>
+            </div>
+            <input id="slider-split" type="range" min="0.05" max="0.95" step="0.01" value="0.50" />
+          </div>
+
+          <div id="diff-gain-wrap" class="slider-block hidden">
+            <div class="slider-header">
+              <label for="sel-diff-gain">误差放大倍数（只有动到的地方会亮）</label>
+              <select id="sel-diff-gain"><option value="8">×8</option><option value="32" selected>×32</option><option value="64">×64</option></select>
+            </div>
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-header">
+              <label for="slider-intensity">全局微动效总幅度（头发 · 呼吸；0 时眨眼也停）</label>
+              <span id="intensity-value" class="slider-val">1.00x（默认）</span>
+            </div>
+            <input id="slider-intensity" type="range" min="0.00" max="1.00" step="0.05" value="1.00" />
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-header">
+              <label for="slider-speed">播放速度（仅调试，不改游戏内节奏）</label>
+              <span id="speed-value" class="slider-val">1.00x（实时）</span>
+            </div>
+            <input id="slider-speed" type="range" min="0.25" max="2.00" step="0.05" value="1.00" />
+          </div>
+
+          <div class="toggles-row">
+            <label class="check-label"><input id="toggle-reduced-motion" type="checkbox" /><span>启用减弱动态模式 (prefers-reduced-motion)</span></label>
+          </div>
+        </section>
+
+        <!-- 2. 专项：头发 -->
+        <section class="panel-card" aria-label="长发随风控制">
+          <h2 class="panel-title">v5.2 专项：左侧整片长发随风</h2>
+          <div class="feature-status-grid">
+            <div class="feature-row">
+              <div class="feature-row-head">
+                <label class="check-label"><input id="toggle-hair" type="checkbox" checked /><strong>长发随风</strong></label>
+                <span id="hair-status-badge" class="feature-badge-ok">已启用</span>
+              </div>
+              <div class="slider-header">
+                <label for="sel-hair">头发版本</label>
+                <select id="sel-hair">
+                  <option value="v5" selected>v5.2 剑左侧整片长发 + 右侧发缘 + 辫子（默认）</option>
+                  <option value="v4">v4 左 4 束 + 右侧发缘 + 胸前辫子（备选）</option>
+                  <option value="v3">v3 只动左侧 4 束（备选）</option>
+                  <option value="v2">v2 分相位 + 补底（备选）</option>
+                  <option value="v1">v1 连续形变（备选）</option>
+                </select>
+              </div>
+              <div class="slider-header">
+                <label for="hair-strength">风力</label>
+                <select id="wind-preset" aria-label="风力预设"><option value="0.6">柔和</option><option value="1" selected>默认（待验收）</option></select>
+                <span id="hair-value" class="slider-val">1.00x</span>
+              </div>
+              <input id="hair-strength" type="range" min="0" max="1.00" step="0.05" value="1" />
+              <p class="handoff-note">
+                整片长发（肩下到画面底部，含剑后、剑柄/手后、剑柄与手臂之间）随风整体平移，底部外缘约 27–45px，周期约 5 秒带阵风。
+                剑、手、手臂、肩侧静止发芯合成一张<strong>前遮挡层</strong>（原图像素）压在最上面，头发从它们后面滑出，不再拉伸：剑柄-手臂段横向拉伸 <code>1.00x</code>（v5.1 局部 3.1x）。
+                风力上限 1.0：遮挡层后面补的头发宽度按默认幅度准备。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. 专项：呼吸与眨眼 -->
+        <section class="panel-card" aria-label="微表情与躯干呼吸专项控制">
+          <h2 class="panel-title">v5.2 专项：局部胸肩呼吸与眨眼</h2>
+          <div class="feature-status-grid">
+            <div class="feature-row">
+              <div class="feature-row-head">
+                <label class="check-label"><input id="toggle-breathing" type="checkbox" checked /><strong>局部胸肩呼吸</strong></label>
+                <span id="breathing-status-badge" class="feature-badge-ok">已启用（1.00x · 周期 4.6s）</span>
+              </div>
+              <div class="slider-header">
+                <label for="slider-breathing">呼吸独立强度</label>
+                <select id="breath-preset" aria-label="呼吸档位"><option value="stronger" selected>已批准：稍强（默认）</option><option value="matched">与幽冥同比例（胸口约 9.8px）</option></select>
+                <span id="breathing-value" class="slider-val">1.00x</span>
+              </div>
+              <input id="slider-breathing" type="range" min="0.00" max="1.60" step="0.05" value="1.00" />
+              <p class="handoff-note">胸口网格 <code>x=500..740, y=300..560</code>（24×26），左肩 <code>x=384..472, y=296..440</code>（11×18）。脸、颈、衣领、双手、剑与右袖零位移；静止发丝和辫芯由静态保护层压回。</p>
+            </div>
+
+            <div class="feature-row" role="region" aria-label="眼睑眨眼控制">
+              <div class="feature-row-head">
+                <label class="check-label"><input id="toggle-blink" type="checkbox" checked /><strong>眨眼 · 生成闭眼图分阶段覆盖</strong></label>
+                <span id="blink-status-badge" class="feature-badge-ok">已启用（0.8 秒 · 3.4–5.8 秒随机间隔）</span>
+              </div>
+              <div class="slider-header">
+                <label for="blink-mode">眼部验收状态</label>
+                <select id="blink-mode"><option value="auto" selected>自动（随机间隔）</option><option value="0.5">固定半闭</option><option value="1">固定全闭</option></select>
+              </div>
+              <p class="handoff-note">v5.2：闭眼补丁改为覆盖整片上眼睑到双眼皮褶线，去掉原上眼线留下的第二条弧线（"怪眼皮"）。33 级沿眼睑斜线逐行覆盖；0.8 秒（闭合 0.26 / 停留 0.11 / 睁开 0.43），时机与节奏未改。暂停冻结相位，减弱动态 / 总幅度 0 显示睁眼。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. 分层拆解 -->
+        <section class="panel-card">
+          <div class="panel-header-inline">
+            <h2 class="panel-title">分层拆解与特效开关</h2>
+            <div class="mini-actions">
+              <button id="btn-layers-all" type="button" class="mini-btn">全部开启</button>
+              <button id="btn-layers-under" type="button" class="mini-btn">仅看干净补底</button>
+            </div>
+          </div>
+          <div id="layer-list" class="layer-list" role="group" aria-label="图层可见性列表"></div>
+        </section>
+
+        <!-- 5. 遮罩与调试可视化 -->
+        <section class="panel-card">
+          <h2 class="panel-title">遮罩与调试可视化（叠加在画面上）</h2>
+          <div class="toggles-row">
+            <label class="check-label"><input id="toggle-ov-mesh" type="checkbox" /><span>显示呼吸变形网格（v1 时也显示头发网格）</span></label>
+            <label class="check-label"><input id="toggle-ov-field" type="checkbox" /><span>显示头发位移场（黄色箭头，每 32px）</span></label>
+            <label class="check-label"><input id="toggle-ov-occ" type="checkbox" /><span>显示前遮挡层范围（红：剑·手·手臂，静止）</span></label>
+            <label class="check-label"><input id="toggle-ov-zone" type="checkbox" /><span>显示头发运动区 / 补底范围（青）</span></label>
+            <label class="check-label"><input id="toggle-ov-eyeBox" type="checkbox" /><span>显示眨眼补丁框（黄框）</span></label>
+          </div>
+        </section>
+
+        <!-- 6. 核验指标 -->
+        <section class="panel-card">
+          <h2 class="panel-title">v5.2 核验指标（node-canvas 逐帧渲染 600 帧）</h2>
+          <div class="metrics-grid">
+            <div class="metric-box"><span class="metric-label">静态重组 t=0 与原图</span><strong class="metric-val">逐像素差 0</strong></div>
+            <div class="metric-box"><span class="metric-label">保护区 600 帧最大差</span><strong class="metric-val">0（脸·颈·手·剑·袖·腿裙·辫芯）</strong></div>
+            <div class="metric-box"><span class="metric-label">剑柄-手臂段最大横向拉伸</span><strong class="metric-val">1.00x（v5.1 局部 3.1x）</strong></div>
+            <div class="metric-box"><span class="metric-label">眨眼</span><strong class="metric-val">20 秒 4 次 · 90 帧，时机未改</strong></div>
+          </div>
+          <p class="fidelity-note">
+            <strong>说明：</strong>剑首左侧竖线的根因是 v5.1 把剑柄外 2px 边环（含抗锯齿珠点边）放进了会动的发片；v5.2 改由静止前遮挡层承担，补头发改为不透明平移拷贝。
+            护手以下剑刃旁蓝纱保留 v5.1 的渐弱做法。本页面未接入正式游戏、未提交上线；请完整解压后双击 <code>index.html</code>，空白时运行 <code>start.bat</code> / <code>start.sh</code>。
+          </p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+<script src="js/breath_guard.js"></script>
+<script src="js/hair_field.js"></script>
+<script src="js/hair2_field.js"></script>
+<script src="js/hair2_locks.js"></script>
+<script src="js/hair3_field.js"></script>
+<script src="js/hair3_locks.js"></script>
+<script src="js/hair4rc_locks.js"></script>
+<script src="js/hair5_sheet.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
