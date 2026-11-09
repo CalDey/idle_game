@@ -59,13 +59,13 @@ const NEW_FOUR_HEROES = {
     skillName: '断影追魂',
     skillKind: 'single',
     mainMult: 1.85,
-    img: 'assets/hero_ziling_hd.jpg?v=3',
-    poster: 'assets/hero_ziling_poster.jpg?v=3',
-    avatar: 'assets/battle/avatars/ziling.webp?v=3',
-    size: { width: 1008, height: 1792 },
-    hdSha256: '7363d69622d376fac5daf3ae01d76b5d5c47deb461aa4be842937154039df179',
-    posterSha256: 'f214ae13db2beb4b551faea71f27932a2405ad00eca8349faf113644b27cb06f',
-    avatarSha256: '5aed69c2445b484544c71ed9aad03a71fc060f5d908e37888eb17f18ecca2676'
+    img: 'assets/hero_ziling_hd.jpg?v=4',
+    poster: 'assets/hero_ziling_poster.jpg?v=4',
+    avatar: 'assets/battle/avatars/ziling.webp?v=4',
+    size: { width: 1080, height: 1920 },
+    hdSha256: '30ef453f2a1038a96cf5b107e1ad976521f6218c8b83a5ed4515d7fc7a1136cc',
+    posterSha256: 'c4aef63a67ead5659956979391e8c05433f245d0768a9b0f497f2c0a939a2b7b',
+    avatarSha256: '0a791a5ed1c51261fd1e23c2aa4af94b01efd33c5f0e1fe51501843564064387'
   },
   honglian: {
     name: '红莲妖姬',
@@ -130,7 +130,7 @@ const UNIFIED_AVATARS = {
   jianghua:   { avatar: 'assets/battle/avatars/jianghua.webp?v=3',   sha256: '4133a6c62215943f7da89093f69768d167cbd39e61712b6dd3ea984e667d152a', changedFromHead: true },
   qingkui:    { avatar: 'assets/battle/avatars/qingkui.webp?v=5',    sha256: 'f820c2a80ecfc86737b98f73fe6c396773ca09d4ccf893a73ee18f60f42a8e6a', changedFromHead: true },
   yueshi:     { avatar: 'assets/battle/avatars/yueshi.webp?v=8',     sha256: '49eded27444a0883294daf0d725d05eb511c8442cdfd8cbfd7368fafd01cf7a6', changedFromHead: true },
-  ziling:     { avatar: 'assets/battle/avatars/ziling.webp?v=3',     sha256: '5aed69c2445b484544c71ed9aad03a71fc060f5d908e37888eb17f18ecca2676', changedFromHead: false },
+  ziling:     { avatar: 'assets/battle/avatars/ziling.webp?v=4',     sha256: '0a791a5ed1c51261fd1e23c2aa4af94b01efd33c5f0e1fe51501843564064387', changedFromHead: true },
   honglian:   { avatar: 'assets/battle/avatars/honglian.webp?v=2',   sha256: '47cfa20d16c637ab70e80dae3e916388d915946529100cf4912568dbf15b35fa', changedFromHead: false },
   molan:      { avatar: 'assets/battle/avatars/molan.webp?v=3',      sha256: '3ff43d5a85eaaee51276b807d4fe97b155126b5c211e70c96bb55dfbaa3fe01e', changedFromHead: true },
   qinglan:    { avatar: 'assets/battle/avatars/qinglan.webp?v=3',    sha256: '80670236d6ac92706d05065378c5927ba57e72d84d13cc738953654cfd1b6d88', changedFromHead: true },
@@ -140,7 +140,7 @@ const UNIFIED_AVATARS = {
 };
 const FREE_ADDED = ['yueshi', 'ziling', 'honglian', 'molan', 'qinglan', 'fenxiao', 'shuangchen', 'youming'];
 const ASSET_UNCHANGED_IDS = ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid', 'jianghua', 'qingkui', 'honglian', 'qinglan'];
-const PORTRAIT_REPLACED_IDS = ['molan'];
+const PORTRAIT_REPLACED_IDS = ['molan', 'ziling'];
 const KICK_ZILING_SHA256 = '1f84886ecbebb4717193dba4622394254220779f3af788ac6611d6be48431cf6';
 const EXISTING_SKILL_KINDS = new Set([
   'single',
@@ -349,7 +349,13 @@ ASSET_UNCHANGED_IDS.forEach((id) => {
 ['yueshi', 'ziling'].forEach((id) => {
   const now = heroes.find((hero) => hero.id === id);
   const prev = mainById[id];
-  assert.deepStrictEqual(withoutAssets(now), withoutAssets(prev), `${id} 除素材外的配置被改动`);
+  const keptNow = withoutAssets(now);
+  const keptPrev = withoutAssets(prev);
+  if (PORTRAIT_REPLACED_IDS.includes(id)) {
+    delete keptNow.avatarPos;
+    delete keptPrev.avatarPos;
+  }
+  assert.deepStrictEqual(keptNow, keptPrev, `${id} 除素材/立绘替换字段外的配置被改动`);
   assert.deepStrictEqual(now.skill, prev.skill);
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[id], mainConfig.HERO_SKILLS[id]);
 });
@@ -469,9 +475,9 @@ unifyBaseConfig.HEROES.forEach((prev) => {
     unchangedAvatarChecks += 1;
   }
 });
-assert.strictEqual(hdPosterChecks, 30, '未替换立绘的 15 位角色共 30 张 HD/poster 字节不可改动');
-assert.strictEqual(unchangedAvatarChecks, 6, '6 位已协调头像字节应保持不变');
-assert.strictEqual(updatedAvatarChecks, 10, '10 位头像应已完成视觉规格统一');
+assert.strictEqual(hdPosterChecks, 28, '未替换立绘的 14 位角色共 28 张 HD/poster 字节不可改动');
+assert.strictEqual(unchangedAvatarChecks, 5, '5 位已协调头像字节应保持不变');
+assert.strictEqual(updatedAvatarChecks, 11, '11 位头像应已完成视觉规格统一');
 
 function loadPortraitHeroList() {
   const sandbox = {
@@ -1006,7 +1012,7 @@ assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=84'));
-assert.ok(index.includes('js/config.js?v=73'));
+assert.ok(index.includes('js/config.js?v=74'));
 assert.ok(index.includes('js/state.js?v=32'));
 assert.ok(index.includes('js/battle.js?v=35'));
 assert.ok(index.includes('js/game.js?v=45'));
