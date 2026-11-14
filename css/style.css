@@ -5000,6 +5000,8 @@ button.mijing-bless-card:active {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
 /* === 新手体验：当前目标条 / 引导气泡 / 解锁提示 (newbie-ux) === */
 .goal-strip {
   flex: none;
@@ -6444,6 +6446,8 @@ button.mijing-bless-card:active {
 
 .grow-upgrade-btn {
   width: 100%;
+}
+
 /* === 新手体验 batch2 P2-5：当前目标条改为深底金字「卷轴符箓」样式（纯 CSS，无新图；同一组件兼任常驻下一目标） === */
 .goal-strip {
   -webkit-appearance: none;
@@ -6675,6 +6679,8 @@ button.mijing-bless-card:active {
 .tower-challenge-btn {
   width: 100%;
   margin-top: 4px;
+}
+
 /* === 新手体验 batch3 P1-3：更换角色卡品阶 + 一句简介 === */
 .role-card-q {
   align-self: flex-start;
