@@ -1482,6 +1482,30 @@
 
   window.roleCardClassName = roleCardClassName;
 
+  // 角色卡品阶标签与一句简介（简介复用图鉴角色条目）
+  function roleCardQualityTag(hero) {
+    const q = window.Newbie && Newbie.heroQuality ? Newbie.heroQuality(hero) : null;
+    return q ? `<span class="role-card-q" style="color:${q.color};border-color:${q.color}">${q.name}</span>` : '';
+  }
+
+  function roleCardIntro(hero) {
+    const t = window.Newbie && Newbie.heroIntro ? Newbie.heroIntro(hero.id) : '';
+    return t ? `<span class="role-card-intro">${t}</span>` : '';
+  }
+
+  // 选中角色后在立绘上冒约 2 秒台词（复用 HeroVoice 气泡与日常台词）
+  let roleLineTimer = 0;
+  function sayRoleSelectLine(heroId) {
+    const text = window.Newbie && Newbie.heroSelectLine ? Newbie.heroSelectLine(heroId) : '';
+    if (!text || !window.HeroVoice || typeof HeroVoice.showBubble !== 'function') return;
+    if (!HeroVoice.showBubble(text)) return;
+    clearTimeout(roleLineTimer);
+    roleLineTimer = setTimeout(() => {
+      const el = document.getElementById('hero-voice-bubble');
+      if (el) el.classList.remove('is-show');
+    }, 2000);
+  }
+
   function renderRoleList() {
     const box = els.roleList || document.getElementById('role-list');
     if (!box) return;
@@ -1513,6 +1537,7 @@
             </span>
           </div>
           <div class="role-card-footer">
+            ${roleCardQualityTag(hero)}
             <span class="role-card-name">${hero.name || '敬请期待'}</span>
             <span class="role-card-cond">${hero.unlockCond || '暂未开放'}</span>
           </div>
@@ -1524,7 +1549,9 @@
           <img class="role-card-img" src="${hero.img}" alt="${hero.name}" loading="lazy" />
           ${isActive ? '<span class="role-card-badge">使用中</span>' : ''}
           <div class="role-card-footer">
+            ${roleCardQualityTag(hero)}
             <span class="role-card-name">${hero.name}</span>
+            ${roleCardIntro(hero)}
           </div>
         `;
       }
@@ -1547,6 +1574,7 @@
     if (els.roleModal) {
       els.roleModal.classList.remove('active');
     }
+    sayRoleSelectLine(hero.id);
   }
 
   function gameLoop(now) {

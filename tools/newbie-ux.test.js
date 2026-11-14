@@ -702,5 +702,28 @@ function breakAt(GS, roll) {
   assert.ok(text('index.html').includes('胜算：<strong id="stage-winrate">'));
 }
 
+// ---------- batch3 P1-3 更换角色卡：品阶 + 简介 + 选中台词 ----------
+{
+  const { NB, CFG, sandbox } = loadRuntime(memoryStorage());
+  ['js/codex-data.js', 'js/hero-lines-data.js'].forEach((rel) => vm.runInNewContext(text(rel), sandbox, { filename: rel }));
+  const heroes = CFG.HEROES.filter((h) => h && h.id);
+  assert.ok(heroes.length >= 10);
+  heroes.forEach((h) => {
+    const q = NB.heroQuality(h);
+    assert.ok(q && q.name.endsWith('品'), `${h.id} 品阶`);
+  });
+  const intro = NB.heroIntro('lanyi');
+  assert.strictEqual(intro, '替仙界斩叛仙的执剑仙。', '复用图鉴副标题并去掉品阶前缀');
+  const withIntro = heroes.filter((h) => NB.heroIntro(h.id)).length;
+  assert.ok(withIntro >= heroes.length - 2, `大多数角色有简介 ${withIntro}/${heroes.length}`);
+  assert.strictEqual(NB.heroSelectLine('lanyi'), sandbox.window.HeroLinesData.voice.lanyi.tap, '复用点击台词');
+  assert.strictEqual(NB.heroIntro('nope'), '');
+  assert.strictEqual(NB.heroSelectLine('nope'), '');
+  const game = text('js/game.js');
+  assert.ok(game.includes('sayRoleSelectLine(hero.id);'));
+  assert.ok(/roleLineTimer = setTimeout\([\s\S]{0,160}\}, 2000\);/.test(game), '约 2 秒');
+  assert.ok(game.includes('${roleCardQualityTag(hero)}') && game.includes('${roleCardIntro(hero)}'));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');

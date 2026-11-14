@@ -321,6 +321,30 @@
     return out;
   }
 
+  // ---------- 更换角色卡：品阶 + 一句简介 + 选中台词（batch3 P1-3） ----------
+  function heroQuality(hero) {
+    const list = (window.GameConfig && window.GameConfig.QUALITIES) || [];
+    const q = list.find((x) => x && hero && x.id === hero.quality);
+    return q ? { id: q.id, name: q.name, color: q.color } : null;
+  }
+
+  // 复用图鉴角色条目的副标题，去掉开头的「X品。」（品阶另行显示）
+  function heroIntro(heroId) {
+    const data = typeof window !== 'undefined' && window.CodexData;
+    const entries = (data && data.entries) || [];
+    const e = entries.find((x) => x && x.id === `hero_${heroId}`);
+    if (!e || !e.subtitle) return '';
+    return String(e.subtitle).replace(/^[凡灵玄地天仙]品[。.．]\s*/, '').trim();
+  }
+
+  // 复用角色日常台词：优先「点击立绘」，否则「出战」
+  function heroSelectLine(heroId) {
+    const data = typeof window !== 'undefined' && window.HeroLinesData;
+    const v = data && data.voice && data.voice[heroId];
+    if (!v) return '';
+    return v.tap || v.deploy || v.idle || '';
+  }
+
   // ---------- 弹窗关闭 ----------
   function topActiveModal(doc) {
     const d = doc || (typeof document !== 'undefined' ? document : null);
@@ -740,6 +764,9 @@
     upgradeDot,
     compareDiff,
     cpGainOptions,
+    heroQuality,
+    heroIntro,
+    heroSelectLine,
     UNLOCKS,
     unlockedKeys,
     ensureUnlockSeen,
