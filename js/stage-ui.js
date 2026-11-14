@@ -1300,6 +1300,7 @@
       window.GameState.saveGame();
       if (window.Titles) window.Titles.sync(s);
       if (window.TitlesUI) window.TitlesUI.flushToasts();
+      if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(s, 'stage_clear', 1, Date.now());
       onChange();
       render();
 
@@ -2501,6 +2502,7 @@
       return false;
     }
     window.GameState.saveGame();
+    if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(s, 'mijing_run', 1, Date.now());
     log(`开启秘境劫运（敌人强度以第 ${res.run.ref} 关为基准），今日剩余 ${M.attemptsLeft(s, Date.now())} 次。`, 'success');
     mijingModalOpen = false;
     mijingModalMode = '';

@@ -125,6 +125,7 @@
     const guaranteed = isBreakGuaranteed();
     const rate = getBreakthroughSuccessRate();
     state.breakAttempts = (Number(state.breakAttempts) || 0) + 1;
+    if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(state, 'breakthrough', 1, Date.now());
     if (guaranteed || roll < rate) {
       state.qi = Math.max(0, state.qi - stage.reqQi);
       state.realmIndex += 1;
@@ -499,6 +500,9 @@
       state.dongfu[id] = (state.dongfu[id] || 0) + 1;
       bought += 1;
     }
+    if (bought > 0 && window.Daily && typeof window.Daily.hook === 'function') {
+      window.Daily.hook(state, 'home_upgrade', 1, Date.now());
+    }
     return bought;
   }
 
@@ -653,7 +657,12 @@
         ? window.Mijing.normalize(saved.mijing)
         : saved.mijing && typeof saved.mijing === 'object'
           ? saved.mijing
-          : { ...def.mijing }
+          : { ...def.mijing },
+      daily: window.Daily
+        ? window.Daily.normalize(saved.daily)
+        : saved.daily && typeof saved.daily === 'object' && !Array.isArray(saved.daily)
+          ? saved.daily
+          : { v: 1, date: '', points: 0, tasks: {}, chests: {}, checkin: { cycleDay: 0, last: '', total: 0 } }
     };
     if (Array.isArray(unlockedHeroes)) {
       merged.unlockedHeroes = unlockedHeroes;
@@ -725,6 +734,7 @@
     const from = Number(hiddenAt) || Number(state.lastSaveTime) || t;
     const report = settleOffline(from, t, { idleStage: false });
     grantPeachGift();
+    if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, t);
     saveGame();
     return report;
   }
@@ -735,6 +745,7 @@
       raw = localStorage.getItem(SAVE_KEY);
       if (!raw) {
         state = createDefaultState();
+        if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, Date.now());
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
@@ -758,6 +769,7 @@
       const savedTime = toFiniteNumber(parsed.lastSaveTime, now) || now;
       const offlineReport = settleOffline(savedTime, now, { idleStage: true });
       grantPeachGift();
+      if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, now);
       return { isNew: false, offlineReport };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
@@ -866,6 +878,9 @@
     fresh.flags = { ...(state.flags || {}) };
     fresh.login = { ...(state.login || {}) };
     fresh.dayTaps = { ...(state.dayTaps || {}) };
+    fresh.daily = window.Daily
+      ? window.Daily.normalize(state.daily)
+      : (state.daily && typeof state.daily === 'object' ? { ...state.daily } : state.daily);
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);
     fresh.titles = {

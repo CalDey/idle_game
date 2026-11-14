@@ -978,6 +978,7 @@
         GameState.state.stones -= cost;
         GameState.state.gongfa[id] = (GameState.state.gongfa[id] || 0) + 1;
         addLog(`潜心参悟${item.name}至第 ${GameState.state.gongfa[id]} 层，吐纳大进！`, 'success');
+        if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(GameState.state, 'home_upgrade', 1, Date.now());
         renderUpgradeLists();
         updateHeaderAndMeditationUI();
         if (window.StageUI) StageUI.render();

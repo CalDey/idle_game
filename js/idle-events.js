@@ -254,6 +254,9 @@
     ev.pending = null;
     ev.count += 1;
     ev.nextAt = (Number(s.playTimeMs) || 0) + randomCooldown(h.rng);
+    if (window.Daily && typeof window.Daily.hook === 'function') {
+      window.Daily.hook(s, 'event_choice', 1, Number((env || {}).now) || Date.now());
+    }
     return { ok: true, event, option, cost: q.cost, reward: q.reward, notes: q.notes, equipItem, equipNote, resultText: option.resultText };
   }
 

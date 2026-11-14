@@ -335,6 +335,7 @@
     if (!unlocked() || (s.tree.peaches || 0) < 1) return;
     s.tree.peaches -= 1;
     s.peachesPicked = (s.peachesPicked || 0) + 1;
+    if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(s, 'peach_pick', 1, Date.now());
     const item = window.Equip.rollItem(s);
     if (item.q >= 1) s.flags.ling = true;
     if (item.q >= 3) s.flags.di = true;

@@ -5800,3 +5800,222 @@ button.mijing-bless-card:active {
   border-color: rgba(240, 200, 110, 0.75);
   font-weight: 700;
 }
+
+/* === 每日功课与七日签到 === */
+.daily-btn.has-claim {
+  border-color: var(--accent-gold-bright);
+  box-shadow: 0 0 10px rgba(245, 199, 106, 0.45);
+}
+
+.daily-dialog {
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(88vh, 720px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.daily-header {
+  padding: 12px 14px 8px;
+}
+
+.daily-body {
+  padding: 0 14px 14px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.daily-section-title {
+  font-size: 14px;
+  color: var(--accent-gold-bright);
+  letter-spacing: 0.08em;
+}
+
+.daily-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.daily-points-label {
+  font-size: 12px;
+  color: var(--text-dim, #cbbd9a);
+}
+
+.daily-hint {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim, #cbbd9a);
+}
+
+.daily-checkin-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.daily-day {
+  min-width: 0;
+  text-align: center;
+  border: 1px solid rgba(230, 201, 138, 0.28);
+  border-radius: 8px;
+  padding: 6px 2px 5px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.daily-day-n {
+  font-size: 10px;
+  color: var(--accent-gold-bright);
+  margin-bottom: 3px;
+}
+
+.daily-day-r {
+  font-size: 9px;
+  line-height: 1.25;
+  color: #e7e2d6;
+  word-break: break-all;
+}
+
+.daily-day.is-claimed {
+  opacity: 0.62;
+}
+
+.daily-day.is-today {
+  border-color: var(--accent-gold-bright);
+  box-shadow: 0 0 8px rgba(245, 199, 106, 0.45);
+}
+
+.daily-day.is-notable {
+  background: rgba(245, 199, 106, 0.1);
+}
+
+.daily-checkin-btn {
+  width: 100%;
+}
+
+.daily-track-wrap {
+  position: relative;
+  margin: 16px 10px 28px;
+}
+
+.daily-track {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.daily-track-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #c9a45c, #f5c76a);
+  border-radius: 4px;
+}
+
+.daily-chests {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 0;
+}
+
+.daily-chest {
+  position: absolute;
+  top: -13px;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(230, 201, 138, 0.4);
+  background: #1a140c;
+  color: #cbbd9a;
+  font-size: 9px;
+  cursor: default;
+  font-family: inherit;
+}
+
+.daily-chest.is-ready {
+  border-color: var(--accent-gold-bright);
+  color: #1a140c;
+  background: #f5c76a;
+  box-shadow: 0 0 8px rgba(245, 199, 106, 0.7);
+  cursor: pointer;
+}
+
+.daily-chest.is-claimed {
+  opacity: 0.55;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.daily-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.daily-task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(230, 201, 138, 0.18);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.daily-task-name {
+  font-size: 13px;
+  color: #f3ead4;
+}
+
+.daily-task-desc {
+  font-size: 11px;
+  color: var(--text-dim, #cbbd9a);
+  margin-top: 2px;
+}
+
+.daily-task-side {
+  text-align: right;
+  flex: none;
+}
+
+.daily-task-pts {
+  font-size: 12px;
+  color: var(--accent-gold-bright);
+}
+
+.daily-task-status {
+  font-size: 11px;
+  color: #e7e2d6;
+  margin-top: 2px;
+}
+
+.daily-task.is-done {
+  opacity: 0.72;
+}
+
+.daily-task.is-locked {
+  opacity: 0.55;
+}
+
+.daily-task.is-locked .daily-task-status {
+  max-width: 9em;
+  white-space: normal;
+}
+
+.daily-toast {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #f5c76a;
+}

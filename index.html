@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=95" />
+  <link rel="stylesheet" href="css/style.css?v=96" />
 </head>
 
 <body>
@@ -30,6 +30,9 @@
           <button id="btn-idle-event" class="icon-btn idle-event-btn" type="button" aria-label="机缘事件" hidden><img class="gi"
               src="assets/icons/ui_bagua@64.webp?v=18" alt="" aria-hidden="true"><span class="icon-btn-badge visible"
               aria-hidden="true"></span></button>
+          <button id="btn-daily" class="icon-btn daily-btn" type="button" aria-label="每日功课"><img class="gi"
+              src="assets/icons/ui_idle_chest.webp?v=18" alt="" aria-hidden="true"><span id="badge-daily"
+              class="icon-btn-badge" aria-hidden="true"></span></button>
           <button id="btn-open-log" class="icon-btn" type="button" aria-label="修仙日志"><img class="gi"
               src="assets/icons/ui_log@64.webp?v=18" alt="" aria-hidden="true"><span id="badge-log"
               class="icon-btn-badge" aria-hidden="true"></span></button>
@@ -649,6 +652,35 @@
     </div>
   </div>
 
+  <div id="daily-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog daily-dialog" role="dialog" aria-modal="true" aria-labelledby="daily-modal-title">
+      <div class="card-header daily-header">
+        <span id="daily-modal-title" class="card-title">每日功课</span>
+        <button id="btn-close-daily" class="home-modal-close" type="button" data-modal-close aria-label="关闭">✕</button>
+      </div>
+      <div class="daily-body">
+        <section class="daily-section" aria-label="七日签到">
+          <div class="daily-section-title">七日签到</div>
+          <p id="daily-checkin-hint" class="daily-hint">累计签到，漏签不中断进度。</p>
+          <div id="daily-checkin-row" class="daily-checkin-row"></div>
+          <button id="btn-daily-checkin" class="btn btn-primary daily-checkin-btn" type="button">领取今日签到</button>
+        </section>
+        <section class="daily-section" aria-label="每日功课">
+          <div class="daily-section-head">
+            <div class="daily-section-title">每日功课</div>
+            <div id="daily-points-label" class="daily-points-label">活跃度 0/100</div>
+          </div>
+          <div class="daily-track-wrap">
+            <div class="daily-track" aria-hidden="true"><div id="daily-track-fill" class="daily-track-fill"></div></div>
+            <div id="daily-chests" class="daily-chests"></div>
+          </div>
+          <div id="daily-tasks" class="daily-tasks"></div>
+        </section>
+        <p id="daily-toast" class="daily-toast" hidden></p>
+      </div>
+    </div>
+  </div>
+
   <div id="home-upgrade-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog home-upgrade-dialog" role="dialog" aria-modal="true" aria-labelledby="home-upgrade-modal-title">
       <div class="card-header home-upgrade-header">
@@ -681,17 +713,18 @@
   <script src="js/config.js?v=77"></script>
   <script src="js/ui-text.js?v=1"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=36"></script>
+  <script src="js/state.js?v=37"></script>
   <script src="js/titles.js?v=23"></script>
   <script src="js/battle.js?v=38"></script>
   <script src="js/bonds.js?v=1"></script>
   <script src="js/mijing.js?v=2"></script>
-  <script src="js/gear.js?v=33"></script>
-  <script src="js/stage-ui.js?v=56"></script>
+  <script src="js/gear.js?v=34"></script>
+  <script src="js/stage-ui.js?v=57"></script>
   <script src="js/newbie.js?v=2"></script>
-  <script src="js/game.js?v=51"></script>
+  <script src="js/game.js?v=52"></script>
   <script src="js/events-data.js?v=2"></script>
-  <script src="js/idle-events.js?v=2"></script>
+  <script src="js/idle-events.js?v=3"></script>
+  <script src="js/daily.js?v=1"></script>
   <script src="js/codex-data.js?v=2"></script>
   <script src="js/codex.js?v=1"></script>
   <script src="js/hero-lines-data.js?v=1"></script>
