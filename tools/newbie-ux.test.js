@@ -268,5 +268,25 @@ function oldSave(fields) {
   assert.ok(gear.includes("btnReplace.classList.toggle('is-recommended', diff.better)"));
 }
 
+// ---------- P2-4 锁定内容 ----------
+{
+  const { NB } = loadRuntime();
+  assert.strictEqual(NB.realmGap(0, 27), 27);
+  assert.strictEqual(NB.realmGapText(0, 1), '还差1重');
+  assert.strictEqual(NB.realmGapText(5, 3), '已达成');
+  assert.strictEqual(NB.realmGateText(0, 27), '需突破至【天神初】· 还差27重');
+  assert.strictEqual(NB.realmGateText(1, 2), '需突破至【搬血后】· 还差1重');
+  const html = text('index.html');
+  // 复用设置里的 42 重说明
+  assert.ok(html.includes(`<div class="setting-sub">${NB.REALM_CHAIN_TEXT}</div>`), '境界说明须与设置一致');
+  assert.ok(html.includes('共42重'));
+  ['data-lock-realm="1"', 'data-lock-realm="2"', 'data-lock-realm="27"', 'id="reincarnate-locked"'].forEach((t) => assert.ok(html.includes(t), t));
+  assert.strictEqual((html.match(/class="lock-silhouette"/g) || []).length, 3);
+  const game = text('js/game.js');
+  assert.ok(game.includes('realmGapText(s.realmIndex, item.unlockRealmIndex)'), '功法/洞府门槛显示还差X重');
+  assert.ok(game.includes('role-card-cond'), '锁定角色卡显示解锁条件');
+  assert.ok(game.includes("ref.badgeEl.classList.toggle('is-locked', !unlocked)"), '洞府锁定岛标注');
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
-if (require.main === module) console.log('newbie-ux.test.js ok (P1)');
+if (require.main === module) console.log('newbie-ux.test.js ok');

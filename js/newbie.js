@@ -392,9 +392,24 @@
     els.unlockModal.setAttribute('aria-hidden', 'true');
   }
 
+  // 锁定卡片：data-lock-realm 写门槛和「还差X重」，data-realm-chain 写境界体系说明。
+  function renderLocks(s) {
+    const realm = s.realmIndex || 0;
+    document.querySelectorAll('[data-lock-realm]').forEach((el) => {
+      const target = Number(el.getAttribute('data-lock-realm')) || 0;
+      const t = realmGateText(realm, target);
+      if (el.textContent !== t) el.textContent = t;
+    });
+    document.querySelectorAll('[data-realm-chain]').forEach((el) => {
+      const t = `境界共${TOTAL_REALMS}重：${REALM_CHAIN_TEXT}`;
+      if (el.textContent !== t) el.textContent = t;
+    });
+  }
+
   function tick() {
     const s = S();
     if (!s) return;
+    renderLocks(s);
     const guide = ensureGuide(s);
     if (activeTab() === 'tab-gear' && (s.realmIndex || 0) >= peachUnlockRealm() && !guide.gearVisited) {
       guide.gearVisited = true;

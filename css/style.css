@@ -5554,3 +5554,54 @@ button.mijing-bless-card:active {
 
 .squad-hero-name-row .bond-tags { flex: none; }
 .squad-hero-name-row .squad-hero-name { min-width: 0; }
+/* 锁定内容：剪影 + 解锁条件 + 还差X重 */
+.lock-art {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 4px;
+}
+
+.lock-silhouette {
+  width: 72px;
+  height: 72px;
+  color: rgba(120, 110, 150, 0.55);
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6));
+}
+
+.lock-cond {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--accent-gold-bright);
+  letter-spacing: 0.5px;
+}
+
+.lock-chain {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-dim, rgba(183, 173, 154, 0.7));
+}
+
+.lock-card[hidden] {
+  display: none;
+}
+
+.reincarnate-locked {
+  margin-bottom: 0;
+}
+
+.role-card-cond {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.3;
+  color: rgba(244, 239, 228, 0.6);
+  white-space: normal;
+}
+
+.home-badge.is-locked {
+  opacity: 0.9;
+  color: rgba(244, 239, 228, 0.8);
+}

@@ -350,6 +350,17 @@
     updateHeaderAndMeditationUI();
   }
 
+  // 境界门槛「还差X重」，复用设置里「境界体系 · 共42重」的说明。
+  function realmGapText(cur, target) {
+    if (window.Newbie) return window.Newbie.realmGapText(cur, target);
+    const gap = Math.max(0, (target || 0) - (cur || 0));
+    return gap > 0 ? `还差${gap}重` : '已达成';
+  }
+
+  function realmChainTitle() {
+    return window.Newbie ? `境界共42重：${window.Newbie.REALM_CHAIN_TEXT}` : '境界共42重';
+  }
+
   // 构建功法列表与洞府场景
   function renderUpgradeLists() {
     const s = GameState.state;
@@ -375,7 +386,7 @@
           <div class="upgrade-meta">
             <div class="upgrade-name-row">
               <span class="upgrade-name">${item.name}</span>
-              <span class="upgrade-lv">${unlocked ? `第 ${lv} 层` : `需 ${reqStageName}`}</span>
+              <span class="upgrade-lv"${unlocked ? '' : ` title="${realmChainTitle()}"`}>${unlocked ? `第 ${lv} 层` : `需 ${reqStageName} · ${realmGapText(s.realmIndex, item.unlockRealmIndex)}`}</span>
             </div>
             <div class="upgrade-desc">${item.desc}</div>
             <div class="upgrade-effect">每层效果：+${formatNumber(perLvEffect)} 灵气/秒</div>
@@ -583,8 +594,9 @@
         ref.badgeEl.textContent = `${shortName} Lv.${lv}`;
       } else {
         const reqName = REALM_STAGES[item.unlockRealmIndex].fullName;
-        ref.badgeEl.textContent = `🔒 ${reqName}解锁`;
+        ref.badgeEl.textContent = `🔒 ${reqName} · ${realmGapText(s.realmIndex, item.unlockRealmIndex)}`;
       }
+      ref.badgeEl.classList.toggle('is-locked', !unlocked);
       ref.badgeEl.classList.toggle('q-xian', isXian);
       ref.badgeEl.style.borderColor = isXian ? '' : q.color;
     });
@@ -802,7 +814,8 @@
         if (lockEl) {
           lockEl.hidden = false;
           lockEl.style.display = '';
-          lockEl.textContent = `需突破至【${reqName}】解锁`;
+          lockEl.textContent = `需突破至【${reqName}】解锁（${realmGapText(s.realmIndex, item.unlockRealmIndex)}，境界共42重）`;
+          lockEl.title = realmChainTitle();
         }
       } else {
         if (metaRow) {
@@ -957,9 +970,11 @@
       els.btnReincarnate.disabled = false;
     } else {
       const currentName = GameState.getCurrentStage().fullName;
-      els.reincarnateReqHint.textContent = `需突破至【天神初】方可开启轮回转世（当前：${currentName}）。`;
+      els.reincarnateReqHint.textContent = `需突破至【天神初】方可开启轮回转世（当前：${currentName}，${realmGapText(s.realmIndex, REINCARNATION_MIN_STAGE)}）。`;
       els.btnReincarnate.disabled = true;
     }
+    const reincarnateLocked = document.getElementById('reincarnate-locked');
+    if (reincarnateLocked) reincarnateLocked.hidden = canReincarnate || (s.reincarnationCount || 0) > 0;
 
     if (els.badgeReincarnate) {
       els.badgeReincarnate.classList.toggle('visible', canReincarnate);
@@ -1418,6 +1433,7 @@
           </div>
           <div class="role-card-footer">
             <span class="role-card-name">${hero.name || '敬请期待'}</span>
+            <span class="role-card-cond">${hero.unlockCond || '暂未开放'}</span>
           </div>
         `;
       } else {
