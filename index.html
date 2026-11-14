@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=116" />
+  <link rel="stylesheet" href="css/style.css?v=117" />
 </head>
 
 <body>
@@ -843,6 +843,36 @@
     </div>
   </div>
 
+  <div id="tribulation-cinematic" class="tribulation-cinematic" hidden aria-hidden="true" tabindex="-1" role="dialog" aria-label="渡劫演出">
+    <div class="trib-dim" aria-hidden="true"></div>
+    <svg class="trib-bolts" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <filter id="trib-bolt-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blur"></feGaussianBlur>
+          <feMerge>
+            <feMergeNode in="blur"></feMergeNode>
+            <feMergeNode in="SourceGraphic"></feMergeNode>
+          </feMerge>
+        </filter>
+      </defs>
+      <polyline class="trib-bolt" fill="none" stroke="#dfe8ff" stroke-width="1.15" stroke-linejoin="round" stroke-linecap="round" filter="url(#trib-bolt-glow)" points=""></polyline>
+    </svg>
+    <div class="trib-strike-flash" aria-hidden="true"></div>
+    <div class="trib-gold" aria-hidden="true">
+      <div class="trib-gold-rays"></div>
+      <div class="trib-gold-core"></div>
+    </div>
+    <div class="trib-copy">
+      <div id="trib-caption" class="trib-caption" hidden></div>
+      <div id="trib-success" class="trib-success" hidden>
+        <div id="trib-success-main" class="trib-success-main"></div>
+        <div id="trib-realm-name" class="trib-realm-name"></div>
+        <div id="trib-realm-desc" class="trib-realm-desc"></div>
+        <div id="trib-success-sub" class="trib-success-sub"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/no-zoom.js?v=22"></script>
   <script src="js/config.js?v=84"></script>
   <script src="js/beasts.js?v=2"></script>
@@ -861,7 +891,9 @@
   <script src="js/story.js?v=2"></script>
   <script src="js/audio.js?v=2"></script>
   <script src="js/newbie.js?v=9"></script>
-  <script src="js/game.js?v=58"></script>
+  <script src="js/tribulation-data.js?v=117"></script>
+  <script src="js/tribulation.js?v=117"></script>
+  <script src="js/game.js?v=117"></script>
   <script src="js/events-data.js?v=116"></script>
   <script src="js/idle-events.js?v=116"></script>
   <script src="js/daily.js?v=1"></script>

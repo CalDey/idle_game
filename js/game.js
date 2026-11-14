@@ -351,7 +351,16 @@
       renderReincarnationUI();
       if (window.StageUI) StageUI.render();
       GameState.saveGame();
-      triggerRealmFx('success');
+      // 状态已写入；大境界渡劫成功只补纯视觉演出，不阻塞存档与 UI 刷新。
+      if (stage.isMajorTribulation && window.Tribulation && typeof window.Tribulation.play === 'function') {
+        window.Tribulation.play({
+          realmName: nextStage.fullName,
+          realmDesc: nextStage.desc,
+          majorName: nextStage.majorName
+        });
+      } else {
+        triggerRealmFx('success');
+      }
       if (window.Titles) Titles.sync(s);
       if (window.TitlesUI) TitlesUI.flushToasts();
     } else {
