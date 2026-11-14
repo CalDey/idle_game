@@ -231,35 +231,75 @@
     };
   }
 
-  const PROBE_SIMS = 12;
-  const PROBE_ITERS = 7;
+  function mijingCfg() {
+    const M = (cfg() && cfg().MIJING) || {};
+    const num = (v, d) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : d;
+    };
+    return {
+      PROBE_SIMS: Math.max(1, Math.floor(num(M.PROBE_SIMS, 12))),
+      PROBE_ITERS: Math.max(1, Math.floor(num(M.PROBE_ITERS, 7))),
+      ANCHOR_FLOOR_MULT: num(M.ANCHOR_FLOOR_MULT, 0.85)
+    };
+  }
+
+  // 按队伍/战力签名缓存测力结果，避免每次开局重复跑约 PROBE_ITERS × PROBE_SIMS 场模拟。
+  const strengthCache = new Map();
+  const STRENGTH_CACHE_MAX = 64;
+
+  function strengthSig(state, ref) {
+    const Btl = battle();
+    if (Btl && typeof Btl.ensureFormation === 'function') {
+      try { Btl.ensureFormation(state); } catch (err) { /* 签名失败时仍用现有阵型 */ }
+    }
+    const squad = (state && state.stage && Array.isArray(state.stage.squad) && state.stage.squad.length)
+      ? state.stage.squad
+      : ((state && state.squad) || []);
+    const form = (state && state.formation) || {};
+    const formStr = Object.keys(form).sort().map((id) => {
+      const f = form[id] || {};
+      return `${id}:${f.c},${f.r}`;
+    }).join('|');
+    const bm = bondMods(state);
+    return `${ref}#${Array.isArray(squad) ? squad.join(',') : ''}#${formStr}#${fullSquadCp(state)}#${bm ? JSON.stringify(bm) : ''}`;
+  }
 
   // 二分查找当前队伍对标准波胜率约 50% 的敌方战力（确定性种子，刷新不变）
   function measureStrength(state, ref) {
     const B = battle();
     if (!B || !B.canStartBattle(state).ok) return 0;
+    const key = strengthSig(state, ref);
+    if (strengthCache.has(key)) return strengthCache.get(key);
+    const mc = mijingCfg();
     const guess = fullSquadCp(state) || refCp(ref);
     let lo = Math.log(guess * 0.3);
     let hi = Math.log(guess * 3);
     const probeMods = bondMods(state);
     const rate = (cp) => {
       let w = 0;
-      for (let i = 0; i < PROBE_SIMS; i++) {
+      for (let i = 0; i < mc.PROBE_SIMS; i++) {
         if (B.createSession(state, probeEnemy(ref, cp), 0x51ed27 + i * 7919, probeMods).runToEnd(true).win) w += 1;
       }
-      return w / PROBE_SIMS;
+      return w / mc.PROBE_SIMS;
     };
-    for (let i = 0; i < PROBE_ITERS; i++) {
+    for (let i = 0; i < mc.PROBE_ITERS; i++) {
       const mid = (lo + hi) / 2;
       if (rate(Math.exp(mid)) >= 0.5) lo = mid;
       else hi = mid;
     }
-    return Math.exp((lo + hi) / 2);
+    const measured = Math.exp((lo + hi) / 2);
+    if (strengthCache.size >= STRENGTH_CACHE_MAX) {
+      const first = strengthCache.keys().next().value;
+      strengthCache.delete(first);
+    }
+    strengthCache.set(key, measured);
+    return measured;
   }
 
   function computeAnchor(state, ref) {
     const measured = measureStrength(state, ref);
-    const floorByCp = fullSquadCp(state) * 0.85;
+    const floorByCp = fullSquadCp(state) * mijingCfg().ANCHOR_FLOOR_MULT;
     return anchorCp(ref, Math.max(measured, floorByCp));
   }
 

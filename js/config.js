@@ -664,6 +664,13 @@
     return 0;
   }
 
+  // 秘境劫运开局测力：二分探测次数与满编战力下限倍率（见 Mijing.measureStrength）
+  const MIJING = {
+    PROBE_SIMS: 12,
+    PROBE_ITERS: 7,
+    ANCHOR_FLOOR_MULT: 0.85
+  };
+
   window.GameConfig = {
     SUB_LEVEL_NAMES,
     MAJOR_REALMS,
@@ -689,6 +696,7 @@
     SUBSTATS,
     TRIBULATION_GATES,
     BATTLE,
+    MIJING,
     PEACH,
     TREE_MAX_LEVEL: 25,
     treeUpgradeCost,

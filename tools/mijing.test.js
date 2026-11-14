@@ -534,4 +534,40 @@ check('index.html 引用 mijing.js 且有入口/面板/弹窗节点', () => {
   assert.ok(text('css/style.css').includes('.mijing-modal-body::-webkit-scrollbar'));
 });
 
+check('测力常数在 config，同签名缓存避免重复模拟', () => {
+  const mc = CFG.MIJING;
+  assert.ok(mc, 'GameConfig.MIJING 应存在');
+  assert.strictEqual(mc.PROBE_SIMS, 12);
+  assert.strictEqual(mc.PROBE_ITERS, 7);
+  assert.strictEqual(mc.ANCHOR_FLOOR_MULT, 0.85);
+  assert.ok(!/const PROBE_SIMS/.test(text('js/mijing.js')), 'PROBE_* 不应再写死在 mijing.js');
+  assert.ok(text('js/mijing.js').includes('ANCHOR_FLOOR_MULT'));
+  assert.ok(text('js/mijing.js').includes('strengthCache'));
+
+  const st = simState(W, 8, 1);
+  st.stage = st.stage || {};
+  st.stage.best = 20;
+  const a = M.measureStrength(st, 20);
+  assert.ok(a > 0);
+  let sessions = 0;
+  const orig = B.createSession.bind(B);
+  B.createSession = function () {
+    sessions += 1;
+    return orig.apply(this, arguments);
+  };
+  try {
+    const b = M.measureStrength(st, 20);
+    assert.strictEqual(b, a, '同队伍同战力签名应命中缓存，结果一致');
+    assert.strictEqual(sessions, 0, '命中缓存时不应再跑探测模拟');
+    const weak = Object.assign(simState(W, 8, 1), { stage: { best: 20 }, squad: [SQUAD[0]] });
+    const c = M.measureStrength(weak, 20);
+    assert.ok(sessions > 0, '换队后应重新测力');
+    assert.ok(c > 0);
+    assert.notStrictEqual(c, a);
+  } finally {
+    B.createSession = orig;
+  }
+});
+
 console.log(`mijing.test.js ok: ${passed} checks`);
+

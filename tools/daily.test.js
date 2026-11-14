@@ -290,3 +290,31 @@ const env = { qiPerSec: 10, stonePerSec: 2 };
 }
 
 console.log('daily.test.js: ok');
+
+// ---------- createDefaultState 预置 daily；坏档重置走 Daily.ensure ----------
+{
+  const { GS, Daily } = loadRuntime();
+  assert.ok(GS.state.daily && typeof GS.state.daily === 'object', '默认档应预置 daily');
+  assert.strictEqual(GS.state.daily.v, 1);
+  assert.strictEqual(typeof GS.state.daily.tasks, 'object');
+  assert.strictEqual(typeof GS.state.daily.chests, 'object');
+  assert.ok(GS.state.daily.checkin && typeof GS.state.daily.checkin === 'object');
+  same(Daily.normalize(null), { v: 1, date: '', points: 0, tasks: {}, chests: {}, checkin: { cycleDay: 0, last: '', total: 0 } });
+}
+
+{
+  const storage = memoryStorage();
+  const first = loadRuntime(storage);
+  storage.setItem(first.GS.SAVE_KEY, '{not-json');
+  const { GS, Daily } = loadRuntime(storage);
+  const loaded = GS.loadGame();
+  assert.ok(loaded.isNew, '坏档应重置为新档');
+  assert.ok(GS.state.daily, '坏档重置后应有 daily');
+  const key = Daily.todayKey(Date.now());
+  assert.strictEqual(GS.state.daily.date, key, '坏档重置分支应调用 Daily.ensure 记上当日');
+  assert.strictEqual(GS.state.daily.points, 0);
+  same(GS.state.daily.tasks, {});
+  assert.ok(Daily.claimCheckin(GS.state, env, Date.now()).ok, '坏档重置后应能正常签到');
+}
+
+console.log('daily.test.js also ok: default daily + corrupt-save Daily.ensure');

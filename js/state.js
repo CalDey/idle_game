@@ -237,6 +237,10 @@
       login: { last: '', streak: 0 },
       dayTaps: { date: '', count: 0 },
       titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
+      // 每日功课：预置空结构；旧档或缺模块时与 Daily.normalize(null) 同形
+      daily: window.Daily && typeof window.Daily.normalize === 'function'
+        ? window.Daily.normalize(null)
+        : { v: 1, date: '', points: 0, tasks: {}, chests: {}, checkin: { cycleDay: 0, last: '', total: 0 } },
       // 秘境劫运：每日次数（本地日期）与进行中的一局；旧存档缺省即为此值
       mijing: { date: '', used: 0, runs: 0, clears: 0, bestWave: 0, run: null },
       guide: defaultGuide(),
@@ -846,6 +850,9 @@
         }
       }
       state = createDefaultState();
+      if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, Date.now());
+      if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
+      if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
       return { isNew: true, offlineReport: null };
     }
   }
