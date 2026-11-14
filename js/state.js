@@ -530,6 +530,65 @@
     return Math.floor(item.baseCost * Math.pow(item.costScale, lv));
   }
 
+  // 当前乘区下，功法升 1 级带来的灵气/秒增量（v1 回本用，不含数值改动）。
+  function gongfaIncrementalQiPerSec(item) {
+    if (!item) return 0;
+    const stage = getCurrentStage();
+    const qiPct = window.Equip && window.Equip.subSum ? window.Equip.subSum(state.equip, 'qi') : 0;
+    const chapters = chapterBonus(state.stage && state.stage.best);
+    const titleFactor = window.Titles ? window.Titles.qiFactor(state) : 1;
+    const julingshiLv = (state.dongfu && state.dongfu.julingshi) || 0;
+    return (
+      item.baseQiPerSec *
+      stage.multiplier *
+      getDaoGuoQiMultiplier() *
+      (1 + qiPct) *
+      (1 + 0.02 * chapters) *
+      titleFactor *
+      (1 + 0.01 * Math.floor(julingshiLv / 10)) *
+      (window.Path ? window.Path.qiFactor(state) : 1)
+    );
+  }
+
+  // 当前乘区下，洞府建筑升 1 级带来的灵石/秒增量（v1 回本用，不含数值改动）。
+  function dongfuIncrementalStonePerSec(item) {
+    if (!item) return 0;
+    const stage = getCurrentStage();
+    const stonePct = window.Equip && window.Equip.subSum ? window.Equip.subSum(state.equip, 'stone') : 0;
+    const chapters = chapterBonus(state.stage && state.stage.best);
+    return (
+      item.baseStonePerSec *
+      Math.pow(stage.multiplier, 0.65) *
+      getDaoGuoStoneMultiplier() *
+      (1 + stonePct) *
+      (1 + 0.02 * chapters) *
+      (window.Titles ? window.Titles.factor(state, 'stone') : 1) *
+      (window.Path ? window.Path.stoneFactor(state) : 1)
+    );
+  }
+
+  /**
+   * v1 回本秒数（数值策划稍后可整函数替换，勿改 UI）。
+   * 公式：升级花费 ÷ 本级带来的每秒增量产出（洞府用灵石、功法用灵气，v1 不做跨资源折算）。
+   * 不可计算时返回 null。
+   */
+  function paybackSeconds(cost, incrementalPerSec) {
+    const c = Number(cost);
+    const inc = Number(incrementalPerSec);
+    if (!Number.isFinite(c) || !Number.isFinite(inc) || c < 0 || inc <= 0) return null;
+    return c / inc;
+  }
+
+  // 展示用：回本 Xs / 回本 X分 / 回本 X时；不可计算时返回空串，由 UI 隐藏。
+  function formatPayback(seconds) {
+    const n = Number(seconds);
+    if (!Number.isFinite(n) || n <= 0) return '';
+    if (n < 60) return `回本 ${Math.max(1, Math.round(n))}秒`;
+    if (n < 3600) return `回本 ${Math.max(1, Math.round(n / 60))}分`;
+    return `回本 ${Math.max(1, Math.round(n / 3600))}时`;
+  }
+
+
   function getHomeDisplayTier(id) {
     const lv = (state.dongfu && state.dongfu[id]) || 0;
     const curTier = window.GameConfig.homeBuildingTier(lv);
@@ -1159,6 +1218,10 @@
     getTapQiGain,
     getGongfaCost,
     getDongfuCost,
+    gongfaIncrementalQiPerSec,
+    dongfuIncrementalStonePerSec,
+    paybackSeconds,
+    formatPayback,
     getHomeDisplayTier,
     getHomeBgDisplayTier,
     getOfflineCapSeconds,

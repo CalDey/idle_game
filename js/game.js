@@ -404,6 +404,18 @@
     return window.Newbie ? `境界共42重：${window.Newbie.REALM_CHAIN_TEXT}` : '境界共42重';
   }
 
+  function paybackText(cost, incrementalPerSec) {
+    if (!GameState.paybackSeconds || !GameState.formatPayback) return '';
+    return GameState.formatPayback(GameState.paybackSeconds(cost, incrementalPerSec));
+  }
+
+  function setPaybackEl(el, text) {
+    if (!el) return;
+    const t = text || '';
+    if (el.textContent !== t) el.textContent = t;
+    el.hidden = !t;
+  }
+
   // 构建功法列表与洞府场景
   function renderUpgradeLists() {
     const s = GameState.state;
@@ -419,6 +431,8 @@
         const canAfford = unlocked && s.stones >= cost;
         const reqStageName = REALM_STAGES[item.unlockRealmIndex].fullName;
         const perLvEffect = item.baseQiPerSec * stage.multiplier * GameState.getDaoGuoQiMultiplier();
+        const incQi = GameState.gongfaIncrementalQiPerSec ? GameState.gongfaIncrementalQiPerSec(item) : perLvEffect;
+        const pb = unlocked ? paybackText(cost, incQi) : '';
 
         const row = document.createElement('div');
         row.className = 'upgrade-item' + (unlocked ? '' : ' locked');
@@ -434,12 +448,15 @@
             <div class="upgrade-desc">${item.desc}</div>
             <div class="upgrade-effect">每层效果：+${formatNumber(perLvEffect)} 灵气/秒</div>
           </div>
-          <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-gongfa-id="${item.id}" ${
+          <div class="upgrade-buy">
+            <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-gongfa-id="${item.id}" ${
           canAfford ? '' : 'disabled'
         }>
-            <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
-            <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
-          </button>
+              <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
+              <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
+            </button>
+            <span class="payback-label"${pb ? '' : ' hidden'}>${pb}</span>
+          </div>
         `;
         els.gongfaList.appendChild(row);
       });
@@ -782,6 +799,7 @@
           </div>
           <div class="home-up-meta-row">
             <span class="home-up-cost"></span>
+            <span class="home-up-payback payback-label" hidden></span>
             <span class="home-up-next"></span>
           </div>
           <div class="home-up-lock" hidden></div>
@@ -862,6 +880,7 @@
           lockEl.textContent = `需突破至【${reqName}】解锁（${realmGapText(s.realmIndex, item.unlockRealmIndex)}，境界共42重）`;
           lockEl.title = realmChainTitle();
         }
+        setPaybackEl(row.querySelector('.home-up-payback'), '');
       } else {
         if (metaRow) {
           metaRow.hidden = false;
@@ -881,6 +900,8 @@
         if (costEl) {
           costEl.innerHTML = `下一级：<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)}</strong>`;
         }
+        const incStone = GameState.dongfuIncrementalStonePerSec ? GameState.dongfuIncrementalStonePerSec(item) : 0;
+        setPaybackEl(row.querySelector('.home-up-payback'), paybackText(nextCost, incStone));
 
         const nextEl = row.querySelector('.home-up-next');
         if (nextEl) {
@@ -915,6 +936,8 @@
       if (costEl) {
         costEl.innerHTML = `下一级：<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><strong>${formatNumber(nextCost)}</strong>`;
       }
+      const incStone = GameState.dongfuIncrementalStonePerSec ? GameState.dongfuIncrementalStonePerSec(item) : 0;
+      setPaybackEl(row.querySelector('.home-up-payback'), paybackText(nextCost, incStone));
       row.querySelectorAll('button[data-home-buy]').forEach((btn) => {
         btn.disabled = !canAfford;
       });
@@ -950,6 +973,8 @@
         if (btn) {
           btn.disabled = !canAfford;
           btn.classList.toggle('btn-primary', canAfford);
+          const incQi = unlocked && GameState.gongfaIncrementalQiPerSec ? GameState.gongfaIncrementalQiPerSec(item) : 0;
+          setPaybackEl(btn.parentElement && btn.parentElement.querySelector('.payback-label'), unlocked ? paybackText(cost, incQi) : '');
         }
       }
     });

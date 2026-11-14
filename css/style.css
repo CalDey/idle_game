@@ -7916,3 +7916,35 @@ button.mijing-bless-card:active {
   font-size: 11px;
   color: var(--text-dim);
 }
+
+/* 洞府 / 功法升级按钮旁的回本时间（不可计算时隐藏） */
+.upgrade-buy {
+  flex: 0 0 92px;
+  width: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.upgrade-buy .btn-cost {
+  flex: none;
+  width: 100%;
+}
+
+.payback-label {
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.payback-label[hidden],
+.payback-label:empty {
+  display: none;
+}
+
+.home-up-payback {
+  color: var(--text-muted);
+}
