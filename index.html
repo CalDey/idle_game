@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=98" />
+  <link rel="stylesheet" href="css/style.css?v=99" />
 </head>
 
 <body>
@@ -269,7 +269,7 @@
           </div>
 
           <div class="stage-action-row">
-            <button id="btn-stage-squad" class="btn stage-btn-toggle stage-btn-squad" type="button" aria-label="编辑出战队伍"><span>队伍</span><span id="stage-squad-count" class="stage-squad-count">6/6</span></button>
+            <button id="btn-stage-squad" class="btn stage-btn-toggle stage-btn-squad" type="button" aria-label="编辑出战队伍"><span>队伍</span><span id="stage-squad-count" class="stage-squad-count">6/6</span><span id="badge-squad-grow" class="icon-btn-badge" aria-hidden="true"></span></button>
             <button id="btn-stage-challenge" class="btn btn-primary stage-btn-main" type="button">挑 战</button>
             <button id="btn-stage-auto" class="btn stage-btn-toggle" type="button" aria-pressed="true">自动</button>
             <button id="btn-stage-speed" class="btn stage-btn-toggle" type="button">2×</button>
@@ -665,7 +665,28 @@
     </div>
   </div>
 
-  <div id="daily-modal" class="modal-backdrop" aria-hidden="true">
+    <div id="grow-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog grow-dialog" role="dialog" aria-modal="true" aria-labelledby="grow-modal-title">
+      <div class="card-header grow-header">
+        <span id="grow-modal-title" class="card-title">仙姬培元</span>
+        <button id="btn-close-grow" class="home-modal-close" type="button" data-modal-close aria-label="关闭">✕</button>
+      </div>
+      <div class="grow-body">
+        <div class="grow-hero">
+          <img id="grow-avatar" class="grow-avatar" alt="" decoding="async" />
+          <div class="grow-hero-text">
+            <div id="grow-name" class="grow-name"></div>
+            <div id="grow-meta" class="grow-meta"></div>
+          </div>
+        </div>
+        <p id="grow-bonus" class="grow-bonus"></p>
+        <p id="grow-hint" class="grow-hint"></p>
+        <button id="btn-grow-upgrade" class="btn btn-primary grow-upgrade-btn" type="button">培元</button>
+      </div>
+    </div>
+  </div>
+
+<div id="daily-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog daily-dialog" role="dialog" aria-modal="true" aria-labelledby="daily-modal-title">
       <div class="card-header daily-header">
         <span id="daily-modal-title" class="card-title">每日功课</span>
@@ -726,13 +747,14 @@
   <script src="js/config.js?v=78"></script>
   <script src="js/ui-text.js?v=2"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=38"></script>
+  <script src="js/state.js?v=39"></script>
   <script src="js/titles.js?v=23"></script>
-  <script src="js/battle.js?v=38"></script>
+  <script src="js/grow.js?v=1"></script>
+  <script src="js/battle.js?v=39"></script>
   <script src="js/bonds.js?v=1"></script>
   <script src="js/mijing.js?v=2"></script>
   <script src="js/gear.js?v=34"></script>
-  <script src="js/stage-ui.js?v=59"></script>
+  <script src="js/stage-ui.js?v=60"></script>
   <script src="js/newbie.js?v=5"></script>
   <script src="js/game.js?v=53"></script>
   <script src="js/events-data.js?v=3"></script>

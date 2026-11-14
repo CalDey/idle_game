@@ -1242,6 +1242,7 @@
       btnSquad.classList.toggle('is-empty', activeSquadIds.length === 0);
       btnSquad.title = isPlaying ? '编辑队伍（下一场生效）' : `编辑队伍（当前 ${activeSquadIds.length}/${maxSquad}）`;
     }
+    if (window.GrowUI && typeof window.GrowUI.refreshBadge === 'function') window.GrowUI.refreshBadge();
     if (btnChallenge) {
       const needPick = Boolean(mjRun && Array.isArray(mjRun.choices) && mjRun.choices.length > 0);
       btnChallenge.textContent = isPlaying ? '跳 过' : needPick ? '择 运' : mjRun ? '迎 战' : '挑 战';
@@ -2069,6 +2070,12 @@
               : isFull
               ? '待命 · 已满 6/6'
               : '+ 待命 · 点击上阵';
+          const grow = window.Grow && typeof window.Grow.snapshot === 'function' ? window.Grow.snapshot(s, h.id) : null;
+          const growLabel = grow ? `培元 ${grow.level}/${grow.cap}` : '';
+          const growDot = grow && grow.can ? ' has-grow' : '';
+          const growHtml = grow
+            ? `<span class="squad-hero-grow${growDot}" data-grow-open="${h.id}">${growLabel}</span>`
+            : '';
           listHtml += `
             <button type="button" class="squad-hero-card ${stateCls}" data-squad-hero-id="${h.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
               <div class="squad-hero-avatar-box ${qCls}"${qStyle}>
@@ -2083,6 +2090,7 @@
                 <div class="squad-hero-skill">绝技 · ${skillName}</div>
                 ${skillDescHtml(h.id)}
                 <div class="squad-hero-status">${statusText}</div>
+                ${growHtml}
               </div>
             </button>
           `;
@@ -2835,6 +2843,14 @@
     });
     if (squadHeroList) {
       squadHeroList.addEventListener('click', (e) => {
+        const growOpen = e.target.closest && e.target.closest('[data-grow-open]');
+        if (growOpen) {
+          const gid = growOpen.getAttribute('data-grow-open');
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          if (typeof e.stopPropagation === 'function') e.stopPropagation();
+          if (gid && window.GrowUI && typeof window.GrowUI.open === 'function') window.GrowUI.open(gid);
+          return;
+        }
         const card = e.target.closest('[data-squad-hero-id]');
         if (!card) return;
         const heroId = card.getAttribute('data-squad-hero-id');
@@ -2944,6 +2960,7 @@
     skipBattle,
     openSquadModal,
     closeSquadModal,
+    renderSquadModal,
     getDraftSquad,
     toggleDraftHero,
     saveSquad,

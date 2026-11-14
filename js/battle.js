@@ -266,7 +266,7 @@
           ? state.cp
           : (state.atk * 10 + state.hp + state.def * 8 + state.spd * 2) * (1 + crit * (cd - 1));
       const cp = baseCp * scale;
-      return {
+      const rawDirect = {
         _fromPlayerStats: true,
         baseAtk: state.atk,
         baseHp: state.hp,
@@ -284,8 +284,13 @@
         formation: state.formation,
         squad: Array.isArray(state.squad) ? squadIds : defaultSquadIds(state),
         unlockedHeroes: state.unlockedHeroes,
-        lockedHeroes: state.lockedHeroes
+        lockedHeroes: state.lockedHeroes,
+        grow: state.grow
       };
+      if (window.Grow && typeof window.Grow.decoratePlayerStats === 'function') {
+        return window.Grow.decoratePlayerStats(state, rawDirect, rawDirect.squad);
+      }
+      return rawDirect;
     }
     const E = root.Equip || (typeof window !== 'undefined' && window.Equip);
     const T = root.Titles || (typeof window !== 'undefined' && window.Titles);
@@ -302,7 +307,7 @@
     const hp = baseHp * squadScale;
     const def = baseDef * squadScale;
     const cp = squadCount === 0 ? 0 : baseCp * squadScale;
-    return {
+    const rawStats = {
       _fromPlayerStats: true,
       baseAtk,
       baseHp,
@@ -320,8 +325,13 @@
       formation: s && s.formation,
       squad: squadIds,
       unlockedHeroes: s && s.unlockedHeroes,
-      lockedHeroes: s && s.lockedHeroes
+      lockedHeroes: s && s.lockedHeroes,
+      grow: s && s.grow
     };
+    if (window.Grow && typeof window.Grow.decoratePlayerStats === 'function') {
+      return window.Grow.decoratePlayerStats(s, rawStats, squadIds);
+    }
+    return rawStats;
   }
 
   function isValidPlayerCell(c, r) {
@@ -716,6 +726,8 @@
     return heroes.map((h, idx) => {
       const pos = formation[h.id] || DEFAULT_PLAYER_SLOTS[idx % DEFAULT_PLAYER_SLOTS.length] || { c: idx % BOARD_COLS, r: 5 };
       const skillCfg = getHeroSkillConfig(h.id, h.skill);
+      const growMean = (pStats && pStats._growMean) || (window.Grow && window.Grow.meanMult(s, heroes.map((x) => x.id))) || 1;
+      const growAdj = window.Grow && typeof window.Grow.unitAdj === 'function' ? window.Grow.unitAdj(s, h.id, growMean) : 1;
       return {
         id: `p_${h.id}`,
         heroId: h.id,
@@ -733,10 +745,10 @@
         r: pos.r,
         share,
         formMult: playerAtkComp,
-        atk: pStats.atk * unitPortion,
-        hp: pStats.hp * unitPortion,
-        maxHp: pStats.hp * unitPortion,
-        def: pStats.def * unitPortion,
+        atk: pStats.atk * unitPortion * growAdj,
+        hp: pStats.hp * unitPortion * growAdj,
+        maxHp: pStats.hp * unitPortion * growAdj,
+        def: pStats.def * unitPortion * growAdj,
         spd: pStats.spd,
         crit: pStats.crit != null ? pStats.crit : 0.05,
         critDmg: pStats.critDmg || pStats.cd || 1.5,

@@ -6344,3 +6344,104 @@ button.mijing-bless-card:active {
   color: var(--accent-gold-bright);
   box-shadow: 0 0 10px rgba(230, 201, 138, 0.3);
 }
+
+/* === 仙姬培元 === */
+.stage-btn-squad {
+  position: relative;
+}
+
+.stage-btn-squad .icon-btn-badge {
+  top: 2px;
+  right: 2px;
+}
+
+.squad-hero-grow {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  background: rgba(230, 201, 138, 0.1);
+  border: 1px solid rgba(230, 201, 138, 0.35);
+  color: var(--accent-gold-bright);
+  cursor: pointer;
+}
+
+.squad-hero-grow.has-grow {
+  border-color: var(--accent-gold-bright);
+  box-shadow: 0 0 6px rgba(245, 199, 106, 0.4);
+}
+
+.grow-dialog {
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(80vh, 520px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.grow-header {
+  padding: 12px 14px 8px;
+}
+
+.grow-body {
+  padding: 0 14px 14px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: none;
+}
+
+.grow-body::-webkit-scrollbar,
+.grow-body::-webkit-scrollbar-button,
+.grow-body::-webkit-scrollbar-track,
+.grow-body::-webkit-scrollbar-thumb {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.grow-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grow-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  object-position: 50% 15%;
+  border: 1px solid rgba(230, 201, 138, 0.35);
+  flex: none;
+}
+
+.grow-name {
+  font-size: 15px;
+  color: #f3ead4;
+}
+
+.grow-meta,
+.grow-bonus,
+.grow-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim, #cbbd9a);
+}
+
+.grow-bonus {
+  color: var(--accent-gold-bright);
+}
+
+.grow-upgrade-btn {
+  width: 100%;
+}

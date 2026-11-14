@@ -662,7 +662,12 @@
         ? window.Daily.normalize(saved.daily)
         : saved.daily && typeof saved.daily === 'object' && !Array.isArray(saved.daily)
           ? saved.daily
-          : { v: 1, date: '', points: 0, tasks: {}, chests: {}, checkin: { cycleDay: 0, last: '', total: 0 } }
+          : { v: 1, date: '', points: 0, tasks: {}, chests: {}, checkin: { cycleDay: 0, last: '', total: 0 } },
+      grow: window.Grow
+        ? window.Grow.normalize(saved.grow)
+        : saved.grow && typeof saved.grow === 'object' && !Array.isArray(saved.grow)
+          ? saved.grow
+          : { v: 1, lv: {} }
     };
     if (Array.isArray(unlockedHeroes)) {
       merged.unlockedHeroes = unlockedHeroes;
@@ -735,6 +740,7 @@
     const report = settleOffline(from, t, { idleStage: false });
     grantPeachGift();
     if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, t);
+    if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
     saveGame();
     return report;
   }
@@ -746,6 +752,7 @@
       if (!raw) {
         state = createDefaultState();
         if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, Date.now());
+        if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
@@ -770,6 +777,7 @@
       const offlineReport = settleOffline(savedTime, now, { idleStage: true });
       grantPeachGift();
       if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, now);
+      if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
       return { isNew: false, offlineReport };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
@@ -885,6 +893,9 @@
     fresh.daily = window.Daily
       ? window.Daily.normalize(state.daily)
       : (state.daily && typeof state.daily === 'object' ? { ...state.daily } : state.daily);
+    fresh.grow = window.Grow
+      ? window.Grow.normalize(state.grow)
+      : (state.grow && typeof state.grow === 'object' ? { ...state.grow, lv: { ...((state.grow && state.grow.lv) || {}) } } : state.grow);
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);
     fresh.titles = {
