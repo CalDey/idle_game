@@ -375,7 +375,7 @@
       { id: 'qingming', name: '青冥蛟后', img: 'placeholder' },
       { id: 'baie', name: '白额山君', img: 'placeholder' },
       { id: 'huoya', name: '火鸦女王', img: 'placeholder' },
-      { id: 'rongyan', name: '熔岩巨傀', img: 'placeholder' },
+      { id: 'rongyan', name: '熔岩巨傀', img: 'assets/enemies/boss_rongyan.webp?v=20' },
       { id: 'fengu', name: '焚骨魔女', img: 'placeholder' },
       { id: 'yanmojiang', name: '炎魔女将', img: 'placeholder' },
       { id: 'chiyan', name: '赤炎魔君', img: 'assets/enemies/boss_chiyan.webp?v=19' },
