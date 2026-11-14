@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=87" />
+  <link rel="stylesheet" href="css/style.css?v=88" />
 </head>
 
 <body>
@@ -67,6 +67,8 @@
           <div id="res-daoguo-val" class="res-value purple">0 (累0)</div>
         </div>
       </div>
+      <!-- 常驻「当前目标」：完成后自动换下一条，点击跳到对应页签 -->
+      <button id="goal-strip" class="goal-strip" type="button" hidden aria-live="polite"><span class="goal-tag">当前目标</span><span id="goal-text" class="goal-text"></span><span id="goal-progress" class="goal-progress"></span></button>
       <!-- 页签1：打坐与突破 -->
       <section id="tab-cultivate" class="tab-pane active">
         <!-- 主角立绘舞台：点击吐纳灵气 -->
@@ -127,7 +129,7 @@
       <section id="tab-gear" class="tab-pane">
         <div id="gear-locked" class="gufeng-card gear-locked">
           <div class="card-title">法宝未启</div>
-          <p class="gear-locked-text">突破至搬血中后，仙桃树赠桃三十枚，方可摘桃开装备。</p>
+          <p class="gear-locked-text">突破至搬血中后，仙桃树赠桃三十枚，摘桃可得法宝</p>
         </div>
         <div id="gear-body" class="gear-body">
           <div class="cp-bar">
@@ -482,6 +484,20 @@
         <span class="nav-text">轮回</span>
       </button>
     </nav>
+    <div id="guide-bubble" class="guide-bubble" hidden aria-live="polite"><span id="guide-bubble-text"></span></div>
+  </div>
+
+  <!-- 法宝解锁提示（只弹一次） -->
+  <div id="unlock-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog unlock-dialog" role="dialog" aria-modal="true" aria-labelledby="unlock-modal-title">
+      <img class="gi unlock-icon" src="assets/icons/nav_gear@64.webp?v=18" alt="" aria-hidden="true">
+      <h2 id="unlock-modal-title" class="modal-title">法宝已开启</h2>
+      <div class="modal-body unlock-body">仙桃树赠桃三十枚，去法宝页摘桃可得法宝。</div>
+      <div class="modal-actions">
+        <button id="btn-unlock-later" class="btn" type="button" data-modal-close>稍后</button>
+        <button id="btn-unlock-go" class="btn btn-primary" type="button">去摘桃</button>
+      </div>
+    </div>
   </div>
 
   <!-- 离线收益弹窗 -->
@@ -614,13 +630,14 @@
   <script src="js/no-zoom.js?v=22"></script>
   <script src="js/config.js?v=75"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=33"></script>
+  <script src="js/state.js?v=34"></script>
   <script src="js/titles.js?v=23"></script>
   <script src="js/battle.js?v=36"></script>
   <script src="js/mijing.js?v=1"></script>
   <script src="js/gear.js?v=31"></script>
   <script src="js/stage-ui.js?v=50"></script>
-  <script src="js/game.js?v=46"></script>
+  <script src="js/newbie.js?v=1"></script>
+  <script src="js/game.js?v=48"></script>
   <script src="js/events-data.js?v=1"></script>
   <script src="js/idle-events.js?v=1"></script>
 </body>

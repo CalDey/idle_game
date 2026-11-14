@@ -68,6 +68,40 @@
     return computeDefaultSquadIds(refState);
   }
 
+  // 新手引导状态。旧存档没有 guide 字段：有进度的一律视为老玩家，不弹引导；几乎未动过的存档按新玩家处理。
+  function defaultGuide() {
+    return { v: 1, step: 0, done: false, taps: 0, gearPopup: false, gearVisited: false };
+  }
+
+  function isProgressedSave(saved) {
+    if (!saved || typeof saved !== 'object') return false;
+    if ((Number(saved.realmIndex) || 0) > 0) return true;
+    if ((Number(saved.reincarnationCount) || 0) > 0 || (Number(saved.totalDaoGuo) || 0) > 0) return true;
+    if (saved.stage && (Number(saved.stage.best) || 0) > 0) return true;
+    if ((Number(saved.peachesPicked) || 0) > 0) return true;
+    if ((Number(saved.totalClicks) || 0) >= 5) return true;
+    if ((Number(saved.playTimeMs) || 0) >= 60000) return true;
+    return false;
+  }
+
+  function normalizeGuide(rawGuide, saved) {
+    const def = defaultGuide();
+    if (rawGuide && typeof rawGuide === 'object') {
+      const step = Math.max(0, Math.min(3, Math.floor(Number(rawGuide.step) || 0)));
+      return {
+        v: 1,
+        step,
+        done: Boolean(rawGuide.done) || step >= 3,
+        taps: Math.max(0, Math.floor(Number(rawGuide.taps) || 0)),
+        gearPopup: Boolean(rawGuide.gearPopup),
+        gearVisited: Boolean(rawGuide.gearVisited),
+        ...(rawGuide.legacy ? { legacy: true } : {})
+      };
+    }
+    if (!isProgressedSave(saved)) return def;
+    return { ...def, step: 3, done: true, gearPopup: true, gearVisited: true, legacy: true };
+  }
+
   function createDefaultState() {
     const gongfaLevels = {};
     window.GameConfig.GONGFA_LIST.forEach((g, idx) => {
@@ -121,6 +155,7 @@
       titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
       // 秘境劫运：每日次数（本地日期）与进行中的一局；旧存档缺省即为此值
       mijing: { date: '', used: 0, runs: 0, clears: 0, bestWave: 0, run: null },
+      guide: defaultGuide(),
       ...v2Fields
     };
   }
@@ -442,6 +477,7 @@
       flags: { ...def.flags, ...(saved.flags || {}) },
       login: { ...def.login, ...(saved.login || {}) },
       dayTaps: { ...def.dayTaps, ...(saved.dayTaps || {}) },
+      guide: normalizeGuide(saved.guide, saved),
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
       playTimeMs: saved.playTimeMs || 0,
       lifetimeQi: saved.lifetimeQi || 0,
@@ -636,6 +672,7 @@
     fresh.flags = { ...(state.flags || {}) };
     fresh.login = { ...(state.login || {}) };
     fresh.dayTaps = { ...(state.dayTaps || {}) };
+    fresh.guide = normalizeGuide(state.guide, state);
     fresh.titles = {
       owned: [...((state.titles && state.titles.owned) || ['churu'])],
       worn: (state.titles && state.titles.worn) || 'churu',
@@ -756,6 +793,9 @@
     performReincarnation,
     tickTimers,
     grantPeachGift,
-    applyIdleStageRewards
+    applyIdleStageRewards,
+    defaultGuide,
+    normalizeGuide,
+    isProgressedSave
   };
 })();

@@ -1691,6 +1691,10 @@
       });
     }
 
+    if (window.Newbie) {
+      Newbie.init({ switchTab: switchToTab, log: addLog });
+    }
+
     lastTickTime = performance.now();
     requestAnimationFrame(gameLoop);
   }
