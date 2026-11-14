@@ -761,5 +761,84 @@ function breakAt(GS, roll) {
   assert.ok(text('index.html').includes('试试凑羁绊'));
 }
 
+// ---------- batch3 P1-1 主线剧情对话 ----------
+{
+  const { GS, CFG, sandbox } = loadRuntime(memoryStorage());
+  ['js/codex-data.js', 'js/story-data.js', 'js/story.js'].forEach((rel) => vm.runInNewContext(text(rel), sandbox, { filename: rel }));
+  const SD = sandbox.window.StoryData;
+  const ST = sandbox.window.Story;
+  const BOSSES = CFG.BATTLE.BOSSES;
+  assert.strictEqual(SD.chapters.length, 6, '前 6 章');
+  SD.chapters.forEach((ch) => {
+    assert.ok(ch.intro.length > 0, `第 ${ch.chapter} 章 intro`);
+    assert.strictEqual(ch.bosses.length, 1, '每章 1 个 Boss');
+    const b = ch.bosses[0];
+    assert.strictEqual(b.stage, ch.chapter * 10, 'Boss 在 10 的倍数关');
+    assert.strictEqual(b.bossId, BOSSES[ch.chapter - 1].id, 'bossId 与 config 一致');
+    assert.ok(b.pre.length && b.post.length && b.lastWords);
+    [...ch.intro, ...b.pre, ...b.post].forEach((l) => {
+      if (!['旁白', 'Boss', '无名修士'].includes(l.speaker)) assert.ok(l.fallback, `heroId 台词必带 fallback：${l.speaker}`);
+    });
+  });
+  assert.strictEqual(Object.keys(SD.lastWords).length, 30, '30 个 Boss 遗言');
+  BOSSES.slice(0, 30).forEach((b) => assert.ok(SD.lastWords[b.id], `遗言 ${b.id}`));
+  const raw = text('js/story-data.js');
+  BOSSES.forEach((b) => assert.ok(!raw.includes(b.name), `剧情数据不硬编码 Boss 名：${b.name}`));
+  assert.ok(raw.includes('{boss}'));
+  // 运行时从 config 读名字（改名后自动跟随）
+  const filled = ST.fill('{boss}倒下，{boss:heifeng}在等。', 'shanxiao');
+  assert.strictEqual(filled, `${BOSSES[0].name}倒下，${BOSSES[2].name}在等。`);
+  const old = BOSSES[0].name;
+  BOSSES[0].name = '改名测试';
+  assert.strictEqual(ST.fill('{boss}', 'shanxiao'), '改名测试');
+  BOSSES[0].name = old;
+  // 开场台词仍是图鉴 quote，遗言是新字段
+  const lore = sandbox.window.CodexData.bossLore[BOSSES[0].name];
+  assert.ok(lore && lore.quote, '图鉴开场台词还在');
+  assert.notStrictEqual(ST.lastWordsFor('shanxiao', 10), lore.quote, '遗言不覆盖开场台词');
+  // 触发时机
+  assert.strictEqual(ST.pendingBefore(1, {})[0].key, 'c1:intro');
+  assert.strictEqual(ST.pendingBefore(2, {}), null);
+  assert.strictEqual(ST.pendingBefore(10, {})[0].key, 'b10:pre');
+  assert.strictEqual(ST.pendingBefore(10, { 'b10:pre': true }), null, '看过不再播');
+  assert.strictEqual(ST.pendingBefore(11, {})[0].key, 'c2:intro');
+  assert.strictEqual(ST.pendingBefore(61, {}), null, '第 7 章暂无剧情');
+  const after10 = ST.pendingAfter(10, {})[0];
+  assert.strictEqual(after10.lines[0].kind, 'last', '先遗言');
+  assert.strictEqual(after10.lines[after10.lines.length - 1].kind, 'codex', '最后提示图鉴已收录');
+  assert.ok(after10.lines[after10.lines.length - 1].text.includes(`图鉴已收录【${BOSSES[0].name}】`));
+  assert.ok(after10.lines.length > 2, '前 6 章有战后剧情');
+  const after70 = ST.pendingAfter(70, {})[0];
+  assert.strictEqual(after70.lines.length, 2, '第 7 章起：遗言 + 图鉴已收录');
+  assert.strictEqual(ST.pendingAfter(15, {}), null, '非 Boss 关');
+  assert.strictEqual(ST.pendingAfter(10, { 'b10:post': true }), null);
+  // 说话人：不在队伍的角色用 fallback 改为旁白
+  const lines = [{ speaker: 'qinglan', text: '甲', fallback: '乙' }, { speaker: 'molan', text: '丙' }, { speaker: 'Boss', text: '{boss}！' }];
+  const out1 = ST.resolveLines(lines, { bossId: 'shanxiao', squad: [] });
+  assert.deepStrictEqual(plain(out1.map((l) => [l.who, l.text])), [['narrator', '乙'], ['boss', `${BOSSES[0].name}！`]]);
+  const out2 = ST.resolveLines(lines, { bossId: 'shanxiao', squad: ['qinglan', 'molan'], heroName: (id) => id.toUpperCase() });
+  assert.deepStrictEqual(plain(out2.map((l) => [l.who, l.name, l.text])), [['hero', 'QINGLAN', '甲'], ['hero', 'MOLAN', '丙'], ['boss', BOSSES[0].name, `${BOSSES[0].name}！`]]);
+  // 存档：新档 {}；旧档按进度补记；轮回保留
+  GS.loadGame();
+  assert.deepStrictEqual(plain(GS.state.storySeen), {});
+  GS.state.realmIndex = 27;
+  GS.state.storySeen = { 'c1:intro': true };
+  GS.performReincarnation();
+  assert.deepStrictEqual(plain(GS.state.storySeen), { 'c1:intro': true });
+  const o = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 9, stage: { best: 25, cur: 26 } }) }));
+  o.GS.loadGame();
+  assert.deepStrictEqual(Object.keys(plain(o.GS.state.storySeen)).sort(), ['b10:post', 'b10:pre', 'b20:post', 'b20:pre', 'c1:intro', 'c2:intro', 'c3:intro'].sort(), '旧档已过内容不补播');
+  const o2 = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 0, storySeen: 'bad' }) }));
+  assert.doesNotThrow(() => o2.GS.loadGame());
+  // 接线
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('window.Story.beforeBattle(st.cur, () => startBattle(manual))'));
+  assert.ok(ui.includes('window.Story.afterBossWin(stageNum, resumeAuto)'));
+  assert.ok(/!towerBattle && !inMijing\(\) && window\.Story/.test(ui), '秘境/镇妖塔不播剧情');
+  const html = text('index.html');
+  assert.ok(html.includes('id="story-modal"') && html.includes('id="btn-story-skip" class="btn story-skip" type="button" data-modal-close'), '可跳过（含 Esc / 遮罩）');
+  assert.ok(html.indexOf('js/story-data.js') < html.indexOf('js/story.js'));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');

@@ -125,6 +125,40 @@
     return out;
   }
 
+  // 主线剧情已看过的段落（键：c<章>:intro / b<关>:pre / b<关>:post）。
+  // 旧档没有该字段：已打过的章节与 Boss 一律记为看过，只给之后的内容播剧情。
+  const STORY_CHAPTERS = 6;
+  function seedStorySeen(best) {
+    const out = {};
+    const b = Math.max(0, Math.floor(Number(best) || 0));
+    for (let ch = 1; ch <= STORY_CHAPTERS; ch += 1) {
+      const start = (ch - 1) * 10 + 1;
+      const bossStage = ch * 10;
+      if (b >= start) out[`c${ch}:intro`] = true;
+      if (b >= bossStage) {
+        out[`c${ch}:intro`] = true;
+        out[`b${bossStage}:pre`] = true;
+        out[`b${bossStage}:post`] = true;
+      }
+    }
+    return out;
+  }
+
+  function normalizeStorySeen(raw, saved) {
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      const out = {};
+      Object.keys(raw).forEach((k) => {
+        if (raw[k]) out[k] = true;
+      });
+      return out;
+    }
+    const best = Math.max(
+      Number(saved && saved.stage && saved.stage.best) || 0,
+      Number(saved && saved.lifeBestStage) || 0
+    );
+    return seedStorySeen(best);
+  }
+
   function isBreakGuaranteed() {
     return (Number(state.breakAttempts) || 0) < GUARANTEED_BREAKS;
   }
@@ -208,6 +242,7 @@
       guide: defaultGuide(),
       breakAttempts: 0,
       unlockSeen: {},
+      storySeen: {},
       ...v2Fields
     };
   }
@@ -660,6 +695,7 @@
       guide: normalizeGuide(saved.guide, saved),
       breakAttempts: normalizeBreakAttempts(saved),
       unlockSeen: normalizeUnlockSeen(saved.unlockSeen),
+      storySeen: normalizeStorySeen(saved.storySeen, saved),
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
       playTimeMs: saved.playTimeMs || 0,
       lifetimeQi: saved.lifetimeQi || 0,
@@ -936,6 +972,7 @@
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);
     fresh.unlockSeen = normalizeUnlockSeen(state.unlockSeen) || {};
+    fresh.storySeen = normalizeStorySeen(state.storySeen, state);
     fresh.titles = {
       owned: [...((state.titles && state.titles.owned) || ['churu'])],
       worn: (state.titles && state.titles.worn) || 'churu',
@@ -1063,6 +1100,8 @@
     GUARANTEED_BREAKS,
     normalizeBreakAttempts,
     normalizeUnlockSeen,
+    normalizeStorySeen,
+    seedStorySeen,
     isBreakGuaranteed,
     applyBreakthroughAttempt,
     settleOffline,

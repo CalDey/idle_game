@@ -1382,6 +1382,7 @@
 
     if (sim.win) {
       hideResultOverlay();
+      const firstClear = stageNum > (st.best || 0);
       st.fails = 0;
       st.wins = (st.wins || 0) + 1;
       st.streak = (st.streak || 0) + 1;
@@ -1430,9 +1431,13 @@
       onChange();
       render();
 
-      if (stageNum < 300) {
-        scheduleAutoNextIfAllowed();
-      }
+      // 首通 Boss：遗言 → 战后剧情 → 「图鉴已收录」，看完再继续自动推关
+      const resumeAuto = () => {
+        if (stageNum < 300) scheduleAutoNextIfAllowed();
+      };
+      const storyShown = Boolean(firstClear && enemy.isBoss && window.Story && window.Story.afterBossWin(stageNum, resumeAuto));
+      if (storyShown) log(`图鉴已收录【${enemy.name}】`, 'gold');
+      else resumeAuto();
     } else {
       st.fails = (st.fails || 0) + 1;
       st.losses = (st.losses || 0) + 1;
@@ -1632,6 +1637,16 @@
       }
       render();
       return false;
+    }
+
+    // 主线剧情（batch3 P1-1）：章首第一关 / Boss 关首次开战前先播对话，播完（或跳过）再开战
+    if (!towerBattle && !inMijing() && window.Story) {
+      if (window.Story.isOpen()) return false;
+      if (window.Story.beforeBattle(st.cur, () => startBattle(manual))) {
+        clearTimeout(autoNextTimer);
+        autoNextTimer = 0;
+        return false;
+      }
     }
 
     clearTimeout(autoNextTimer);

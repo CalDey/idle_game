@@ -7052,4 +7052,141 @@ button.mijing-bless-card:active {
   padding: 4px 8px;
   font-size: 11px;
   min-height: 0;
+/* === 新手体验 batch3 P1-1：主线剧情对话（主角立绘 + Boss 剪影，可跳过） === */
+.story-modal {
+  z-index: 120;
+  padding: 12px;
+  align-items: flex-end;
+  background: radial-gradient(ellipse at 50% 30%, rgba(60, 20, 30, 0.55), rgba(4, 3, 12, 0.92) 70%);
+}
+
+.story-stage {
+  position: relative;
+  width: 100%;
+  max-width: 456px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.story-portraits {
+  position: relative;
+  height: min(46vh, 380px);
+  pointer-events: none;
+}
+
+.story-hero {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 58%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 15%;
+  border-radius: 10px;
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
+  transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+.story-boss {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 48%;
+  height: 88%;
+  border-radius: 50% 50% 8px 8px / 38% 38% 8px 8px;
+  background:
+    radial-gradient(ellipse at 50% 22%, #000 0 16%, transparent 17%),
+    radial-gradient(ellipse at 50% 72%, #000 0 42%, transparent 43%),
+    radial-gradient(ellipse at 50% 60%, rgba(200, 40, 40, 0.38), transparent 70%);
+  filter: drop-shadow(0 0 10px rgba(220, 50, 50, 0.55));
+  transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+.story-boss img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  filter: brightness(0) drop-shadow(0 0 8px rgba(230, 60, 60, 0.7));
+  opacity: 0;
+}
+
+.story-boss.has-img {
+  background: radial-gradient(ellipse at 50% 60%, rgba(200, 40, 40, 0.32), transparent 70%);
+}
+
+.story-boss.has-img img {
+  opacity: 1;
+}
+
+.story-modal[data-who="boss"] .story-hero,
+.story-modal[data-who="narrator"] .story-hero,
+.story-modal[data-who="codex"] .story-hero {
+  filter: brightness(0.45) saturate(0.6);
+}
+
+.story-modal[data-who="hero"] .story-boss,
+.story-modal[data-who="player"] .story-boss {
+  opacity: 0.55;
+}
+
+.story-box {
+  position: relative;
+  padding: 10px 12px 8px;
+  border: 1px solid rgba(214, 178, 102, 0.75);
+  border-radius: 4px;
+  background: linear-gradient(180deg, #1c1408, #0d0a06);
+  box-shadow: inset 0 0 0 2px #0d0a06, inset 0 0 0 3px rgba(214, 178, 102, 0.35), 0 4px 18px rgba(0, 0, 0, 0.6);
+  color: #efe6cf;
+  cursor: pointer;
+}
+
+.story-speaker {
+  min-height: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #f1d48f;
+}
+
+.story-modal[data-who="boss"] .story-speaker {
+  color: #f08a7a;
+}
+
+.story-text {
+  min-height: 3.2em;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.story-modal[data-who="narrator"] .story-text {
+  color: #cfc6b0;
+  font-style: italic;
+}
+
+.story-modal.is-last-words .story-text {
+  color: #f3b0a4;
+}
+
+.story-modal[data-who="codex"] .story-text {
+  color: #f1d48f;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.story-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.story-actions .btn {
+  min-height: 32px;
+  padding: 4px 14px;
+  font-size: 12px;
 }
