@@ -1398,8 +1398,8 @@
       hero = heroes.find((h) => h && !isHeroLocked(h)) || {
         id: 'lanyi',
         name: '蓝衣剑修',
-        img: 'assets/hero_v21_new_hd.jpg?v=3',
-        poster: 'assets/hero_v21_new_poster.jpg?v=3'
+        img: 'assets/hero_v21_new_hd.jpg?v=5',
+        poster: 'assets/hero_v21_new_poster.jpg?v=5'
       };
     }
     return hero;

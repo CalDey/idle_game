@@ -48,7 +48,9 @@ const RESTORED_PORTRAITS = {
     posterSha256: 'f4ba6aba72ec17205073bec6dfd4e108037e2bb980a0c3c021e2cde78652b8af'
   }
 };
-// 2026-11-15 HD 立绘升级到 1080×1920（DawnBubbles Lanczos 放大）。lanyi / youming 因动态立绘图层按 1008×1792 像素对齐，暂不升级。
+// 2026-11-15 HD 立绘升级到 1080×1920（DawnBubbles Lanczos 放大）。
+// 本仓库静态页无按像素对齐的动态图层（object-position 为百分比）；动态立绘在独立 worktree，未改。
+// 海报 13 张 + lanyi HD 来自 handoff_hd1080/posters/，幽冥立绘来自 handoff_hd1080/hero_youming_hd.jpg。头像未改。
 const HD1080 = {
   'assets/hero_fenxiao_hd.jpg': { v: '2', sha256: 'c9b01f80998c5121991d37294f65896e391df34bfa1b07e64269939b6fa87094' },
   'assets/hero_honglian_hd.jpg': { v: '2', sha256: '22e73f00c3a5aab1afc8a1c5f2ffee781ac388971d6055eb69e9f893b185edfe' },
@@ -60,7 +62,22 @@ const HD1080 = {
   'assets/hero_shuangchen_hd.jpg': { v: '2', sha256: '94c797f004fc9f36f9538c26d9663b11783a2ffce3122ee1e4343b2049af2840' },
   'assets/hero_shuanghua_hd.jpg': { v: '5', sha256: 'd884afabd482fcdcfdcd848d3ece72fd3195edc520e92c7399e62dba45de0a29' },
   'assets/hero_sweetmaid_hd.jpg': { v: '5', sha256: '539fb885e480aeeeff729135ff8e8b90ef54315d268b8261b4489b305614a739' },
-  'assets/hero_yueshi_hd.jpg': { v: '3', sha256: 'c24983059d5c9060efbd343e9bfb89100e73c0c6a2abd2f1cfe7e792e9024af7' }
+  'assets/hero_yueshi_hd.jpg': { v: '3', sha256: 'c24983059d5c9060efbd343e9bfb89100e73c0c6a2abd2f1cfe7e792e9024af7' },
+  'assets/hero_v21_new_hd.jpg': { v: '5', sha256: '526f350b2d25e58d9f1028804fa796e26f1b4f1ddd6ebdbbc8589c44f74ec52b' },
+  'assets/hero_youming_hd.jpg': { v: '2', sha256: '63ba25edf9884459d8cb44316524878f1be2e94eb212f135db4a05b2569acb45' },
+  'assets/hero_fenxiao_poster.jpg': { v: '2', sha256: 'f197ebf51814455b9aa89397ad24c76f8aa1e93eac2c3103c6744a9a57ab3172' },
+  'assets/hero_honglian_poster.jpg': { v: '2', sha256: 'f28dfee8fdb538cf6e3e7c8d20f9085dc494069891ed70505c8327ae5c39549a' },
+  'assets/hero_jianghua_poster.jpg': { v: '3', sha256: 'fbcc92ad4b0d6504d741ed049b77c9c03bbddc05244b030ffedf520de9cd6fad' },
+  'assets/hero_miko_dawn_poster.jpg': { v: '5', sha256: 'dc4cd8d5db005cfdbc2ce469028687e2bad687d298a5f215e0b7db774a283ff4' },
+  'assets/hero_mlg_dawn_poster.jpg': { v: '5', sha256: 'd89329f9308ea29d49be60c4ef6dfa99c3a8da5e7b0aea843ba5d967d67d38e8' },
+  'assets/hero_qingkui_poster.jpg': { v: '3', sha256: 'f311ba5d10b17605a4ec47d531f5073a3ee2edeb9e2c656a3589272d0c57465b' },
+  'assets/hero_saintess_v4b_poster.jpg': { v: '5', sha256: 'd3f64475c964ec8c45de90224b160ad09e7b50e6777b8525077b712bdeb7a259' },
+  'assets/hero_shuangchen_poster.jpg': { v: '2', sha256: 'e2142292eb56f5e791e714e9f7a2b4826b6b4394ebd6468171d817ca64b8c36d' },
+  'assets/hero_shuanghua_poster.jpg': { v: '5', sha256: 'd9d5967b7f19f337044a1c70d5f088d8e142a716b2ade347e45d1b946fe375c4' },
+  'assets/hero_sweetmaid_poster.jpg': { v: '5', sha256: 'e252ff96770c3764f43c435bd9ff3e067ad141814c8c3665ea0634b6fb823805' },
+  'assets/hero_v21_new_poster.jpg': { v: '5', sha256: '1480666670d868d31a4e3c26793634daa878b27534d85afdec584d59f25b2967' },
+  'assets/hero_youming_poster.jpg': { v: '2', sha256: '5d5ff5d1298d9bfa8d9ee9904034aedf5f7fcf44ff1dcb14e92d13788caea78e' },
+  'assets/hero_yueshi_poster.jpg': { v: '3', sha256: 'cadd36483d81920ea9ef9016f423701aafce77bed03f4900546f45e86c86fe7c' }
 };
 const HD_SIZE_OLD = { width: 1008, height: 1792 };
 const HD_SIZE_1080 = { width: 1080, height: 1920 };
@@ -365,12 +382,12 @@ ASSET_UNCHANGED_IDS.forEach((id) => {
   const u = UNIFIED_AVATARS[id];
   assert.deepStrictEqual(withoutAssets(now), withoutAssets(prev), `${id} 除头像外配置被改动`);
   assert.strictEqual(now.img, expectedImg(prev.img));
-  assert.strictEqual(now.poster, prev.poster);
+  assert.strictEqual(now.poster, expectedImg(prev.poster));
   assert.strictEqual(now.avatar, u.avatar);
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[id], mainConfig.HERO_SKILLS[id], `${id} 技能被改动`);
   ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(prev[key]);
-    if (key === 'img' && hdUp(rel)) {
+    if (hdUp(rel)) {
       assert.strictEqual(sha256(read(rel)), hdUp(rel).sha256, `HD1080 立绘不匹配：${rel}`);
       return;
     }
@@ -414,18 +431,18 @@ PREVIOUS_IDS.forEach((id) => {
   if (Object.prototype.hasOwnProperty.call(RESTORED_PORTRAITS, id)) {
     const exp = RESTORED_PORTRAITS[id];
     assert.strictEqual(now.img, expectedImg(exp.img));
-    assert.strictEqual(now.poster, exp.poster);
+    assert.strictEqual(now.poster, expectedImg(exp.poster));
     assert.strictEqual(sha256(read(stripQuery(now.img))), expectedHdSha(exp.img, exp.hdSha256));
-    assert.strictEqual(sha256(read(stripQuery(now.poster))), exp.posterSha256);
+    assert.strictEqual(sha256(read(stripQuery(now.poster))), expectedHdSha(exp.poster, exp.posterSha256));
     assert.deepStrictEqual(imageSize(stripQuery(now.img)), expectedHdSize(exp.img));
-    assert.deepStrictEqual(imageSize(stripQuery(now.poster)), { width: 1008, height: 1792 });
+    assert.deepStrictEqual(imageSize(stripQuery(now.poster)), expectedHdSize(exp.poster));
     return;
   }
   assert.strictEqual(now.img, expectedImg(prev.img));
-  assert.strictEqual(now.poster, prev.poster);
+  assert.strictEqual(now.poster, expectedImg(prev.poster));
   ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(prev[key]);
-    if (key === 'img' && hdUp(rel)) {
+    if (hdUp(rel)) {
       assert.strictEqual(sha256(read(rel)), hdUp(rel).sha256, `HD1080 立绘不匹配：${rel}`);
       return;
     }
@@ -447,7 +464,7 @@ assert.strictEqual(yueshi.skill.healAllyMaxHpRatio, 0.08);
 assert.strictEqual(yueshi.skill.mainMult, 1.2);
 assert.strictEqual(yueshi.skill.splashMult, 0);
 assert.strictEqual(yueshi.img, expectedImg('assets/hero_yueshi_hd.jpg?v=2'));
-assert.strictEqual(yueshi.poster, 'assets/hero_yueshi_poster.jpg?v=2');
+assert.strictEqual(yueshi.poster, expectedImg('assets/hero_yueshi_poster.jpg?v=2'));
 assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=8');
 assert.strictEqual(yueshi.avatarPos, '50% 22%');
 assert.strictEqual(yueshi.avatarScale, 2.6);
@@ -480,6 +497,7 @@ unifyBaseConfig.HEROES.forEach((prev) => {
   delete kept.avatar;
   delete oldHero.avatar;
   if (hdUp(prev.img)) oldHero.img = expectedImg(prev.img);
+  if (hdUp(prev.poster)) oldHero.poster = expectedImg(prev.poster);
   if (PORTRAIT_REPLACED_IDS.includes(prev.id)) {
     delete kept.img;
     delete kept.poster;
@@ -496,9 +514,9 @@ unifyBaseConfig.HEROES.forEach((prev) => {
       assert.ok(fs.existsSync(path.join(root, rel)), `${prev.id}.${key} 缺失`);
       return;
     }
-    if (key === 'img' && hdUp(rel)) {
-      assert.strictEqual(now.img, expectedImg(prev.img));
-      assert.strictEqual(sha256(read(rel)), hdUp(rel).sha256, `${prev.id}.img HD1080 不匹配`);
+    if (hdUp(rel)) {
+      assert.strictEqual(now[key], expectedImg(prev[key]));
+      assert.strictEqual(sha256(read(rel)), hdUp(rel).sha256, `${prev.id}.${key} HD1080 不匹配`);
       hdPosterChecks += 1;
       return;
     }
@@ -606,10 +624,10 @@ assert.deepStrictEqual(baseQualities, {
   assert.ok(text('js/config.js').includes(path.basename(rel)), `部署引用缺失 ${rel}`);
 });
 assert.strictEqual(sha256(read(stripQuery(yueshi.img))), expectedHdSha(yueshi.img, YUESHI_HD_SHA256));
-assert.strictEqual(sha256(read(stripQuery(yueshi.poster))), YUESHI_POSTER_SHA256);
+assert.strictEqual(sha256(read(stripQuery(yueshi.poster))), expectedHdSha(yueshi.poster, YUESHI_POSTER_SHA256));
 assert.strictEqual(sha256(read(stripQuery(yueshi.avatar))), YUESHI_AVATAR_SHA256);
 assert.deepStrictEqual(imageSize(stripQuery(yueshi.img)), expectedHdSize(yueshi.img));
-assert.deepStrictEqual(imageSize(stripQuery(yueshi.poster)), { width: 1008, height: 1792 });
+assert.deepStrictEqual(imageSize(stripQuery(yueshi.poster)), expectedHdSize(yueshi.poster));
 assert.deepStrictEqual(imageSize(stripQuery(yueshi.avatar)), { width: 512, height: 512 });
 assert.ok(read(stripQuery(yueshi.img)).length > 100000);
 assert.notStrictEqual(sha256(read(stripQuery(yueshi.poster))), YUESHI_HD_SHA256);
@@ -635,10 +653,10 @@ Object.keys(NEW_FOUR_HEROES).forEach((hid) => {
     assert.ok(text('js/config.js').includes(path.basename(rel)), `部署引用缺失 ${rel}`);
   });
   assert.strictEqual(sha256(read(stripQuery(hero.img))), expectedHdSha(hero.img, exp.hdSha256));
-  assert.strictEqual(sha256(read(stripQuery(hero.poster))), exp.posterSha256);
+  assert.strictEqual(sha256(read(stripQuery(hero.poster))), expectedHdSha(hero.poster, exp.posterSha256));
   assert.strictEqual(sha256(read(stripQuery(hero.avatar))), exp.avatarSha256);
   assert.deepStrictEqual(imageSize(stripQuery(hero.img)), expectedHdSize(hero.img, exp.size));
-  assert.deepStrictEqual(imageSize(stripQuery(hero.poster)), exp.size);
+  assert.deepStrictEqual(imageSize(stripQuery(hero.poster)), expectedHdSize(hero.poster, exp.size));
   assert.deepStrictEqual(imageSize(stripQuery(hero.avatar)), { width: 512, height: 512 });
   assert.notStrictEqual(sha256(read(stripQuery(hero.poster))), exp.hdSha256);
 });
@@ -710,16 +728,18 @@ Object.keys(XIAN_PAIR).forEach((hid) => {
   assert.ok(EXISTING_SKILL_KINDS.has(hero.skill.kind));
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[hid], hero.skill);
   assert.strictEqual(hero.img, expectedImg(exp.img));
-  assert.strictEqual(hero.poster, exp.poster);
+  assert.strictEqual(hero.poster, expectedImg(exp.poster));
   assert.strictEqual(hero.avatar, exp.avatar);
   assert.strictEqual(sha256(read(stripQuery(hero.img))), expectedHdSha(exp.img, exp.hdSha256));
-  assert.strictEqual(sha256(read(stripQuery(hero.poster))), exp.posterSha256);
+  assert.strictEqual(sha256(read(stripQuery(hero.poster))), expectedHdSha(exp.poster, exp.posterSha256));
   assert.strictEqual(sha256(read(stripQuery(hero.avatar))), exp.avatarSha256);
   assert.deepStrictEqual(imageSize(stripQuery(hero.img)), expectedHdSize(exp.img));
-  assert.deepStrictEqual(imageSize(stripQuery(hero.poster)), { width: 1008, height: 1792 });
+  assert.deepStrictEqual(imageSize(stripQuery(hero.poster)), expectedHdSize(exp.poster));
   assert.deepStrictEqual(imageSize(stripQuery(hero.avatar)), { width: 512, height: 512 });
-  assert.ok(read(stripQuery(hero.poster)).length < read(stripQuery(hero.img)).length);
-  assert.notStrictEqual(sha256(read(stripQuery(hero.poster))), exp.hdSha256);
+  if (!hdUp(stripQuery(hero.poster))) {
+    assert.ok(read(stripQuery(hero.poster)).length < read(stripQuery(hero.img)).length);
+  }
+  assert.notStrictEqual(sha256(read(stripQuery(hero.poster))), sha256(read(stripQuery(hero.img))));
 });
 
 const fresh = loadRuntime(memoryStorage());

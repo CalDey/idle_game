@@ -119,8 +119,8 @@
         {
           id: 'lanyi',
           name: '清冷剑仙',
-          img: 'assets/hero_v21_new_hd.jpg?v=3',
-          poster: 'assets/hero_v21_new_poster.jpg?v=3'
+          img: 'assets/hero_v21_new_hd.jpg?v=5',
+          poster: 'assets/hero_v21_new_poster.jpg?v=5'
         }
       ]
     );
