@@ -3706,7 +3706,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=135") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=136") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3714,11 +3714,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=135");
+  background-image: url("../assets/home/scene_xuan.webp?v=136");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=135");
+  background-image: url("../assets/home/scene_xian.webp?v=136");
 }
 
 .home-stage {
@@ -5184,6 +5184,24 @@ button.mijing-bless-card:active {
   color: var(--accent-gold-bright);
   font-size: 10px;
   letter-spacing: 1px;
+}
+
+.goal-recommend {
+  flex: none;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(230, 201, 138, 0.28);
+  color: var(--accent-gold-bright);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.goal-recommend[hidden] {
+  display: none;
 }
 
 .goal-text {

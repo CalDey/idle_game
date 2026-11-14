@@ -231,9 +231,9 @@ check('第5条 战败引导：优先级、买完后的 T、目标条、对比主
   let opts = NB.cpGainOptions(s);
   assert.strictEqual(JSON.stringify(s), snap, '估算后存档还原');
   assert.strictEqual(opts[0].key, 'pending');
-  assert.strictEqual(opts[0].best, true);
   assert.ok(opts[0].label.includes('有更好的法宝没换上'));
   assert.ok(opts.length <= 3);
+  assert.strictEqual(opts.filter((o) => o.best).length, 1, '同时只有一颗 ★');
 
   // 没有待换时，灵气够突破排第一
   s.pending = null;

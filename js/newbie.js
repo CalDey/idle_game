@@ -417,94 +417,279 @@
     return `把灵石用来参悟功法（灵气 ${fmtRate(before)}/s → ${fmtRate(detail.qiPerSecAfter)}/s）`;
   }
 
-  function snapshotState(s) {
-    return JSON.stringify(s);
+  const SIM_KEYS = ['qi', 'realmIndex', 'stones', 'gongfa', 'dongfu', 'path', 'equip', 'breakAttempts', 'pity', 'pending', 'tree', 'peachesPicked'];
+
+  function snapshotSim(s) {
+    const o = {};
+    for (let i = 0; i < SIM_KEYS.length; i += 1) {
+      const k = SIM_KEYS[i];
+      if (Object.prototype.hasOwnProperty.call(s, k)) o[k] = s[k];
+    }
+    return JSON.stringify(o);
   }
 
-  function restoreState(s, json) {
-    const snap = JSON.parse(json);
-    Object.keys(s).forEach((k) => {
-      if (!Object.prototype.hasOwnProperty.call(snap, k)) delete s[k];
-    });
-    Object.keys(snap).forEach((k) => { s[k] = snap[k]; });
+  function restoreSim(s, json) {
+    const o = JSON.parse(json);
+    for (let i = 0; i < SIM_KEYS.length; i += 1) {
+      const k = SIM_KEYS[i];
+      if (Object.prototype.hasOwnProperty.call(o, k)) s[k] = o[k];
+    }
   }
 
-  function trySimBreak(s, GS) {
+  function remainingGuarantees(s) {
+    const GS = window.GameState;
+    const cap = (GS && GS.GUARANTEED_BREAKS) || 3;
+    return Math.max(0, cap - (Number(s.breakAttempts) || 0));
+  }
+
+  function trySimBreak(s, GS, ctx) {
     const stage = typeof GS.getCurrentStage === 'function' ? GS.getCurrentStage() : null;
     if (!stage || stage.isMaxStage) return 'max';
     if (tribulationGate(s)) return 'gate';
     const need = Number(stage.reqQi) || 0;
     if ((Number(s.qi) || 0) < need) return 'need';
+    if (!ctx || ctx.left <= 0) return 'unguaranteed';
     s.qi = Math.max(0, (Number(s.qi) || 0) - need);
     s.realmIndex = (s.realmIndex || 0) + 1;
+    s.breakAttempts = (Number(s.breakAttempts) || 0) + 1;
+    ctx.left -= 1;
     return 'ok';
   }
 
-  function drainBreaks(s, GS) {
+  function drainBreaks(s, GS, ctx) {
     let last = 'need';
     for (let i = 0; i < 80; i += 1) {
-      last = trySimBreak(s, GS);
+      last = trySimBreak(s, GS, ctx);
       if (last !== 'ok') return last;
     }
     return last;
+  }
+
+  function peekUnguaranteed(s, GS, base) {
+    const stage = typeof GS.getCurrentStage === 'function' ? GS.getCurrentStage() : null;
+    if (!stage || stage.isMaxStage || tribulationGate(s)) return null;
+    const need = Number(stage.reqQi) || 0;
+    if ((Number(s.qi) || 0) < need) return null;
+    const rate = typeof GS.getBreakthroughSuccessRate === 'function' ? Number(GS.getBreakthroughSuccessRate()) : 0;
+    const prevQi = s.qi;
+    const prevRealm = s.realmIndex;
+    s.qi = Math.max(0, (Number(s.qi) || 0) - need);
+    s.realmIndex = (s.realmIndex || 0) + 1;
+    const peek = {
+      nextRealmIndex: s.realmIndex,
+      nextRealmName: realmName(s.realmIndex),
+      nextGain: Math.max(0, cpOf(s) - base),
+      nextRate: rate
+    };
+    s.qi = prevQi;
+    s.realmIndex = prevRealm;
+    return peek;
+  }
+
+  function applyBuyFirst(s, buyFirst) {
+    if (!buyFirst) return;
+    if (buyFirst === 'peach') {
+      simulateSpendPeach(s);
+      return;
+    }
+    if (buyFirst === 'path') {
+      simulateSpendPath(s);
+      return;
+    }
+    if (buyFirst === 'gongfa' || buyFirst === 'dongfu') {
+      simulateSpendStones(s, buyFirst);
+      return;
+    }
+    simulateSpendStones(s, 'all');
   }
 
   function runBreakChain(s, budget, buyFirst) {
     const GS = window.GameState;
     const startRealm = s.realmIndex || 0;
     const base = cpOf(s);
-    if (buyFirst) simulateSpendStones(s);
-    let stop = drainBreaks(s, GS);
+    applyBuyFirst(s, buyFirst);
+    const ctx = { left: remainingGuarantees(s) };
+    let stop = drainBreaks(s, GS, ctx);
     let t = 0;
     const lim = Math.max(0, Math.floor(Number(budget) || 0));
     while (t < lim && stop === 'need') {
       const per = (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
       s.qi = (Number(s.qi) || 0) + per;
       t += 1;
-      stop = drainBreaks(s, GS);
+      stop = drainBreaks(s, GS, ctx);
     }
     const endRealm = s.realmIndex || 0;
-    return {
+    const peek = stop === 'unguaranteed' ? peekUnguaranteed(s, GS, base) : null;
+    const out = {
       gain: Math.max(0, cpOf(s) - base),
       realmIndex: endRealm,
       realmName: realmName(endRealm),
       breaks: Math.max(0, endRealm - startRealm),
       seconds: t,
       stop: stop === 'need' ? 'time' : stop,
-      buyFirst: !!buyFirst
+      buyFirst: buyFirst || false,
+      guaranteed: remainingGuarantees({ breakAttempts: (Number(s.breakAttempts) || 0) }) // leftover after sim, not needed
     };
+    if (peek) {
+      out.nextRealmIndex = peek.nextRealmIndex;
+      out.nextRealmName = peek.nextRealmName;
+      out.nextGain = peek.nextGain;
+      out.nextRate = peek.nextRate;
+    }
+    return out;
   }
 
-  // 120 秒连锁估算：只在传入的活 state 上改 qi / realmIndex / 灵石 / 功法 / 洞府，
-  // 必须放进 try/finally，算完把所有动过的字段还原；过程中不存档、不派事件、不刷界面。
-  // getQiPerSec / getGongfaCost / getCurrentStage / tribulationLock 都读这份活 state。
-  // 结果按取整后的灵气、灵石、境界、功法与洞府等级、通关进度缓存，输入变了再算。
-  let chainCache = { key: '', val: null };
+  // 120 秒连锁：只改传入的活 state 上相关字段，try/finally 还原；不存档、不派事件、不刷界面。
+  // 缓存键含装备/称号/道途/道果/保底次数等会影响灵气或战力的字段。
+  // 灵气按约 0.5 秒产量分桶；稳定输入未变时 500ms 内不重算。
+  const CHAIN_THROTTLE_MS = 500;
+  let chainCache = { fullKey: '', stableKey: '', val: null, at: 0 };
+  let chainComputeCount = 0;
+
+  function qiBucket(s, GS) {
+    const qi = Number(s.qi) || 0;
+    const per = (GS && typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
+    const step = Math.max(1, per * 0.5);
+    return Math.floor(qi / step);
+  }
+
+  function chainStableKey(s, budget, buyFirst) {
+    return [
+      s.realmIndex || 0,
+      JSON.stringify(s.gongfa || {}),
+      JSON.stringify(s.dongfu || {}),
+      JSON.stringify(s.equip || {}),
+      JSON.stringify(s.talents || {}),
+      JSON.stringify(s.titles || {}),
+      JSON.stringify(s.path || {}),
+      s.totalDaoGuo || 0,
+      s.breakAttempts || 0,
+      (s.stage && s.stage.best) || 0,
+      (s.tree && s.tree.peaches) || 0,
+      s.pending ? JSON.stringify(s.pending) : '',
+      budget,
+      String(buyFirst || '')
+    ].join('|');
+  }
+
   function estimateBreakChain(s, seconds, opts) {
     const GS = window.GameState;
     if (!s || !GS) return null;
     const budget = seconds == null ? CHAIN_SECONDS : Number(seconds);
-    const buyFirst = !!(opts && opts.buyFirst);
-    const key = [
-      Math.floor(Number(s.qi) || 0),
-      Math.floor(Number(s.stones) || 0),
-      s.realmIndex || 0,
-      JSON.stringify(s.gongfa || {}),
-      JSON.stringify(s.dongfu || {}),
-      (s.stage && s.stage.best) || 0,
-      budget,
-      buyFirst ? 1 : 0
-    ].join('|');
-    if (chainCache.key === key && chainCache.val) return chainCache.val;
-    const json = snapshotState(s);
+    const buyFirst = opts && opts.buyFirst ? opts.buyFirst : false;
+    const now = (opts && opts.now) || Date.now();
+    const stable = chainStableKey(s, budget, buyFirst);
+    const full = `${stable}|q${qiBucket(s, GS)}|st${Math.floor(Number(s.stones) || 0)}`;
+    if (chainCache.fullKey === full && chainCache.val) return chainCache.val;
+    if (chainCache.stableKey === stable && chainCache.val && now - chainCache.at < CHAIN_THROTTLE_MS) {
+      return chainCache.val;
+    }
+    const json = snapshotSim(s);
     let result = null;
     try {
+      chainComputeCount += 1;
       result = runBreakChain(s, budget, buyFirst);
     } finally {
-      restoreState(s, json);
+      restoreSim(s, json);
     }
-    chainCache = { key, val: result };
+    chainCache = { fullKey: full, stableKey: stable, val: result, at: now };
     return result;
+  }
+
+  function resetChainCache() {
+    chainCache = { fullKey: '', stableKey: '', val: null, at: 0 };
+  }
+
+  function chainComputeCalls() {
+    return chainComputeCount;
+  }
+
+  function chainSuccessNote(chain) {
+    if (!chain || !chain.nextRealmName || chain.nextRate == null) return '';
+    const pct = Math.round((Number(chain.nextRate) || 0) * 100);
+    return `，再成功一次（约 ${pct}%）可至${chain.nextRealmName}，战力 +${fmt(chain.nextGain)}`;
+  }
+
+  function formatBreakChainLabel(s, chain) {
+    if (!chain) return '';
+    const st = currentStageOf(s);
+    const major = nextMajorName(s);
+    const note = chainSuccessNote(chain);
+    if (chain.breaks < 1) {
+      if (!chain.nextRealmName) return '';
+      const pct = Math.round((Number(chain.nextRate) || 0) * 100);
+      return st && st.isMajorTribulation
+        ? `渡劫进入${major} · 再成功一次（约 ${pct}%）可至${chain.nextRealmName}，战力 +${fmt(chain.nextGain)}`
+        : `可以突破 · 再成功一次（约 ${pct}%）可至${chain.nextRealmName}，战力 +${fmt(chain.nextGain)}`;
+    }
+    const dest = chain.realmName;
+    const gain = fmt(chain.gain);
+    const base = st && st.isMajorTribulation
+      ? `渡劫进入${major} · 2 分钟内可连破至${dest}，战力 +${gain}`
+      : `可以突破 · 2 分钟内可连破 ${chain.breaks} 重，战力 +${gain}`;
+    return base + note;
+  }
+
+  function formatSpendChainLabel(prefix, chain, fallback) {
+    if (!chain || (chain.breaks < 1 && !chain.nextRealmName)) return fallback;
+    if (chain.breaks < 1) {
+      const pct = Math.round((Number(chain.nextRate) || 0) * 100);
+      return `${prefix}再成功一次（约 ${pct}%）可至${chain.nextRealmName}，战力 +${fmt(chain.nextGain)}`;
+    }
+    return `${prefix}2 分钟内可连破至${chain.realmName}，战力 +${fmt(chain.gain)}` + chainSuccessNote(chain);
+  }
+
+  const REC_ORDER = ['break', 'gongfa', 'peach', 'dongfu', 'path'];
+  const REC_NAMES = { break: '突破', gongfa: '修行', peach: '法宝', dongfu: '洞府', path: '道途' };
+
+  function categoryChain(s, key) {
+    if (key === 'break') {
+      if (tribulationGate(s)) return null;
+      return estimateBreakChain(s, CHAIN_SECONDS);
+    }
+    if (key === 'gongfa') {
+      if (!canAffordUpgrade(s) && !cheapestUpgrade(s, 'gongfa')) return null;
+      if (!cheapestUpgrade(s, 'gongfa')) return null;
+      return estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: 'gongfa' });
+    }
+    if (key === 'dongfu') {
+      if (!cheapestUpgrade(s, 'dongfu')) return null;
+      return estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: 'dongfu' });
+    }
+    if (key === 'path') {
+      const P = window.Path;
+      if (!P || !P.isUnlocked || !P.isUnlocked(s)) return null;
+      const cur = P.peek ? P.peek(s) : null;
+      if (!cur || !cur.id || (P.hasAction && !P.hasAction(s))) return null;
+      return estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: 'path' });
+    }
+    if (key === 'peach') {
+      const CFG = window.GameConfig;
+      const unlock = (CFG && CFG.PEACH && CFG.PEACH.UNLOCK_REALM) || 1;
+      const peaches = Math.floor((s.tree && s.tree.peaches) || 0);
+      const hasPeach = (s.realmIndex || 0) >= unlock && peaches > 0;
+      const E = window.Equip;
+      const hasPending = !!(s.pending && E && typeof E.powerWithSwap === 'function' && E.powerWithSwap(s, s.pending) > E.combatPower(s));
+      if (!hasPeach && !hasPending) return null;
+      return estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: 'peach' });
+    }
+    return null;
+  }
+
+  function recommendBest(s) {
+    if (!s) return null;
+    let best = null;
+    for (let i = 0; i < REC_ORDER.length; i += 1) {
+      const key = REC_ORDER[i];
+      const ch = categoryChain(s, key);
+      if (!ch) continue;
+      const gain = Number(ch.gain) || 0;
+      if (!best || gain > best.gain) {
+        best = { key, name: REC_NAMES[key], gain, chain: ch, tab: key === 'break' || key === 'path' ? 'tab-cultivate' : key === 'peach' ? 'tab-gear' : 'tab-upgrades' };
+      }
+    }
+    if (best) return best;
+    return null;
   }
 
   function nextMajorName(s) {
@@ -571,36 +756,94 @@
     return gongfa || dongfu;
   }
 
-  function cheapestUpgrade(s) {
+  function cheapestUpgrade(s, only) {
     const GS = window.GameState;
     const CFG = window.GameConfig;
     const realm = s.realmIndex || 0;
     let pick = null;
     let kind = '';
     let cost = Infinity;
-    ((CFG && CFG.GONGFA_LIST) || []).forEach((item) => {
-      if (realm < (item.unlockRealmIndex || 0)) return;
-      const c = GS.getGongfaCost(item);
-      if (c <= (s.stones || 0) && c < cost) { pick = item; kind = 'gongfa'; cost = c; }
-    });
-    ((CFG && CFG.DONGFU_LIST) || []).forEach((item) => {
-      if (realm < (item.unlockRealmIndex || 0)) return;
-      const c = GS.getDongfuCost(item);
-      if (c <= (s.stones || 0) && c < cost) { pick = item; kind = 'dongfu'; cost = c; }
-    });
+    const wantG = !only || only === 'all' || only === 'gongfa' || only === true;
+    const wantD = !only || only === 'all' || only === 'dongfu' || only === true;
+    if (wantG) {
+      ((CFG && CFG.GONGFA_LIST) || []).forEach((item) => {
+        if (realm < (item.unlockRealmIndex || 0)) return;
+        const c = GS.getGongfaCost(item);
+        if (c <= (s.stones || 0) && c < cost) { pick = item; kind = 'gongfa'; cost = c; }
+      });
+    }
+    if (wantD) {
+      ((CFG && CFG.DONGFU_LIST) || []).forEach((item) => {
+        if (realm < (item.unlockRealmIndex || 0)) return;
+        const c = GS.getDongfuCost(item);
+        if (c <= (s.stones || 0) && c < cost) { pick = item; kind = 'dongfu'; cost = c; }
+      });
+    }
     return pick ? { item: pick, kind, cost } : null;
   }
 
   // 模拟把买得起的功法/洞府买完（最多 60 次）。必须在 GameState.state 上跑，因为造价和灵气/秒都读全局 state。
-  function simulateSpendStones(s) {
+  function simulateSpendStones(s, only) {
     if (!s.gongfa) s.gongfa = {};
     if (!s.dongfu) s.dongfu = {};
     for (let i = 0; i < 60; i += 1) {
-      const p = cheapestUpgrade(s);
+      const p = cheapestUpgrade(s, only);
       if (!p) break;
       s.stones -= p.cost;
       if (p.kind === 'gongfa') s.gongfa[p.item.id] = (s.gongfa[p.item.id] || 0) + 1;
       else s.dongfu[p.item.id] = (s.dongfu[p.item.id] || 0) + 1;
+    }
+  }
+
+  function simulateSpendPath(s) {
+    const P = window.Path;
+    if (!P || typeof P.upgrade !== 'function' || typeof P.isUnlocked !== 'function') return;
+    if (!P.isUnlocked(s)) return;
+    const cur = typeof P.peek === 'function' ? P.peek(s) : (s.path || {});
+    if (!cur || !cur.id) return;
+    for (let n = 0; n < 12; n += 1) {
+      let ok = false;
+      for (let i = 0; i < 3; i += 1) {
+        const r = P.upgrade(s, i);
+        if (r && r.ok) { ok = true; break; }
+      }
+      if (!ok) break;
+    }
+  }
+
+  function simulateSpendPeach(s) {
+    const CFG = window.GameConfig;
+    const E = window.Equip;
+    if (s.pending && E && typeof E.powerWithSwap === 'function' && typeof E.combatPower === 'function') {
+      if (E.powerWithSwap(s, s.pending) > E.combatPower(s)) {
+        if (!s.equip) s.equip = {};
+        s.equip[s.pending.s] = s.pending;
+        s.pending = null;
+      }
+    }
+    const unlockRealm = (CFG && CFG.PEACH && CFG.PEACH.UNLOCK_REALM) || 1;
+    const peaches = Math.floor((s.tree && s.tree.peaches) || 0);
+    if (!E || !E.rollItem || (s.realmIndex || 0) < unlockRealm || peaches <= 0) return;
+    const realRandom = Math.random;
+    try {
+      Math.random = seededRandom(0x5eed + peaches * 31 + (s.realmIndex || 0));
+      const fake = { tree: { lv: (s.tree && s.tree.lv) || 1 }, pity: Object.assign({ di: 0, tian: 0 }, s.pity || {}), realmIndex: s.realmIndex || 0, seq: 0 };
+      if (!s.equip) s.equip = {};
+      let cur = cpOf(s);
+      for (let i = 0; i < Math.min(12, peaches); i += 1) {
+        const item = E.rollItem(fake);
+        const prev = s.equip[item.s];
+        s.equip[item.s] = item;
+        const cp = cpOf(s);
+        if (cp > cur) {
+          cur = cp;
+          if (s.tree) s.tree.peaches = Math.max(0, (Number(s.tree.peaches) || 0) - 1);
+          s.peachesPicked = (Number(s.peachesPicked) || 0) + 1;
+        } else s.equip[item.s] = prev;
+      }
+      s.pity = Object.assign({}, fake.pity);
+    } finally {
+      Math.random = realRandom;
     }
   }
 
@@ -743,20 +986,18 @@
     }
     const gate = tribulationGate(s);
     const breakChain = !gate && canBreakNow(s) ? estimateBreakChain(s, CHAIN_SECONDS) : null;
-    if (breakChain && breakChain.breaks >= 1) {
-      const dest = breakChain.realmName;
-      const major = nextMajorName(s);
-      const st = currentStageOf(s);
-      const label = st && st.isMajorTribulation
-        ? `渡劫进入${major} · 2 分钟内可连破至${dest}，战力 +${fmt(breakChain.gain)}`
-        : `可以突破 · 2 分钟内可连破 ${breakChain.breaks} 重，战力 +${fmt(breakChain.gain)}`;
+    const breakLabel = breakChain ? formatBreakChainLabel(s, breakChain) : '';
+    if (breakChain && breakLabel) {
       out.push({
         key: 'break',
-        label,
+        label: breakLabel,
         tab: 'tab-cultivate',
         gain: breakChain.gain,
         breaks: breakChain.breaks,
-        realmName: dest,
+        realmName: breakChain.realmName,
+        nextRealmName: breakChain.nextRealmName,
+        nextGain: breakChain.nextGain,
+        nextRate: breakChain.nextRate,
         priority: 2
       });
     }
@@ -781,21 +1022,50 @@
         priority: 3
       });
     }
-    const spend = estimateSpendDetail(s);
-    if (spend) {
-      const spendChain = !gate ? estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: true }) : null;
-      const useChain = !!(spendChain && spendChain.breaks >= 1);
+    const gongfaChain = cheapestUpgrade(s, 'gongfa') && !gate ? estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: 'gongfa' }) : null;
+    if (gongfaChain || cheapestUpgrade(s, 'gongfa')) {
+      const useChain = !!(gongfaChain && (gongfaChain.breaks >= 1 || gongfaChain.nextRealmName));
       out.push({
         key: 'gongfa',
         label: useChain
-          ? `参悟功法后 2 分钟内可连破至${spendChain.realmName}，战力 +${fmt(spendChain.gain)}`
+          ? formatSpendChainLabel('参悟功法后 ', gongfaChain, '灵石闲置 · 参悟功法让灵气更快')
           : '灵石闲置 · 参悟功法让灵气更快',
         tab: 'tab-upgrades',
-        gain: useChain ? spendChain.gain : spend.immediate,
-        eta: spend.eta,
-        qiPerSecAfter: spend.qiPerSecAfter,
-        breaks: useChain ? spendChain.breaks : 0,
-        realmName: useChain ? spendChain.realmName : '',
+        gain: gongfaChain ? gongfaChain.gain : 0,
+        breaks: gongfaChain ? gongfaChain.breaks : 0,
+        realmName: gongfaChain ? gongfaChain.realmName : '',
+        priority: 4
+      });
+    }
+    const dongfuChain = cheapestUpgrade(s, 'dongfu') && !gate ? estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: 'dongfu' }) : null;
+    if (dongfuChain || cheapestUpgrade(s, 'dongfu')) {
+      const useChain = !!(dongfuChain && (dongfuChain.breaks >= 1 || dongfuChain.nextRealmName));
+      out.push({
+        key: 'dongfu',
+        label: useChain
+          ? formatSpendChainLabel('修建洞府后 ', dongfuChain, '灵石闲置 · 修建洞府让产出更快')
+          : '灵石闲置 · 修建洞府让产出更快',
+        tab: 'tab-upgrades',
+        gain: dongfuChain ? dongfuChain.gain : 0,
+        breaks: dongfuChain ? dongfuChain.breaks : 0,
+        realmName: dongfuChain ? dongfuChain.realmName : '',
+        priority: 4
+      });
+    }
+    const P = window.Path;
+    const pathReady = P && typeof P.isUnlocked === 'function' && P.isUnlocked(s) && P.peek && P.peek(s) && P.peek(s).id && (!P.hasAction || P.hasAction(s));
+    const pathChain = pathReady && !gate ? estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: 'path' }) : null;
+    if (pathChain || pathReady) {
+      const useChain = !!(pathChain && (pathChain.breaks >= 1 || pathChain.nextRealmName));
+      out.push({
+        key: 'path',
+        label: useChain
+          ? formatSpendChainLabel('参悟道途后 ', pathChain, '灵石闲置 · 可参悟本命道途')
+          : '灵石闲置 · 可参悟本命道途',
+        tab: 'tab-cultivate',
+        gain: pathChain ? pathChain.gain : 0,
+        breaks: pathChain ? pathChain.breaks : 0,
+        realmName: pathChain ? pathChain.realmName : '',
         priority: 4
       });
     }
@@ -813,13 +1083,20 @@
       }
     }
     out.sort((a, b) => (a.priority - b.priority) || (b.gain - a.gain));
-    const shown = out.slice(0, 3);
-    if (shown.length) {
-      const brk = shown.find((o) => o.key === 'break');
-      const spendItem = shown.find((o) => o.key === 'gongfa');
-      // 排序仍按原优先级；仅当灵石连锁增益比突破高 50% 以上时，把 ★ 给灵石项。
-      if (spendItem && brk && brk.gain > 0 && spendItem.gain >= brk.gain * 1.5) spendItem.best = true;
-      else shown[0].best = true;
+    const rec = recommendBest(s);
+    const recKey = rec && rec.key === 'peach' && !out.some((o) => o.key === 'peach') && out.some((o) => o.key === 'pending')
+      ? 'pending'
+      : (rec && rec.key);
+    let shown = out.slice(0, 3);
+    if (recKey && !shown.some((o) => o.key === recKey)) {
+      const extra = out.find((o) => o.key === recKey);
+      if (extra) shown = shown.slice(0, 2).concat([extra]);
+    }
+    shown.forEach((o) => { o.best = false; });
+    const star = shown.find((o) => o.key === recKey) || shown[0];
+    if (star) star.best = true;
+    if (rec) {
+      shown.forEach((o) => { if (o.best) o.recommend = rec.name; });
     }
     return shown;
   }
@@ -997,6 +1274,16 @@
   let peachHoldUntil = 0;
   let peachHoldGoal = null;
 
+  function onStateReload() {
+    lastGoal = null;
+    peachHoldUntil = 0;
+    peachHoldGoal = null;
+    resetChainCache();
+  }
+  function goalSession() {
+    return { lastGoal: lastGoal && lastGoal.id, peachHoldUntil };
+  }
+
   function renderGoal(s) {
     if (!els.goal) return;
     const goal = currentGoal(s);
@@ -1032,6 +1319,17 @@
     if (els.goalText.textContent !== goal.text) els.goalText.textContent = goal.text;
     const prog = goalProgress(goal, s, stage);
     if (els.goalProgress.textContent !== prog) els.goalProgress.textContent = prog;
+    const rec = recommendBest(s);
+    if (els.goalRecommend) {
+      if (rec && rec.name) {
+        const recText = `推荐优先 ★${rec.name}`;
+        if (els.goalRecommend.textContent !== recText) els.goalRecommend.textContent = recText;
+        els.goalRecommend.hidden = false;
+      } else {
+        els.goalRecommend.hidden = true;
+        els.goalRecommend.textContent = '';
+      }
+    }
   }
 
   function renderDots(s) {
@@ -1390,6 +1688,7 @@
       goal: document.getElementById('goal-strip'),
       goalText: document.getElementById('goal-text'),
       goalProgress: document.getElementById('goal-progress'),
+      goalRecommend: document.getElementById('goal-recommend'),
       bubble: document.getElementById('guide-bubble'),
       bubbleText: document.getElementById('guide-bubble-text'),
       caption: document.querySelector('#meditation-zone .meditation-caption'),
@@ -1485,6 +1784,13 @@
     tribulationGate,
     tribHintText,
     CHAIN_SECONDS,
+    CHAIN_THROTTLE_MS,
+    chainComputeCalls,
+    resetChainCache,
+    recommendBest,
+    onStateReload,
+    goalSession,
+    formatBreakChainLabel,
     compareDiff,
     cpGainOptions,
     anyModalOpen,

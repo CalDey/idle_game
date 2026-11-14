@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=135',
-    'assets/home/scene_xuan.webp?v=135',
-    'assets/home/scene_xian.webp?v=135'
+    'assets/home/scene_base.webp?v=136',
+    'assets/home/scene_xuan.webp?v=136',
+    'assets/home/scene_xian.webp?v=136'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -480,7 +480,7 @@
           <div class="upgrade-buy">
             <div class="gongfa-actions">
               <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" type="button" data-gongfa-id="${item.id}" data-gongfa-buy="1" ${
-          canAfford || !unlocked ? '' : 'disabled'
+          canAfford ? '' : 'disabled'
         }>
                 <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
                 <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
@@ -1760,6 +1760,7 @@
     initQiMotes();
 
     const { isNew, offlineReport } = GameState.loadGame();
+    if (window.Newbie && typeof window.Newbie.onStateReload === 'function') window.Newbie.onStateReload();
     applyHeroAppearance(GameState.state.heroId);
     renderRoleList();
 
@@ -1922,6 +1923,7 @@
             });
           }
           GameState.resetGame();
+          if (window.Newbie && typeof window.Newbie.onStateReload === 'function') window.Newbie.onStateReload();
           applyHeroAppearance(GameState.state.heroId);
           renderRoleList();
           els.logBox.innerHTML = '';

@@ -1087,7 +1087,7 @@
     }
   }
 
-  // 失败后引导：按 Newbie.cpGainOptions 的固定优先级，第一个标 ★，最多 3 条。
+  // 失败后引导：最多 3 条；★ 与目标条共用 recommendBest（120 秒战力增益，并列按 突破>修行>法宝>洞府>道途）。
   function renderFailGainActions(actionsEl) {
     const opts = window.Newbie && window.Newbie.cpGainOptions ? window.Newbie.cpGainOptions(window.GameState.state) : [];
     const byKey = {};
@@ -3297,6 +3297,8 @@
     const btnClaim = $('btn-stage-claim');
     const btnGotoPeach = $('btn-goto-peach');
     const btnGotoGongfa = $('btn-goto-gongfa');
+    const btnGotoDongfu = $('btn-goto-dongfu');
+    const btnGotoPath = $('btn-goto-path');
     const btnGotoPending = $('btn-goto-pending');
     const btnGotoWait = $('btn-goto-wait');
     const squadModal = $('squad-modal');
@@ -3433,6 +3435,20 @@
         e.stopPropagation();
         hideResultOverlay();
         switchTab('tab-upgrades');
+      });
+    }
+    if (btnGotoDongfu) {
+      btnGotoDongfu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
+        switchTab('tab-upgrades');
+      });
+    }
+    if (btnGotoPath) {
+      btnGotoPath.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
+        switchTab('tab-cultivate');
       });
     }
     if (btnGotoPending) {

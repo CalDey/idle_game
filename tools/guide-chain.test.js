@@ -160,7 +160,7 @@ check('目标条：能突破时突破排在花灵石前，花灵石文案带灵�
   assert.ok(/灵气\s.+\s*\/s\s*→\s*.+\/s/.test(spend.text), `花灵石文案应带 灵气 x/s → y/s，实际：${spend.text}`);
 });
 
-check('战败引导用 120 秒连锁文案，去掉约 0 秒后能突破；灵石项高 50% 才给 ★', () => {
+check('战败引导用 120 秒连锁文案，去掉约 0 秒后能突破；★ 与目标条同一推荐', () => {
   const W = loadRuntime();
   const { NB } = W;
   const found = findTesterSeed(W);
@@ -185,12 +185,11 @@ check('战败引导用 120 秒连锁文案，去掉约 0 秒后能突破；灵�
     assert.ok(keys.indexOf('break') < keys.indexOf('gongfa'), '排序仍是突破在花灵石前');
   }
   const starred = opts.filter((o) => o.best);
-  assert.strictEqual(starred.length, 1);
-  if (spend && brk && brk.gain > 0 && spend.gain >= brk.gain * 1.5) {
-    assert.strictEqual(spend.best, true);
-  } else {
-    assert.strictEqual(opts[0].best, true);
-  }
+  assert.strictEqual(starred.length, 1, '同时只有一颗 ★');
+  const rec = NB.recommendBest(s);
+  assert.ok(rec, '应给出推荐优先项');
+  const recKeys = rec.key === 'peach' ? ['peach', 'pending'] : [rec.key];
+  assert.ok(recKeys.includes(starred[0].key), `战败页 ★ 应与目标条推荐 ${rec.key} 相同，实际 ${starred[0].key}`);
 });
 
 check('门槛提示：2 分钟内能连破时不显示，否则改为下一重倍数文案', () => {
@@ -240,6 +239,115 @@ check('功法页有 ×10 / 最大按钮，375 宽字号至少 12px；buyGongfa �
   assert.strictEqual(bought, 10);
   assert.strictEqual(s.gongfa.yinqijue, before + 10);
   assert.ok(s.stones < stones0);
+});
+
+check('P2-1 节流窗口内重复调用不重跑连锁模拟', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  NB.resetChainCache();
+  const t0 = 1_000_000;
+  const a = NB.estimateBreakChain(s, 120, { now: t0 });
+  const n1 = NB.chainComputeCalls();
+  s.qi += 0.3;
+  const b = NB.estimateBreakChain(s, 120, { now: t0 + 100 });
+  const n2 = NB.chainComputeCalls();
+  assert.strictEqual(n2, n1, `500ms 内且输入未实质变化时不得重算，实际 ${n1} -> ${n2}`);
+  assert.deepStrictEqual(b, a);
+  const c = NB.estimateBreakChain(s, 120, { now: t0 + 200 });
+  assert.strictEqual(NB.chainComputeCalls(), n1);
+  assert.ok(NB.CHAIN_THROTTLE_MS >= 400 && NB.CHAIN_THROTTLE_MS <= 800);
+});
+
+check('P2-2 缓存键含装备/称号等，改装备或称号会失效重算', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  if (!s.titles) s.titles = { owned: ['churu'], worn: 'churu', seen: ['churu'] };
+  if (!s.talents) s.talents = {};
+  s.totalDaoGuo = s.totalDaoGuo || 0;
+  s.breakAttempts = s.breakAttempts || 0;
+  NB.resetChainCache();
+  const t0 = 2_000_000;
+  NB.estimateBreakChain(s, 120, { now: t0 });
+  const n1 = NB.chainComputeCalls();
+  const snap = JSON.stringify(s);
+  s.equip = Object.assign({}, s.equip, { ring: { s: 'ring', q: 4, lv: 8, m: 40, sub: [] } });
+  NB.estimateBreakChain(s, 120, { now: t0 + 50 });
+  const n2 = NB.chainComputeCalls();
+  assert.ok(n2 > n1, `改装备应立即重算，实际 ${n1} -> ${n2}`);
+  s.titles = Object.assign({}, s.titles, { worn: 'changed-title-for-cache' });
+  NB.estimateBreakChain(s, 120, { now: t0 + 80 });
+  const n3 = NB.chainComputeCalls();
+  assert.ok(n3 > n2, `改称号应立即重算，实际 ${n2} -> ${n3}`);
+  assert.ok(JSON.stringify(s) !== snap);
+});
+
+check('P2-3 保底覆盖整段连锁时文案不变；保底用尽后停在首次非保底并附再成功一次', () => {
+  const W = loadRuntime();
+  const { GS, NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  s.tree.peaches = 0;
+  s.pending = null;
+  s.breakAttempts = 0;
+  const snap0 = JSON.stringify(s);
+  const covered = NB.estimateBreakChain(s, 120);
+  assert.strictEqual(JSON.stringify(s), snap0);
+  assert.ok(covered.breaks >= 3 && covered.realmName === '洞天后', `保底足够时应仍连到洞天后，实际 ${covered.realmName} +${covered.gain} ${covered.breaks}重`);
+  assert.ok(!covered.nextRealmName, '保底覆盖整段时不应附加「再成功一次」');
+  const label0 = NB.formatBreakChainLabel(s, covered);
+  assert.ok(label0.includes('2 分钟内可连破至洞天后') && !label0.includes('再成功一次'), label0);
+
+  s.breakAttempts = (GS.GUARANTEED_BREAKS || 3) - 1; // 只剩 1 次保底
+  const snap1 = JSON.stringify(s);
+  const truncated = NB.estimateBreakChain(s, 120);
+  assert.strictEqual(JSON.stringify(s), snap1, '截断试算后 state JSON 不变');
+  assert.strictEqual(truncated.breaks, 1, `只应计入保底的那一重，实际 ${truncated.breaks} 到 ${truncated.realmName}`);
+  assert.strictEqual(truncated.realmName, '洞天初');
+  assert.ok(truncated.nextRealmName, '应预览下一次成功');
+  assert.strictEqual(truncated.nextRealmName, '洞天中');
+  assert.ok(truncated.nextGain > truncated.gain, `再成功一次的战力应从起点计且高于保底段，${truncated.gain} vs ${truncated.nextGain}`);
+  const rate = truncated.nextRate;
+  assert.ok(rate > 0 && rate <= 0.98, `成功率应取自游戏公式，实际 ${rate}`);
+  const pct = Math.round(rate * 100);
+  const label1 = NB.formatBreakChainLabel(s, truncated);
+  assert.ok(label1.includes('2 分钟内可连破至洞天初') && label1.includes(`再成功一次（约 ${pct}%）可至洞天中，战力 +`), label1);
+  assert.ok(!label1.includes('期望') && !/期望|期望值|EV/i.test(label1));
+});
+
+check('P3-1 新档/读档重置 peachHold 与 lastGoal；P3-2 未解锁功法按钮禁用', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  NB.onStateReload();
+  const sess = NB.goalSession();
+  assert.strictEqual(sess.lastGoal, null);
+  assert.strictEqual(sess.peachHoldUntil, 0);
+  const game = text('js/game.js');
+  assert.ok(/loadGame\(\)[\s\S]{0,180}Newbie\.onStateReload/.test(game), '读档后应重置目标条停顿状态');
+  assert.ok(/resetGame\(\)[\s\S]{0,180}Newbie\.onStateReload/.test(game), '新档后应重置目标条停顿状态');
+  assert.ok(!/canAfford \|\| !unlocked \? '' : 'disabled'/.test(game), '锁定功法不得因为 !unlocked 而可点');
+  assert.ok(/data-gongfa-buy="1"[\s\S]{0,80}canAfford \? '' : 'disabled'/.test(game));
+  assert.ok(text('index.html').includes('id="goal-recommend"') && text('css/style.css').includes('.goal-recommend'));
+});
+
+check('目标条与战败页推荐同一项，且同时只有一颗星', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  s.tree.peaches = 0;
+  s.pending = null;
+  const rec = NB.recommendBest(s);
+  const opts = NB.cpGainOptions(s);
+  assert.strictEqual(opts.filter((o) => o.best).length, 1);
+  const star = opts.find((o) => o.best);
+  assert.ok(rec && star);
+  const recKeys = rec.key === 'peach' ? ['peach', 'pending'] : [rec.key];
+  assert.ok(recKeys.includes(star.key), `推荐 ${rec.key}/${rec.name}，战败 ★ 为 ${star.key}`);
+  assert.ok(['突破', '修行', '法宝', '洞府', '道途'].includes(rec.name), rec.name);
 });
 
 console.log(`guide-chain: ${passed} checks passed`);
