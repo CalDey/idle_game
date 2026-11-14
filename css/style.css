@@ -5348,6 +5348,11 @@ button.mijing-bless-card:active {
   background: rgba(22, 18, 42, 0.95);
 }
 
+/* 血蝠夫人：图鉴缩略图按全立绘比例裁切时钉住底部，避免裁掉弱点标记（三根铁钉与血纸） */
+.codex-boss-thumb[src*="boss_xuefu"] {
+  object-position: 50% 100%;
+}
+
 .codex-boss-thumb.is-locked {
   border-color: var(--border-subtle);
 }
