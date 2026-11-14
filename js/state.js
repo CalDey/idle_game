@@ -730,7 +730,12 @@
         ? window.HomeFortune.normalize(saved.homeFortune)
         : saved.homeFortune && typeof saved.homeFortune === 'object' && !Array.isArray(saved.homeFortune)
           ? saved.homeFortune
-          : { v: 1, date: '', spawned: 0, pending: null, queued: 0, recent: [], nextOnlineAt: 20 * 60 * 1000, onlineMs: 0, lastSeen: 0 }
+          : { v: 1, date: '', spawned: 0, pending: null, queued: 0, recent: [], nextOnlineAt: 20 * 60 * 1000, onlineMs: 0, lastSeen: 0 },
+      codex: window.Codex
+        ? window.Codex.normalize(saved.codex)
+        : saved.codex && typeof saved.codex === 'object' && !Array.isArray(saved.codex)
+          ? saved.codex
+          : { v: 2, maxRealm: 0, kills: {}, seen: {}, claimed: {} }
     };
     if (Array.isArray(unlockedHeroes)) {
       merged.unlockedHeroes = unlockedHeroes;
@@ -808,6 +813,7 @@
     if (window.HomeFortune && typeof window.HomeFortune.onResume === 'function') {
       window.HomeFortune.onResume(state, (report && report.effectiveSeconds ? report.effectiveSeconds : 0) * 1000, t);
     }
+    if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
     saveGame();
     return report;
   }
@@ -822,6 +828,7 @@
         if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
         if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
         if (window.HomeFortune && typeof window.HomeFortune.ensure === 'function') window.HomeFortune.ensure(state, Date.now());
+        if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
@@ -851,6 +858,7 @@
       if (window.HomeFortune && typeof window.HomeFortune.onResume === 'function') {
         window.HomeFortune.onResume(state, (offlineReport && offlineReport.effectiveSeconds ? offlineReport.effectiveSeconds : 0) * 1000, now);
       }
+      if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
       return { isNew: false, offlineReport };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
@@ -865,6 +873,7 @@
       if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, Date.now());
       if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
       if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
+      if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
       return { isNew: true, offlineReport: null };
     }
   }
@@ -960,7 +969,10 @@
       window.Codex.syncMaxRealm(state);
     }
     if (state.codex && typeof state.codex === 'object' && !Array.isArray(state.codex)) {
-      fresh.codex = JSON.parse(JSON.stringify(state.codex));
+      const copied = JSON.parse(JSON.stringify(state.codex));
+      fresh.codex = window.Codex && typeof window.Codex.normalize === 'function'
+        ? window.Codex.normalize(copied)
+        : copied;
     }
     // 轮回不重置秘境当日次数，进行中的一局按开局快照继续（避免轮回刷次数）
     if (state.mijing && typeof state.mijing === 'object') {

@@ -1,8 +1,7 @@
-// 图鉴：只读的世界观条目（境界/地域/势力/纪元/角色）与「妖魔」页（Boss + 普通敌人）。
-// - 解锁全部由存档推导：realmIndex（含历史最高）、到达章节、首通关卡、已获得角色。
-// - 存档只多一个 state.codex = { v, maxRealm }，用于转世后不重新上锁；旧档缺省时安全推导。
-// - Boss 战开场显示一句台词（非阻塞横幅），图鉴里显示 desc + 台词。
-// - 页签通过 registerTab 扩展，后续「万妖图鉴」（收集加成）可在妖魔页上叠加，不改条目数据。
+// 图鉴：世界观条目 +「妖魔」页收集（击杀计数、精通阶、薄奖与小幅永久加成）。
+// - 条目文案仍来自 CodexData；敌人显示名始终读自 GameConfig（改名补丁只需改配置）。
+// - 存档 state.codex = { v, maxRealm, kills, seen, claimed }；旧档缺省安全迁移；轮回深拷贝保留。
+// - 未遭遇为剪影（复用已有立绘，CSS 压暗），首次遭遇后现形；击杀达门槛可领取一次奖励。
 (function () {
   const BOSS_EVERY = 10;
   const MAX_STAGE = 300;
@@ -17,11 +16,80 @@
     return cfg().BATTLE || { BOSSES: [], REGIONS: [] };
   }
 
+  const CODEX_VERSION = 2;
+  const TIERS = [1, 10, 50, 200];
+  const BONUS_PER_TIER = 0.0005; // 每阶 +0.05% 攻/血/防
+  const BONUS_CAP = 0.05; // 总加成不超过 +5%
+  const PEACH_CAP = 3;
+  const JADE_CAP_HOURS = 0.5;
+  const JADE_CAP_MIN = 3;
+  const QI_STONE_CAP_MINUTES = 6;
+  const TIER_REWARDS = {
+    1: { qiMin: 1, stoneMin: 1, jade: 1, peach: 0 },
+    10: { qiMin: 2, stoneMin: 2, jade: 1, peach: 1 },
+    50: { qiMin: 3, stoneMin: 3, jade: 2, peach: 1 },
+    200: { qiMin: 4, stoneMin: 4, jade: 3, peach: 2 }
+  };
+
+  function emptyCodex() {
+    return { v: CODEX_VERSION, maxRealm: 0, kills: {}, seen: {}, claimed: {} };
+  }
+
+  function normalizeCounts(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach((k) => {
+      if (typeof k !== 'string' || !k) return;
+      const n = Math.max(0, Math.floor(Number(raw[k]) || 0));
+      if (n > 0) out[k] = n;
+    });
+    return out;
+  }
+
+  function normalizeFlags(raw, kills) {
+    const out = {};
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      Object.keys(raw).forEach((k) => {
+        if (typeof k === 'string' && k && raw[k]) out[k] = 1;
+      });
+    }
+    Object.keys(kills || {}).forEach((k) => {
+      if ((kills[k] || 0) > 0) out[k] = 1;
+    });
+    return out;
+  }
+
+  function normalizeClaimed(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach((k) => {
+      if (typeof k !== 'string' || !k) return;
+      const n = Math.max(0, Math.floor(Number(raw[k]) || 0));
+      const tier = TIERS.filter((t) => t <= n).pop() || 0;
+      if (tier) out[k] = tier;
+    });
+    return out;
+  }
+
+  function normalize(raw) {
+    const src = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+    const kills = normalizeCounts(src.kills);
+    return {
+      v: CODEX_VERSION,
+      maxRealm: Math.max(0, Math.floor(Number(src.maxRealm) || 0)),
+      kills,
+      seen: normalizeFlags(src.seen, kills),
+      claimed: normalizeClaimed(src.claimed)
+    };
+  }
+
   function ensureState(s) {
-    let c = s.codex;
-    if (!c || typeof c !== 'object' || Array.isArray(c)) c = {};
-    const out = { v: 1, maxRealm: Math.max(0, Math.floor(Number(c.maxRealm) || 0)) };
+    if (!s || typeof s !== 'object') return emptyCodex();
+    const out = normalize(s.codex);
     if (s.codex && typeof s.codex === 'object' && !Array.isArray(s.codex)) {
+      Object.keys(s.codex).forEach((k) => {
+        if (!(k in out)) delete s.codex[k];
+      });
       Object.assign(s.codex, out);
       return s.codex;
     }
@@ -29,8 +97,245 @@
     return out;
   }
 
+  function stripElite(name) {
+    return String(name || '').replace(/^精英·/, '').trim();
+  }
+
+  function regionNameForChapter(chapter) {
+    const regs = battleCfg().REGIONS || [];
+    const idx = Math.min(regs.length - 1, Math.max(0, Math.floor((Math.max(1, chapter) - 1) / 5)));
+    return (regs[idx] && regs[idx].name) || '';
+  }
+
+  function catalog() {
+    const B = battleCfg();
+    const lore = data();
+    const bossLore = lore.bossLore || {};
+    const mobLore = lore.mobLore || {};
+    const list = [];
+    (B.BOSSES || []).forEach((b, i) => {
+      if (!b) return;
+      const name = typeof b === 'object' ? b.name : String(b);
+      const id = 'boss_' + ((typeof b === 'object' && b.id) || String(i + 1));
+      const l = bossLore[name] || {};
+      list.push({
+        id,
+        kind: 'boss',
+        name,
+        img: bossImgUrl(typeof b === 'object' ? b.img : ''),
+        region: regionNameForChapter(i + 1),
+        chapter: i + 1,
+        stage: (i + 1) * BOSS_EVERY,
+        desc: l.desc || '',
+        quote: l.quote || ''
+      });
+    });
+    (B.REGIONS || []).forEach((r, ri) => {
+      (r && r.mobs ? r.mobs : []).forEach((m, mi) => {
+        if (!m) return;
+        const name = typeof m === 'object' ? m.name : String(m);
+        const mid = (typeof m === 'object' && m.id) ? String(m.id) : String(mi);
+        const id = mid.indexOf('mob_') === 0 ? mid : 'mob_' + mid;
+        list.push({
+          id,
+          kind: 'mob',
+          name,
+          img: bossImgUrl(typeof m === 'object' ? m.img : ''),
+          region: r.name || '',
+          chapter: (r.chapters && r.chapters[0]) || 1,
+          desc: mobLore[name] || '',
+          quote: ''
+        });
+      });
+    });
+    return list;
+  }
+
+  let _catCache = null;
+  let _catSrc = null;
+  function cachedCatalog() {
+    const src = battleCfg();
+    if (_catCache && _catSrc === src) return _catCache;
+    _catCache = catalog();
+    _catSrc = src;
+    return _catCache;
+  }
+
+  function entryById(id) {
+    return cachedCatalog().find((e) => e.id === id) || null;
+  }
+
+  function resolveId(unitOrEnemy) {
+    if (!unitOrEnemy) return '';
+    if (unitOrEnemy.bestiaryId && entryById(unitOrEnemy.bestiaryId)) return unitOrEnemy.bestiaryId;
+    const name = stripElite(unitOrEnemy.name);
+    if (!name) return '';
+    const list = cachedCatalog();
+    const wantBoss = Boolean(unitOrEnemy.isBoss);
+    const hit = list.find((e) => e.name === name && (wantBoss ? e.kind === 'boss' : e.kind === 'mob'))
+      || list.find((e) => e.name === name);
+    return hit ? hit.id : '';
+  }
+
+  function reachedTiers(kills) {
+    const n = Math.max(0, Math.floor(Number(kills) || 0));
+    return TIERS.filter((t) => n >= t);
+  }
+
+  function nextTier(kills) {
+    const n = Math.max(0, Math.floor(Number(kills) || 0));
+    return TIERS.find((t) => n < t) || 0;
+  }
+
+  function totalReachedTiers(s) {
+    const c = ensureState(s);
+    let n = 0;
+    cachedCatalog().forEach((e) => {
+      n += reachedTiers(c.kills[e.id] || 0).length;
+    });
+    return n;
+  }
+
+  function bonusRate(s) {
+    return Math.min(BONUS_CAP, totalReachedTiers(s) * BONUS_PER_TIER);
+  }
+
+  function decoratePlayerStats(s, stats) {
+    if (!stats || stats._bestiaryMult) return stats;
+    const rate = bonusRate(s);
+    const m = 1 + rate;
+    stats._bestiaryMult = m;
+    stats._bestiaryBonus = rate;
+    if (!(rate > 0)) return stats;
+    stats.atk = (Number(stats.atk) || 0) * m;
+    stats.hp = (Number(stats.hp) || 0) * m;
+    stats.def = (Number(stats.def) || 0) * m;
+    const crit = stats.crit != null ? stats.crit : 0.05;
+    const cd = stats.critDmg || stats.cd || 1.5;
+    stats.cp = (stats.atk * 10 + stats.hp + stats.def * 8 + (Number(stats.spd) || 0) * 2) * (1 + crit * (cd - 1));
+    return stats;
+  }
+
+  function noteSeen(s, units) {
+    const c = ensureState(s);
+    const list = Array.isArray(units) ? units : units ? [units] : [];
+    list.forEach((u) => {
+      if (!u || (u.side && u.side !== 'enemy')) return;
+      const id = resolveId(u);
+      if (id) c.seen[id] = 1;
+    });
+    return c;
+  }
+
+  function noteKills(s, units, allDead) {
+    const c = ensureState(s);
+    const list = Array.isArray(units) ? units : units ? [units] : [];
+    list.forEach((u) => {
+      if (!u || (u.side && u.side !== 'enemy')) return;
+      const dead = allDead || u.alive === false || (Number(u.hp) || 0) <= 0;
+      const id = resolveId(u);
+      if (!id) return;
+      c.seen[id] = 1;
+      if (dead) c.kills[id] = (c.kills[id] || 0) + 1;
+    });
+    return c;
+  }
+
+  function noteBattle(s, session) {
+    if (!s) return null;
+    const units = (session && session.enemyUnits) || [];
+    noteSeen(s, units);
+    noteKills(s, units, Boolean(session && session.win));
+    return ensureState(s);
+  }
+
+  function claimableTiersFor(s, id) {
+    const c = ensureState(s);
+    const have = reachedTiers(c.kills[id] || 0);
+    const claimed = Number(c.claimed[id]) || 0;
+    return have.filter((t) => t > claimed);
+  }
+
+  function claimableCount(s) {
+    return cachedCatalog().reduce((n, e) => n + claimableTiersFor(s, e.id).length, 0);
+  }
+
+  function jadeCapFor(s) {
+    const best = (s && s.stage && Number(s.stage.best)) || 0;
+    return Math.max(JADE_CAP_MIN, Math.ceil((6 + 0.4 * best) * JADE_CAP_HOURS));
+  }
+
+  function scaleTierReward(s, tier, env) {
+    const spec = TIER_REWARDS[tier] || { qiMin: 0, stoneMin: 0, jade: 0, peach: 0 };
+    const e = env || {};
+    const qiPer = Math.max(0, Number(e.qiPerSec) || 0);
+    const stPer = Math.max(0, Number(e.stonePerSec) || 0);
+    const reward = {};
+    if (spec.qiMin > 0) {
+      const n = Math.round(qiPer * 60 * Math.min(QI_STONE_CAP_MINUTES, spec.qiMin));
+      if (n > 0) reward.qi = n;
+    }
+    if (spec.stoneMin > 0) {
+      const n = Math.round(stPer * 60 * Math.min(QI_STONE_CAP_MINUTES, spec.stoneMin));
+      if (n > 0) reward.stone = n;
+    }
+    if (spec.jade > 0) reward.jade = Math.max(1, Math.min(Math.round(spec.jade), jadeCapFor(s)));
+    if (spec.peach > 0) reward.peach = Math.max(1, Math.min(Math.round(spec.peach), PEACH_CAP));
+    return reward;
+  }
+
+  function grantReward(s, reward) {
+    const rw = reward || {};
+    if (rw.qi) {
+      s.qi = (Number(s.qi) || 0) + rw.qi;
+      s.lifetimeQi = (Number(s.lifetimeQi) || 0) + rw.qi;
+    }
+    if (rw.stone) s.stones = (Number(s.stones) || 0) + rw.stone;
+    if (rw.jade) s.lingyu = (Number(s.lingyu) || 0) + rw.jade;
+    if (rw.peach) {
+      if (!s.tree || typeof s.tree !== 'object') s.tree = {};
+      s.tree.peaches = (Number(s.tree.peaches) || 0) + rw.peach;
+    }
+    return rw;
+  }
+
+  function claimNext(s, id, env) {
+    const c = ensureState(s);
+    const pending = claimableTiersFor(s, id);
+    if (!pending.length) return { ok: false, reason: 'none' };
+    const tier = pending[0];
+    const reward = grantReward(s, scaleTierReward(s, tier, env));
+    c.claimed[id] = tier;
+    return { ok: true, id, tier, reward };
+  }
+
+  function claimAll(s, env) {
+    const got = [];
+    cachedCatalog().forEach((e) => {
+      while (true) {
+        const res = claimNext(s, e.id, env);
+        if (!res.ok) break;
+        got.push(res);
+      }
+    });
+    return { ok: got.length > 0, claims: got };
+  }
+
+  function collectionProgress(s) {
+    const c = ensureState(s);
+    const list = cachedCatalog();
+    let seen = 0;
+    let tiers = 0;
+    list.forEach((e) => {
+      if (c.seen[e.id]) seen += 1;
+      tiers += reachedTiers(c.kills[e.id] || 0).length;
+    });
+    return { seen, total: list.length, tiers, maxTiers: list.length * TIERS.length, bonus: bonusRate(s), claimable: claimableCount(s) };
+  }
+
   // 由存档推导的进度快照
   function progress(s) {
+
     const st = s.stage || {};
     const minRe = Number(cfg().REINCARNATION_MIN_STAGE) || 27;
     const c = ensureState(s);
@@ -142,7 +447,7 @@
     return c;
   }
 
-  const core = { ensureState, progress, isUnlocked, hintText, heroOwned, bossList, mobList, bossLore, bossImgUrl, registerTab, tabs, entriesFor, syncMaxRealm };
+  const core = { ensureState, normalize, progress, isUnlocked, hintText, heroOwned, bossList, mobList, bossLore, bossImgUrl, registerTab, tabs, entriesFor, syncMaxRealm, catalog: cachedCatalog, entryById, resolveId, noteSeen, noteKills, noteBattle, bonusRate, decoratePlayerStats, claimNext, claimAll, claimableCount, claimableTiersFor, collectionProgress, scaleTierReward, reachedTiers, nextTier, totalReachedTiers, TIERS, BONUS_PER_TIER, BONUS_CAP, TIER_REWARDS, PEACH_CAP, QI_STONE_CAP_MINUTES, JADE_CAP_MIN, CODEX_VERSION };
   window.Codex = core;
 
   // ===================== 界面 =====================
@@ -154,8 +459,8 @@
 
   function tabCount(s, tab, prog) {
     if (tab.kind === 'bestiary') {
-      const list = bossList(s);
-      return `${list.filter((b) => b.reached).length}/${list.length}`;
+      const col = collectionProgress(s);
+      return `${col.seen}/${col.total}`;
     }
     const list = entriesFor(tab.id);
     return `${list.filter((e) => isUnlocked(s, e, prog)).length}/${list.length}`;
@@ -179,24 +484,59 @@
   }
 
   function renderBestiary(s) {
-    const bosses = bossList(s)
-      .map((b) => {
-        if (!b.reached) {
-          return `<div class="codex-boss is-locked"><div class="codex-boss-thumb is-locked" aria-hidden="true"></div><div class="codex-boss-meta"><div class="codex-entry-title">？？？</div><div class="codex-entry-hint">到达第${b.chapter}章第${b.stage}关</div></div></div>`;
-        }
-        return `<details class="codex-boss"><summary><img class="codex-boss-thumb" src="${esc(b.img)}" alt="" loading="lazy"><span class="codex-boss-meta"><span class="codex-entry-title">${esc(b.name)}</span><span class="codex-boss-tag${b.defeated ? ' is-done' : ''}">第${b.chapter}章 · ${b.defeated ? '已击败' : '未击败'}</span>${b.quote ? `<span class="codex-boss-quote">「${esc(b.quote.replace(/^「|」$/g, ''))}」</span>` : ''}</span></summary><p class="codex-entry-body">${esc(b.desc)}</p></details>`;
-      })
-      .join('');
+    const c = ensureState(s);
+    const col = collectionProgress(s);
+    const pct = (col.bonus * 100).toFixed(2).replace(/\.?0+$/, '');
+    const head = `<div class="codex-bestiary-head"><div class="codex-bestiary-progress">收集 ${col.seen}/${col.total} · 精通 ${col.tiers}/${col.maxTiers} · 属性 +${pct}%</div><button type="button" class="btn btn-primary codex-claim-all" data-codex-claim-all ${col.claimable ? '' : 'disabled'}>${col.claimable ? `领取 ${col.claimable} 项` : '暂无可领'}</button></div>`;
+
+    function tierMarks(id, kills) {
+      const claimed = Number(c.claimed[id]) || 0;
+      return TIERS.map((tier) => {
+        let cls = 'codex-tier';
+        if (kills >= tier && claimed >= tier) cls += ' is-claimed';
+        else if (kills >= tier) cls += ' is-ready';
+        return `<span class="${cls}" title="${tier}击">${tier}</span>`;
+      }).join('');
+    }
+
+    function claimBtn(id) {
+      const n = claimableTiersFor(s, id).length;
+      if (!n) return '';
+      return `<button type="button" class="btn codex-claim-btn" data-codex-claim="${esc(id)}">领取</button>`;
+    }
+
+    const bosses = cachedCatalog().filter((e) => e.kind === 'boss').map((e) => {
+      const seen = Boolean(c.seen[e.id]);
+      const kills = c.kills[e.id] || 0;
+      const thumbCls = 'codex-boss-thumb' + (seen ? '' : ' is-unseen');
+      if (!seen) {
+        return `<div class="codex-boss is-locked is-unseen"><img class="${thumbCls}" src="${esc(e.img)}" alt="" loading="lazy" width="44" height="58"><div class="codex-boss-meta"><div class="codex-entry-title">？？？</div><div class="codex-entry-hint">遭遇后现形</div></div></div>`;
+      }
+      return `<details class="codex-boss is-seen"><summary><img class="codex-boss-thumb" src="${esc(e.img)}" alt="" loading="lazy" width="44" height="58"><span class="codex-boss-meta"><span class="codex-entry-title">${esc(e.name)}</span><span class="codex-boss-tag${kills > 0 ? ' is-done' : ''}">击破 ${kills} · 第${e.chapter}章</span>${e.quote ? `<span class="codex-boss-quote">「${esc(String(e.quote).replace(/^「|」$/g, ''))}」</span>` : ''}<span class="codex-tiers">${tierMarks(e.id, kills)}</span>${claimBtn(e.id)}</span></summary><p class="codex-entry-body">${esc(e.desc)}</p></details>`;
+    }).join('');
+
     let region = '';
-    const mobs = mobList(s)
-      .map((m) => {
-        const head = m.region !== region ? `<div class="codex-mob-region">${esc((region = m.region))}</div>` : '';
-        return head + (m.unlocked
-          ? `<div class="codex-mob"><span class="codex-mob-name">${esc(m.name)}</span><span class="codex-mob-desc">${esc(m.desc)}</span></div>`
-          : `<div class="codex-mob is-locked"><span class="codex-mob-name">？？？</span><span class="codex-mob-desc">进入${esc(m.region)}后可见</span></div>`);
-      })
-      .join('');
-    return `<div class="codex-section-title">首领</div>${bosses}<div class="codex-section-title">妖物</div>${mobs}`;
+    const mobs = cachedCatalog().filter((e) => e.kind === 'mob').map((e) => {
+      const seen = Boolean(c.seen[e.id]);
+      const kills = c.kills[e.id] || 0;
+      const headR = e.region !== region ? `<div class="codex-mob-region">${esc((region = e.region))}</div>` : '';
+      const thumbCls = 'codex-boss-thumb codex-mob-thumb' + (seen ? '' : ' is-unseen');
+      if (!seen) {
+        return headR + `<div class="codex-mob is-locked is-unseen"><img class="${thumbCls}" src="${esc(e.img)}" alt="" loading="lazy" width="44" height="58"><div class="codex-mob-main"><span class="codex-mob-name">？？？</span><span class="codex-mob-desc">遭遇后现形</span></div></div>`;
+      }
+      return headR + `<div class="codex-mob is-seen"><img class="codex-boss-thumb codex-mob-thumb" src="${esc(e.img)}" alt="" loading="lazy" width="44" height="58"><div class="codex-mob-main"><span class="codex-mob-name">${esc(e.name)}</span><span class="codex-mob-desc">${esc(e.desc)}</span><span class="codex-mob-kills">击破 ${kills}</span><span class="codex-tiers">${tierMarks(e.id, kills)}</span>${claimBtn(e.id)}</div></div>`;
+    }).join('');
+
+    return `${head}<div class="codex-section-title">首领</div>${bosses}<div class="codex-section-title">妖物</div>${mobs}`;
+  }
+
+  function renderBadge() {
+    const badge = document.getElementById('badge-codex');
+    const btn = els && els.btn;
+    const GS = window.GameState;
+    const on = !!(GS && GS.state && claimableCount(GS.state) > 0);
+    if (badge) badge.classList.toggle('visible', on);
+    if (btn) btn.classList.toggle('has-claim', on);
   }
 
   function render() {
@@ -207,6 +547,7 @@
     renderTabs(s, prog);
     const tab = tabs.find((t) => t.id === activeTab);
     els.list.innerHTML = !tab ? '' : tab.kind === 'bestiary' ? renderBestiary(s) : (typeof tab.render === 'function' ? tab.render(s) : renderEntries(s, tab.id, prog));
+    renderBadge();
   }
 
   function open() {
@@ -249,6 +590,8 @@
   core.open = open;
   core.close = close;
 
+  core.renderBadge = renderBadge;
+
   function init() {
     els = {
       btn: document.getElementById('btn-open-codex'),
@@ -280,8 +623,27 @@
       render();
       els.list.scrollTop = 0;
     });
+    els.list.addEventListener('click', (e) => {
+      const all = e.target.closest('[data-codex-claim-all]');
+      const one = e.target.closest('[data-codex-claim]');
+      if (!all && !one) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const GS = window.GameState;
+      if (!GS || !GS.state) return;
+      const env = {
+        qiPerSec: typeof GS.getQiPerSec === 'function' ? GS.getQiPerSec() : 0,
+        stonePerSec: typeof GS.getStonePerSec === 'function' ? GS.getStonePerSec() : 0,
+        now: Date.now()
+      };
+      if (all && !all.disabled) claimAll(GS.state, env);
+      else if (one) claimNext(GS.state, one.getAttribute('data-codex-claim'), env);
+      GS.saveGame();
+      render();
+    });
     syncMaxRealm();
-    setInterval(syncMaxRealm, 5000);
+    renderBadge();
+    setInterval(() => { syncMaxRealm(); renderBadge(); }, 5000);
   }
 
   if (document.readyState === 'loading') {

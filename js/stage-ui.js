@@ -1369,6 +1369,9 @@
     const stageNum = enemy.n;
 
     syncAllSessionUnits();
+    if (window.Codex && typeof window.Codex.noteBattle === 'function') {
+      window.Codex.noteBattle(s, sim);
+    }
 
     isPlaying = false;
     currentSession = null;
@@ -1704,6 +1707,9 @@
     currentSession = session;
     currentEnemy = enemy;
     currentPlayer = player;
+    if (window.Codex && typeof window.Codex.noteSeen === 'function') {
+      window.Codex.noteSeen(s, session.enemyUnits || [enemy]);
+    }
     previewBoardKey = '';
 
     mountUnitsToBoard(session.units);

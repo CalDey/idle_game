@@ -57,7 +57,12 @@ const byId = (id) => D.entries.find((e) => e.id === id);
   assert.ok(!CX.isUnlocked(s, byId('region_qingming')));
   assert.ok(!CX.isUnlocked(s, byId('era_taixu')), '首通 200 关才解锁');
   assert.ok(CX.isUnlocked(s, byId('hero_lanyi')), '初始角色');
-  assert.deepStrictEqual(host(s.codex), { v: 1, maxRealm: 0 }, '旧档补上安全默认值');
+  const migrated = host(s.codex);
+  assert.strictEqual(migrated.maxRealm, 0, '旧档补上安全默认值');
+  assert.ok(migrated.v >= 1);
+  assert.deepStrictEqual(migrated.kills || {}, {});
+  assert.deepStrictEqual(migrated.seen || {}, {});
+  assert.deepStrictEqual(migrated.claimed || {}, {});
   // 章节：当前到达关卡决定章节（第 50 关已过 → 到达 51 关 = 第 6 章）
   s.stage.best = 50; s.stage.cur = 51;
   assert.ok(CX.isUnlocked(s, byId('region_qingming')));

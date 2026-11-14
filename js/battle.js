@@ -295,10 +295,14 @@
         lockedHeroes: state.lockedHeroes,
         grow: state.grow
       };
+      let decorated = rawDirect;
       if (window.Grow && typeof window.Grow.decoratePlayerStats === 'function') {
-        return window.Grow.decoratePlayerStats(state, rawDirect, rawDirect.squad);
+        decorated = window.Grow.decoratePlayerStats(state, decorated, rawDirect.squad);
       }
-      return rawDirect;
+      if (window.Codex && typeof window.Codex.decoratePlayerStats === 'function') {
+        decorated = window.Codex.decoratePlayerStats(state, decorated);
+      }
+      return decorated;
     }
     const E = root.Equip || (typeof window !== 'undefined' && window.Equip);
     const T = root.Titles || (typeof window !== 'undefined' && window.Titles);
@@ -336,10 +340,14 @@
       lockedHeroes: s && s.lockedHeroes,
       grow: s && s.grow
     };
+    let decorated = rawStats;
     if (window.Grow && typeof window.Grow.decoratePlayerStats === 'function') {
-      return window.Grow.decoratePlayerStats(s, rawStats, squadIds);
+      decorated = window.Grow.decoratePlayerStats(s, decorated, squadIds);
     }
-    return rawStats;
+    if (window.Codex && typeof window.Codex.decoratePlayerStats === 'function') {
+      decorated = window.Codex.decoratePlayerStats(s, decorated);
+    }
+    return decorated;
   }
 
   function isValidPlayerCell(c, r) {

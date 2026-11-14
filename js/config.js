@@ -431,54 +431,54 @@
         name: '凡尘野地',
         chapters: [1, 5],
         mobs: [
-          { name: '山贼喽啰', img: 'placeholder' },
-          { name: '野狼', img: 'placeholder' },
-          { name: '游荡僵尸', img: 'placeholder' }
+          { id: 'shanzei', name: '山贼喽啰', img: 'placeholder' },
+          { id: 'yelang', name: '野狼', img: 'placeholder' },
+          { id: 'jiangshi', name: '游荡僵尸', img: 'placeholder' }
         ]
       },
       {
         name: '青冥山脉',
         chapters: [6, 10],
         mobs: [
-          { name: '青蛇妖', img: 'placeholder' },
-          { name: '树妖', img: 'placeholder' },
-          { name: '雷鹰', img: 'placeholder' }
+          { id: 'qingshe', name: '青蛇妖', img: 'placeholder' },
+          { id: 'shuyao', name: '树妖', img: 'placeholder' },
+          { id: 'leiying', name: '雷鹰', img: 'placeholder' }
         ]
       },
       {
         name: '赤炎荒原',
         chapters: [11, 15],
         mobs: [
-          { name: '火灵', img: 'placeholder' },
-          { name: '熔岩蜥', img: 'placeholder' },
-          { name: '魔修散人', img: 'placeholder' }
+          { id: 'huoling', name: '火灵', img: 'placeholder' },
+          { id: 'rongyanxi', name: '熔岩蜥', img: 'placeholder' },
+          { id: 'moxiu', name: '魔修散人', img: 'placeholder' }
         ]
       },
       {
         name: '玄冰海',
         chapters: [16, 20],
         mobs: [
-          { name: '冰魄蛛', img: 'placeholder' },
-          { name: '寒水妖', img: 'placeholder' },
-          { name: '雪尸', img: 'placeholder' }
+          { id: 'bingpozhu', name: '冰魄蛛', img: 'placeholder' },
+          { id: 'hanshui', name: '寒水妖', img: 'placeholder' },
+          { id: 'xueshi', name: '雪尸', img: 'placeholder' }
         ]
       },
       {
         name: '九幽魔域',
         chapters: [21, 25],
         mobs: [
-          { name: '怨魂', img: 'placeholder' },
-          { name: '骨魔', img: 'placeholder' },
-          { name: '血傀', img: 'placeholder' }
+          { id: 'yuanhun', name: '怨魂', img: 'placeholder' },
+          { id: 'gumo', name: '骨魔', img: 'placeholder' },
+          { id: 'xuekui', name: '血傀', img: 'placeholder' }
         ]
       },
       {
         name: '天外天',
         chapters: [26, 30],
         mobs: [
-          { name: '星骸', img: 'placeholder' },
-          { name: '天魔', img: 'placeholder' },
-          { name: '虚空剑影', img: 'placeholder' }
+          { id: 'xinghai', name: '星骸', img: 'placeholder' },
+          { id: 'tianmo', name: '天魔', img: 'placeholder' },
+          { id: 'xukongjian', name: '虚空剑影', img: 'placeholder' }
         ]
       }
     ],
