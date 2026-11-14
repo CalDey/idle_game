@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=103" />
+  <link rel="stylesheet" href="css/style.css?v=104" />
 </head>
 
 <body>
@@ -437,6 +437,14 @@
 
           <div class="setting-row">
             <div>
+              <div class="setting-label">灵兽伴生</div>
+              <div class="setting-sub">闯关第 30 / 90 / 150 关结缘灵兽，同时带一只；灵玉与仙桃喂养</div>
+            </div>
+            <button id="btn-open-beast" class="btn btn-primary" type="button">查看灵兽</button>
+          </div>
+
+          <div class="setting-row">
+            <div>
               <div class="setting-label">手动铭刻玉简</div>
               <div class="setting-sub">系统每 4 秒自动保存至本地，亦可手动立即存档</div>
             </div>
@@ -646,6 +654,18 @@
     </div>
   </div>
 
+  <div id="beast-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog beast-dialog" role="dialog" aria-modal="true" aria-labelledby="beast-modal-title">
+      <div class="card-header beast-header">
+        <span id="beast-modal-title" class="card-title">灵兽伴生</span>
+        <span id="beast-wallet" class="card-subtitle beast-wallet"></span>
+        <button id="btn-close-beast" data-modal-close class="home-modal-close" type="button" aria-label="关闭">✕</button>
+      </div>
+      <div class="beast-note">同时只带一只灵兽。全队攻击小幅提升，同系仙缘（幽冥 / 冰霜 / 烈焰）的上阵角色另得同系加成。</div>
+      <div id="beast-list" class="beast-list"></div>
+    </div>
+  </div>
+
   <div id="dispatch-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog dispatch-dialog" role="dialog" aria-modal="true" aria-labelledby="dispatch-modal-title">
       <div class="card-header squad-modal-header">
@@ -770,17 +790,18 @@
 
   <script src="js/no-zoom.js?v=22"></script>
   <script src="js/config.js?v=78"></script>
+  <script src="js/beasts.js?v=1"></script>
   <script src="js/ui-text.js?v=3"></script>
   <script src="js/equip.js?v=22"></script>
   <script src="js/state.js?v=43"></script>
   <script src="js/titles.js?v=23"></script>
   <script src="js/grow.js?v=1"></script>
   <script src="js/battle.js?v=39"></script>
-  <script src="js/bonds.js?v=1"></script>
+  <script src="js/bonds.js?v=3"></script>
   <script src="js/mijing.js?v=2"></script>
   <script src="js/tower.js?v=1"></script>
   <script src="js/gear.js?v=34"></script>
-  <script src="js/stage-ui.js?v=63"></script>
+  <script src="js/stage-ui.js?v=64"></script>
   <script src="js/newbie.js?v=7"></script>
   <script src="js/game.js?v=54"></script>
   <script src="js/events-data.js?v=3"></script>
@@ -792,6 +813,7 @@
   <script src="js/hero-voice.js?v=1"></script>
   <script src="js/skill-text-data.js?v=1"></script>
   <script src="js/dispatch.js?v=1"></script>
+  <script src="js/beasts-ui.js?v=1"></script>
 </body>
 
 </html>

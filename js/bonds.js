@@ -168,8 +168,13 @@
     }
   }
 
+  // 羁绊 + 灵兽伴生（js/beasts.js，可缺省）合并后的 mods；两者都没有时返回 null
   function modsForState(state) {
-    return buildMods(squadIdsOf(state));
+    const ids = squadIdsOf(state);
+    const base = buildMods(ids);
+    const Bs = root.Beasts;
+    const beast = Bs && typeof Bs.modsForState === 'function' ? Bs.modsForState(state, ids) : null;
+    return beast ? mergeMods(base, beast) : base;
   }
 
   // 合并两份 mods（如秘境劫运 + 羁绊）：倍率按增量相加，其余数值相加，heroMods 逐角色合并

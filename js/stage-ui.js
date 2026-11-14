@@ -190,7 +190,8 @@
     const row = $('stage-bond-row');
     if (!row) return;
     const html = bondChipsHtml(squadIds, false) || '<span class="bond-row-empty">仙缘：同标签角色上阵 2 人激活羁绊</span>';
-    const full = `<span class="bond-row-label">仙缘</span>${html}`;
+    const beastChip = window.BeastsUI && typeof window.BeastsUI.chipHtml === 'function' ? window.BeastsUI.chipHtml() : '';
+    const full = `${beastChip}<span class="bond-row-label">仙缘</span>${html}`;
     if (row._lastHtml !== full) {
       row._lastHtml = full;
       row.innerHTML = full;
@@ -325,7 +326,14 @@
   function forecastKey(state, id, playerCp) {
     const formStr = serializeFormation(state && state.formation);
     const squadStr = window.Battle.getSquadIds(state).join(',');
-    return `${id}:${Math.round(playerCp)}:${state && state.heroId}:${squadStr}:${formStr}`;
+    return `${id}:${Math.round(playerCp)}:${state && state.heroId}:${squadStr}:${formStr}:${beastKey(state)}`;
+  }
+
+  // 灵兽伴生（js/beasts.js）会改变战斗 mods：当前伴生与等级并入胜率缓存键
+  function beastKey(state) {
+    const Bs = window.Beasts;
+    const b = Bs && state ? Bs.activeBeast(state) : null;
+    return b ? `${b.id}${Bs.levelOf(state, b.id)}` : '';
   }
 
   function getCachedWinRate(state, stageNum, playerCp) {
@@ -2492,7 +2500,7 @@
     const formStr = serializeFormation(state && state.formation);
     const squadStr = window.Battle.getSquadIds(state).join(',');
     const blessStr = Object.keys(run.blessings || {}).sort().map((k) => `${k}${run.blessings[k]}`).join('');
-    const key = `${run.seed}:${run.wave}:${blessStr}:${Math.round(playerCp)}:${squadStr}:${formStr}`;
+    const key = `${run.seed}:${run.wave}:${blessStr}:${Math.round(playerCp)}:${squadStr}:${formStr}:${beastKey(state)}`;
     if (key !== mijingWinRateKey) {
       mijingWinRateKey = key;
       mijingWinRateVal = MJ().winRate(state, run, 20);
