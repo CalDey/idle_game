@@ -51,7 +51,7 @@ function check(name, fn) {
   console.log(`ok - ${name}`);
 }
 
-check('派遣按派出时锁定奖励，领取时灵石/灵玉按当时产出封顶；面板文案与逻辑一致，不改结算', () => {
+check('派遣按派出时锁定奖励，仅轮回后才按今生产出封顶；面板文案与逻辑一致', () => {
   const { W } = loadRuntime();
   const D = W.Dispatch;
   const GS = W.GameState;
@@ -61,20 +61,25 @@ check('派遣按派出时锁定奖励，领取时灵石/灵玉按当时产出封
   s.unlockedHeroes = W.GameConfig.HEROES.map((h) => h.id);
   s.squad = ['lanyi'];
   s.createdAt = 123456789;
+  s.reincarnationCount = 0;
   D.ensureState(s, Date.now());
   const m = s.dispatch.board.find((b) => (D.TPL_MAP[b.tpl].kinds || []).includes('stone')) || s.dispatch.board[0];
   const ids = D.availableHeroes(s).slice(0, m.need);
   const started = D.start(s, m.slot, ids, { now: 1000, stonePerSec: 10 });
   assert.ok(started.ok);
+  assert.strictEqual(started.mission.reincarnationCount, 0);
   const snap = Object.assign({}, started.mission.reward);
   assert.ok(started.mission.reward, '派出时写入奖励快照');
   const same = D.claimReward(s, started.mission, { stonePerSec: 10 });
   if (snap.stone) assert.strictEqual(same.stone, snap.stone, '产出未降时领到快照值');
   if (snap.stone) {
+    const dip = D.claimReward(s, started.mission, { stonePerSec: 0.01 });
+    assert.strictEqual(dip.stone, snap.stone, '未轮回时产出下降仍发快照，不得按当时产出少给');
+    s.reincarnationCount = 1;
     const capped = D.claimReward(s, started.mission, { stonePerSec: 0.01 });
-    assert.ok(capped.stone < snap.stone, '领取时若当时产出更低，灵石按当时产出封顶');
+    assert.ok(capped.stone < snap.stone, '轮回后产出更低，灵石按今生产出封顶');
   }
-  assert.strictEqual(D.SETTLEMENT_HINT, '按派出时锁定，领取时按当时产出封顶');
+  assert.strictEqual(D.SETTLEMENT_HINT, '按派出时锁定（轮回后按今生产出封顶）');
   assert.ok(text('js/dispatch.js').includes('dispatch-settle-hint') && text('js/dispatch.js').includes('SETTLEMENT_HINT'));
   assert.ok(text('css/style.css').includes('.dispatch-settle-hint'));
 });

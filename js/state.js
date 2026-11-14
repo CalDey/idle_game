@@ -1196,7 +1196,7 @@
     if (state.path && typeof state.path === 'object') {
       fresh.path = window.Path ? window.Path.onReincarnate(state.path) : JSON.parse(JSON.stringify(state.path));
     }
-    // 仙姬派遣：轮回不清空进行中的派遣与当日悬赏（避免轮回刷新悬赏榜；灵石奖励领取时按当时产出封顶）
+    // 仙姬派遣：轮回不清空进行中的派遣与当日悬赏（避免轮回刷新悬赏榜；领取时若已轮回则灵石/灵玉按今生产出封顶）
     if (state.dispatch && typeof state.dispatch === 'object') {
       fresh.dispatch = JSON.parse(JSON.stringify(state.dispatch));
     }

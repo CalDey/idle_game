@@ -5,8 +5,10 @@
 // - 只能派当前不在出战队伍中的已解锁仙姬；同一仙姬同时只能接 1 条；派遣中的仙姬不能编入出战队伍（召回后可上阵）。
 //   出战队伍永远不受影响，最多同时占用 8 人。
 // - 仙缘标签匹配：悬赏有「仙缘」标签，每名持该标签的派遣仙姬奖励 +25%（最多 2 人 +50%）。
-// - 奖励只用灵石、灵玉、仙桃：灵石按当前每秒产出折算（领取时再按当时产出封顶，防止轮回后领前世高额灵石），
-//   灵玉按闯关挂机每小时灵玉折算，仙桃按时长；均有单条上限。不发灵气、不发道果，不影响转世收益。
+// - 奖励只用灵石、灵玉、仙桃：派出时按当时产出写入快照，并记下 state.reincarnationCount。
+//   仅当领取时轮回次数多于派出时，才对灵石/灵玉按今生产出封顶（防止轮回后领前世高额）；
+//   同一世里产出下降（换阵/加成到期）仍发快照值。旧任务没有该字段时不封顶（视为派出后未再轮回）。
+//   仙桃仍受单条上限。不发灵气、不发道果，不影响转世收益。
 // - 时间用 Date.now()（真实时间），刷新/离线后仍按结束时间判定；系统时钟回拨超过 1 分钟则从当前时间重新计时。
 // - 存档字段 state.dispatch；旧存档缺省自动补全，损坏字段被修正。
 (function () {
@@ -155,7 +157,9 @@
           const n = Math.floor(Number(r[k]) || 0);
           if (n > 0) reward[k] = n;
         });
-        out.active.push(Object.assign({
+        const recRaw = a.reincarnationCount;
+        const recSnap = (recRaw == null || recRaw === '') ? null : Math.floor(Number(recRaw));
+        const row = Object.assign({
           id: typeof a.id === 'string' ? a.id : `d${out.seq++}`,
           tpl: a.tpl,
           date: typeof a.date === 'string' ? a.date : '',
@@ -165,7 +169,9 @@
           startAt,
           endAt: startAt + m.h * 3600 * 1000,
           reward
-        }, m));
+        }, m);
+        if (Number.isFinite(recSnap) && recSnap >= 0) row.reincarnationCount = recSnap;
+        out.active.push(row);
       });
     }
     return out;
@@ -350,7 +356,8 @@
       h: mission.h,
       need: mission.need,
       tag: mission.tag,
-      minQ: mission.minQ
+      minQ: mission.minQ,
+      reincarnationCount: reincarnationCountOf(s)
     };
     d.active.push(a);
     mission.taken = true;
@@ -365,15 +372,29 @@
     return Math.max(0, a.endAt - (Number(now) || Date.now()));
   }
 
-  // 领取时的灵石封顶：不超过「当时」每秒产出 × STONE_CAP_MIN 分钟（轮回后领前世任务不会暴富）
+  function reincarnationCountOf(s) {
+    return Math.max(0, Math.floor(Number(s && s.reincarnationCount) || 0));
+  }
+
+  // 仅当领取时轮回次数 > 派出时记下的 reincarnationCount，才对灵石/灵玉按今生产出封顶。
+  // 旧任务没有该字段时不封顶（视为派出后未再轮回）。仙桃始终受 PEACH_CAP。
+  function shouldCapAfterReincarnation(s, a) {
+    if (!a || a.reincarnationCount == null || a.reincarnationCount === '') return false;
+    const snapped = Math.floor(Number(a.reincarnationCount));
+    if (!Number.isFinite(snapped) || snapped < 0) return false;
+    return reincarnationCountOf(s) > snapped;
+  }
+
   function claimReward(s, a, env) {
     const r = Object.assign({}, a.reward);
-    if (r.stone) {
-      const cap = Math.max(1, Math.round(stonePerSec(s, env) * 60 * RULES.STONE_CAP_MIN));
-      r.stone = Math.min(r.stone, cap);
+    if (shouldCapAfterReincarnation(s, a)) {
+      if (r.stone) {
+        const cap = Math.max(1, Math.round(stonePerSec(s, env) * 60 * RULES.STONE_CAP_MIN));
+        r.stone = Math.min(r.stone, cap);
+      }
+      if (r.jade) r.jade = Math.min(r.jade, Math.max(1, Math.round(jadeRate(s) * RULES.JADE_CAP_H)));
     }
     if (r.peach) r.peach = Math.min(r.peach, RULES.PEACH_CAP);
-    if (r.jade) r.jade = Math.min(r.jade, Math.max(1, Math.round(jadeRate(s) * RULES.JADE_CAP_H)));
     return r;
   }
 
@@ -442,8 +463,8 @@
     };
   }
 
-  // 奖励在派出时写入任务快照；领取时灵石/灵玉再按当时产出封顶（防轮回后领前世高额），不重算整笔奖励。
-  const SETTLEMENT_HINT = '按派出时锁定，领取时按当时产出封顶';
+  // 奖励在派出时写入快照并记下 reincarnationCount；仅轮回后领取才按今生产出封顶。
+  const SETTLEMENT_HINT = '按派出时锁定（轮回后按今生产出封顶）';
 
   function hasClaimable(s, now) {
     return summary(s, now).done > 0;

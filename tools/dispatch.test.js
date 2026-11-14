@@ -227,6 +227,57 @@ check('轮回：派遣与当日悬赏保留（不能靠轮回刷新）；前世�
   }
 });
 
+check('产出下降未轮回仍发快照；轮回后产出低才封顶；旧任务无 reincarnationCount 不封顶', () => {
+  const { W } = runtime();
+  const s = freshState(W, 30);
+  s.reincarnationCount = 2;
+  const d = W.Dispatch.ensureState(s, T0);
+  const m = d.board.find((b) => D.TPL_MAP[b.tpl].kinds.includes('stone')) || d.board[0];
+  const high = 100;
+  const low = 1;
+  const res = W.Dispatch.start(s, m.slot, pickFor(s, m), { now: T0, stonePerSec: high });
+  assert.ok(res.ok);
+  assert.strictEqual(res.mission.reincarnationCount, 2, '派出时应记下当前轮回次数 reincarnationCount');
+  const snap = res.mission.reward.stone;
+  assert.ok(snap > 0, '快照含灵石');
+  const sameLife = W.Dispatch.claimReward(s, res.mission, { stonePerSec: low });
+  assert.strictEqual(sameLife.stone, snap, '同一世产出下降（换阵/加成到期）仍发快照值');
+  if (res.mission.reward.jade) {
+    assert.strictEqual(sameLife.jade, res.mission.reward.jade, '未轮回时灵玉也不封顶');
+  }
+
+  // 轮回次数增加后才按今生产出封顶
+  s.reincarnationCount = 3;
+  const after = W.Dispatch.claimReward(s, res.mission, { stonePerSec: low });
+  const cap = low * 60 * 60;
+  assert.ok(snap > cap, '快照高于今生封顶，才能验证封顶');
+  assert.strictEqual(after.stone, cap, '轮回后产出低则按今生产出封顶');
+
+  // 仙桃上限始终保留
+  const withPeach = Object.assign({}, res.mission, { reward: Object.assign({}, res.mission.reward, { peach: D.RULES.PEACH_CAP + 3 }) });
+  s.reincarnationCount = 2;
+  const peachSame = W.Dispatch.claimReward(s, withPeach, { stonePerSec: low });
+  assert.strictEqual(peachSame.peach, D.RULES.PEACH_CAP, '未轮回时仙桃仍受 PEACH_CAP');
+  s.reincarnationCount = 3;
+  const peachAfter = W.Dispatch.claimReward(s, withPeach, { stonePerSec: low });
+  assert.strictEqual(peachAfter.peach, D.RULES.PEACH_CAP, '轮回后仙桃仍受 PEACH_CAP');
+
+  // 旧任务无字段：即使当前已轮回且产出更低，也不封顶
+  const legacy = JSON.parse(JSON.stringify(res.mission));
+  delete legacy.reincarnationCount;
+  s.reincarnationCount = 5;
+  const legacyGot = W.Dispatch.claimReward(s, legacy, { stonePerSec: low });
+  assert.strictEqual(legacyGot.stone, snap, '旧任务无 reincarnationCount 时不封顶');
+
+  // ensureState/normalize 须保留该字段，缺省则仍缺
+  s.dispatch.active[0].reincarnationCount = 2;
+  W.Dispatch.ensureState(s, T0);
+  assert.strictEqual(s.dispatch.active[0].reincarnationCount, 2, 'normalize 保留轮回快照');
+  delete s.dispatch.active[0].reincarnationCount;
+  W.Dispatch.ensureState(s, T0);
+  assert.ok(!('reincarnationCount' in s.dispatch.active[0]) || s.dispatch.active[0].reincarnationCount == null, '旧任务规范化后仍无该字段');
+});
+
 check('旧存档迁移：无 dispatch 字段正常读档；坏数据被修正（非法模板/时长、重复占用、非法奖励）', () => {
   const storage = memoryStorage();
   const A = runtime({ storage });
