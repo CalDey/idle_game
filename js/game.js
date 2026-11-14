@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=134',
-    'assets/home/scene_xuan.webp?v=134',
-    'assets/home/scene_xian.webp?v=134'
+    'assets/home/scene_base.webp?v=135',
+    'assets/home/scene_xuan.webp?v=135',
+    'assets/home/scene_xian.webp?v=135'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -478,18 +478,22 @@
             <div class="upgrade-effect">每层效果：+${formatNumber(perLvEffect)} 灵气/秒</div>
           </div>
           <div class="upgrade-buy">
-            <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" data-gongfa-id="${item.id}" ${
-          canAfford ? '' : 'disabled'
+            <div class="gongfa-actions">
+              <button class="btn btn-cost ${canAfford ? 'btn-primary' : ''}" type="button" data-gongfa-id="${item.id}" data-gongfa-buy="1" ${
+          canAfford || !unlocked ? '' : 'disabled'
         }>
-              <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
-              <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
-            </button>
+                <span class="btn-action">${unlocked ? '参悟' : '锁定'}</span>
+                <span class="btn-price">${unlocked ? `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石` : '境界不足'}</span>
+              </button>
+              <button class="btn" type="button" data-gongfa-id="${item.id}" data-gongfa-buy="10" ${canAfford ? '' : 'disabled'}>×10</button>
+              <button class="btn" type="button" data-gongfa-id="${item.id}" data-gongfa-buy="max" ${canAfford ? '' : 'disabled'}>最大</button>
+            </div>
             <span class="payback-label${pb.tone ? ` payback-${pb.tone}` : ''}"${pb.text ? '' : ' hidden'}>${pb.text}</span>
           </div>
         `;
         const gongfaNew = window.Newbie && typeof window.Newbie.unlockItemUnvisited === 'function'
           && window.Newbie.unlockItemUnvisited(s, 'gongfa', item.id);
-        setActionBadge(row.querySelector('button[data-gongfa-id]'), canAfford || gongfaNew);
+        setActionBadge(row.querySelector('button[data-gongfa-id][data-gongfa-buy="1"]'), canAfford || gongfaNew);
         els.gongfaList.appendChild(row);
       });
     }
@@ -1037,15 +1041,26 @@
       if (canAfford) anyGongfaAffordable = true;
 
       if (els.gongfaList) {
-        const btn = els.gongfaList.querySelector(`button[data-gongfa-id="${item.id}"]`);
-        if (btn) {
+        const btns = els.gongfaList.querySelectorAll(`button[data-gongfa-id="${item.id}"]`);
+        btns.forEach((btn) => {
+          const buy = btn.getAttribute('data-gongfa-buy') || '1';
           btn.disabled = !canAfford;
-          btn.classList.toggle('btn-primary', canAfford);
-          const gongfaNew = window.Newbie && typeof window.Newbie.unlockItemUnvisited === 'function'
-            && window.Newbie.unlockItemUnvisited(s, 'gongfa', item.id);
-          setActionBadge(btn, canAfford || gongfaNew);
-          setPaybackEl(btn.parentElement && btn.parentElement.querySelector('.payback-label'), unlocked ? paybackView('gongfa', item) : { text: '', tone: '' });
-        }
+          if (buy === '1') {
+            btn.classList.toggle('btn-primary', canAfford);
+            const price = btn.querySelector('.btn-price');
+            if (price && unlocked) {
+              price.innerHTML = `<img class="gi gi-12" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true">${formatNumber(cost)} 灵石`;
+            }
+            const gongfaNew = window.Newbie && typeof window.Newbie.unlockItemUnvisited === 'function'
+              && window.Newbie.unlockItemUnvisited(s, 'gongfa', item.id);
+            setActionBadge(btn, canAfford || gongfaNew);
+          } else {
+            btn.hidden = !unlocked;
+          }
+        });
+        const rowBuy = els.gongfaList.querySelector(`button[data-gongfa-id="${item.id}"][data-gongfa-buy="1"]`);
+        const payHost = rowBuy && rowBuy.closest('.upgrade-buy');
+        setPaybackEl(payHost && payHost.querySelector('.payback-label'), unlocked ? paybackView('gongfa', item) : { text: '', tone: '' });
       }
     });
 
@@ -1091,12 +1106,11 @@
       const id = gongfaBtn.getAttribute('data-gongfa-id');
       const item = GONGFA_LIST.find((g) => g.id === id);
       if (!item) return;
-      const cost = GameState.getGongfaCost(item);
-      if (GameState.state.realmIndex >= item.unlockRealmIndex && GameState.state.stones >= cost) {
-        GameState.state.stones -= cost;
-        GameState.state.gongfa[id] = (GameState.state.gongfa[id] || 0) + 1;
+      const buyRaw = gongfaBtn.getAttribute('data-gongfa-buy') || '1';
+      const n = buyRaw === 'max' ? Infinity : Number(buyRaw) || 1;
+      const bought = GameState.buyGongfa(id, n);
+      if (bought > 0) {
         addLog(`潜心参悟${item.name}至第 ${GameState.state.gongfa[id]} 层，吐纳大进！`, 'success');
-        if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(GameState.state, 'home_upgrade', 1, Date.now());
         renderUpgradeLists();
         updateHeaderAndMeditationUI();
         if (window.StageUI) StageUI.render();
@@ -1260,10 +1274,17 @@
       if (breakLabel.textContent !== breakText) breakLabel.textContent = breakText;
     }
     if (els.breakthroughTribHint) {
-      const showTribHint = window.GameConfig && typeof window.GameConfig.shouldShowTribHint === 'function'
+      const baseHint = window.GameConfig && typeof window.GameConfig.shouldShowTribHint === 'function'
         ? window.GameConfig.shouldShowTribHint(stage)
         : Boolean(stage.isMajorTribulation) && !stage.isMaxStage;
-      els.breakthroughTribHint.hidden = !showTribHint;
+      let hint = '';
+      if (baseHint) {
+        hint = window.Newbie && typeof window.Newbie.tribHintText === 'function'
+          ? window.Newbie.tribHintText(s, stage)
+          : '大境界门槛大幅提升';
+      }
+      els.breakthroughTribHint.hidden = !hint;
+      if (hint && els.breakthroughTribHint.textContent !== hint) els.breakthroughTribHint.textContent = hint;
     }
 
     if (els.badgeBreakthrough) {

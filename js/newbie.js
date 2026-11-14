@@ -148,9 +148,9 @@
     {
       id: 'spend',
       tab: 'tab-upgrades',
-      text: () => '把灵石用来参悟功法/修建洞府',
-      // 灵石还买得起时继续提醒；通关 1-10 或到化灵初后让位给逐重突破，避免中后期一直挡着目标条。
-      done: (s) => !canAffordUpgrade(s) || bestStage(s) >= 10 || (s.realmIndex || 0) >= 6
+      text: (s) => spendGoalText(s),
+      // 灵石还买得起时继续提醒；能突破时让位给突破目标；通关 1-10 或到化灵初后也让位。
+      done: (s) => !canAffordUpgrade(s) || bestStage(s) >= 10 || (s.realmIndex || 0) >= 6 || canBreakNow(s)
     },
     realmGoal('realm3', 3)
   ];
@@ -390,6 +390,154 @@
     return B ? Math.round(Number(B.playerStats(s).cp) || 0) : 0;
   }
 
+  const CHAIN_SECONDS = 120;
+
+  function canBreakNow(s) {
+    if (!s) return false;
+    const list = cfg().REALM_STAGES || [];
+    const st = list[s.realmIndex || 0];
+    if (!st || st.isMaxStage) return false;
+    if ((Number(s.qi) || 0) < (Number(st.reqQi) || 0)) return false;
+    return !tribulationGate(s);
+  }
+
+  function fmtRate(n) {
+    const x = Number(n) || 0;
+    if (x >= 100) return String(Math.round(x));
+    const r = Math.round(x * 10) / 10;
+    return Number.isInteger(r) ? String(r) : r.toFixed(1);
+  }
+
+  function spendGoalText(s) {
+    const GS = window.GameState;
+    if (!s || !GS || !canAffordUpgrade(s)) return '把灵石用来参悟功法/修建洞府';
+    const before = (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
+    const detail = estimateSpendDetail(s);
+    if (!detail || !(detail.qiPerSecAfter > 0)) return '把灵石用来参悟功法/修建洞府';
+    return `把灵石用来参悟功法（灵气 ${fmtRate(before)}/s → ${fmtRate(detail.qiPerSecAfter)}/s）`;
+  }
+
+  function snapshotState(s) {
+    return JSON.stringify(s);
+  }
+
+  function restoreState(s, json) {
+    const snap = JSON.parse(json);
+    Object.keys(s).forEach((k) => {
+      if (!Object.prototype.hasOwnProperty.call(snap, k)) delete s[k];
+    });
+    Object.keys(snap).forEach((k) => { s[k] = snap[k]; });
+  }
+
+  function trySimBreak(s, GS) {
+    const stage = typeof GS.getCurrentStage === 'function' ? GS.getCurrentStage() : null;
+    if (!stage || stage.isMaxStage) return 'max';
+    if (tribulationGate(s)) return 'gate';
+    const need = Number(stage.reqQi) || 0;
+    if ((Number(s.qi) || 0) < need) return 'need';
+    s.qi = Math.max(0, (Number(s.qi) || 0) - need);
+    s.realmIndex = (s.realmIndex || 0) + 1;
+    return 'ok';
+  }
+
+  function drainBreaks(s, GS) {
+    let last = 'need';
+    for (let i = 0; i < 80; i += 1) {
+      last = trySimBreak(s, GS);
+      if (last !== 'ok') return last;
+    }
+    return last;
+  }
+
+  function runBreakChain(s, budget, buyFirst) {
+    const GS = window.GameState;
+    const startRealm = s.realmIndex || 0;
+    const base = cpOf(s);
+    if (buyFirst) simulateSpendStones(s);
+    let stop = drainBreaks(s, GS);
+    let t = 0;
+    const lim = Math.max(0, Math.floor(Number(budget) || 0));
+    while (t < lim && stop === 'need') {
+      const per = (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
+      s.qi = (Number(s.qi) || 0) + per;
+      t += 1;
+      stop = drainBreaks(s, GS);
+    }
+    const endRealm = s.realmIndex || 0;
+    return {
+      gain: Math.max(0, cpOf(s) - base),
+      realmIndex: endRealm,
+      realmName: realmName(endRealm),
+      breaks: Math.max(0, endRealm - startRealm),
+      seconds: t,
+      stop: stop === 'need' ? 'time' : stop,
+      buyFirst: !!buyFirst
+    };
+  }
+
+  // 120 秒连锁估算：只在传入的活 state 上改 qi / realmIndex / 灵石 / 功法 / 洞府，
+  // 必须放进 try/finally，算完把所有动过的字段还原；过程中不存档、不派事件、不刷界面。
+  // getQiPerSec / getGongfaCost / getCurrentStage / tribulationLock 都读这份活 state。
+  // 结果按取整后的灵气、灵石、境界、功法与洞府等级、通关进度缓存，输入变了再算。
+  let chainCache = { key: '', val: null };
+  function estimateBreakChain(s, seconds, opts) {
+    const GS = window.GameState;
+    if (!s || !GS) return null;
+    const budget = seconds == null ? CHAIN_SECONDS : Number(seconds);
+    const buyFirst = !!(opts && opts.buyFirst);
+    const key = [
+      Math.floor(Number(s.qi) || 0),
+      Math.floor(Number(s.stones) || 0),
+      s.realmIndex || 0,
+      JSON.stringify(s.gongfa || {}),
+      JSON.stringify(s.dongfu || {}),
+      (s.stage && s.stage.best) || 0,
+      budget,
+      buyFirst ? 1 : 0
+    ].join('|');
+    if (chainCache.key === key && chainCache.val) return chainCache.val;
+    const json = snapshotState(s);
+    let result = null;
+    try {
+      result = runBreakChain(s, budget, buyFirst);
+    } finally {
+      restoreState(s, json);
+    }
+    chainCache = { key, val: result };
+    return result;
+  }
+
+  function nextMajorName(s) {
+    const list = cfg().REALM_STAGES || [];
+    const next = list[(s.realmIndex || 0) + 1];
+    return (next && next.majorName) || realmName((s.realmIndex || 0) + 1);
+  }
+
+  function currentStageOf(s) {
+    const list = cfg().REALM_STAGES || [];
+    return list[s.realmIndex || 0] || null;
+  }
+
+  function tribHintText(s, stage) {
+    const C = cfg();
+    const st = stage || currentStageOf(s);
+    if (!st || typeof C.shouldShowTribHint !== 'function' || !C.shouldShowTribHint(st)) return '';
+    const list = C.REALM_STAGES || [];
+    const idx = Number.isInteger(st.index) ? st.index : list.indexOf(st);
+    const next = idx >= 0 ? list[idx + 1] : null;
+    const cur = Number(st.reqQi) || 0;
+    const nxt = next ? Number(next.reqQi) || 0 : 0;
+    const n = cur > 0 ? Math.max(1, Math.round(nxt / cur)) : 0;
+    const hasQi = !st.isMaxStage && (Number(s && s.qi) || 0) >= (Number(st.reqQi) || 0);
+    if (hasQi && !tribulationGate(s)) {
+      const ch = estimateBreakChain(s, CHAIN_SECONDS);
+      if (ch && ch.breaks >= 2 && ch.seconds <= CHAIN_SECONDS) return '';
+    }
+    return n >= 2
+      ? `渡劫后下一重需灵气 ×${n}，记得先参悟功法提速`
+      : '渡劫后下一重需灵气大幅提升，记得先参悟功法提速';
+  }
+
   function estimateBreakGain(s) {
     const GS = window.GameState;
     const stage = GS.getCurrentStage();
@@ -594,13 +742,21 @@
       });
     }
     const gate = tribulationGate(s);
-    const breakGain = estimateBreakGain(s);
-    if (breakGain != null && !gate) {
+    const breakChain = !gate && canBreakNow(s) ? estimateBreakChain(s, CHAIN_SECONDS) : null;
+    if (breakChain && breakChain.breaks >= 1) {
+      const dest = breakChain.realmName;
+      const major = nextMajorName(s);
+      const st = currentStageOf(s);
+      const label = st && st.isMajorTribulation
+        ? `渡劫进入${major} · 2 分钟内可连破至${dest}，战力 +${fmt(breakChain.gain)}`
+        : `可以突破 · 2 分钟内可连破 ${breakChain.breaks} 重，战力 +${fmt(breakChain.gain)}`;
       out.push({
         key: 'break',
-        label: `可以突破了 · 战力 +${fmt(breakGain)}`,
+        label,
         tab: 'tab-cultivate',
-        gain: breakGain,
+        gain: breakChain.gain,
+        breaks: breakChain.breaks,
+        realmName: dest,
         priority: 2
       });
     }
@@ -627,17 +783,19 @@
     }
     const spend = estimateSpendDetail(s);
     if (spend) {
-      const t = spend.eta;
-      const useBreak = t != null && t <= 120;
+      const spendChain = !gate ? estimateBreakChain(s, CHAIN_SECONDS, { buyFirst: true }) : null;
+      const useChain = !!(spendChain && spendChain.breaks >= 1);
       out.push({
         key: 'gongfa',
-        label: useBreak
-          ? `灵石闲置 · 参悟功法让灵气更快，约 ${t} 秒后能突破`
+        label: useChain
+          ? `参悟功法后 2 分钟内可连破至${spendChain.realmName}，战力 +${fmt(spendChain.gain)}`
           : '灵石闲置 · 参悟功法让灵气更快',
         tab: 'tab-upgrades',
-        gain: useBreak ? spend.breakGain : spend.immediate,
-        eta: t,
+        gain: useChain ? spendChain.gain : spend.immediate,
+        eta: spend.eta,
         qiPerSecAfter: spend.qiPerSecAfter,
+        breaks: useChain ? spendChain.breaks : 0,
+        realmName: useChain ? spendChain.realmName : '',
         priority: 4
       });
     }
@@ -656,7 +814,13 @@
     }
     out.sort((a, b) => (a.priority - b.priority) || (b.gain - a.gain));
     const shown = out.slice(0, 3);
-    if (shown.length) shown[0].best = true;
+    if (shown.length) {
+      const brk = shown.find((o) => o.key === 'break');
+      const spendItem = shown.find((o) => o.key === 'gongfa');
+      // 排序仍按原优先级；仅当灵石连锁增益比突破高 50% 以上时，把 ★ 给灵石项。
+      if (spendItem && brk && brk.gain > 0 && spendItem.gain >= brk.gain * 1.5) spendItem.best = true;
+      else shown[0].best = true;
+    }
     return shown;
   }
 
@@ -1314,9 +1478,13 @@
     upgradeDot,
     unlockItemUnvisited,
     canAffordUpgrade,
+    canBreakNow,
     estimateSpendDetail,
+    estimateBreakChain,
     estimateWaitEta,
     tribulationGate,
+    tribHintText,
+    CHAIN_SECONDS,
     compareDiff,
     cpGainOptions,
     anyModalOpen,

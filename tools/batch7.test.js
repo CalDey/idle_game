@@ -239,7 +239,7 @@ check('第5条 战败引导：优先级、买完后的 T、目标条、对比主
   s.pending = null;
   opts = NB.cpGainOptions(s);
   assert.strictEqual(opts[0].key, 'break');
-  assert.ok(opts[0].label.includes('可以突破了'));
+  assert.ok(opts[0].label.includes('可以突破') && opts[0].label.includes('2 分钟内可连破'));
 
   // 灵气不够时，有桃则摘桃优先于功法
   s.qi = 0;
@@ -262,10 +262,10 @@ check('第5条 战败引导：优先级、买完后的 T、目标条、对比主
   assert.ok(detail.eta !== tIfCurrent || qiBefore === detail.qiPerSecAfter, '若速度快了，T 必须变短');
   opts = NB.cpGainOptions(s);
   assert.strictEqual(opts[0].key, 'gongfa');
-  assert.ok(opts[0].label.includes('灵石闲置'));
-  if (detail.eta <= 120) {
-    assert.ok(opts[0].label.includes(`约 ${detail.eta} 秒后能突破`));
-    assert.strictEqual(opts[0].gain, detail.breakGain, 'T≤120 时按突破战力增益');
+  assert.ok(opts[0].label.includes('参悟功法') || opts[0].label.includes('灵石闲置'), opts[0].label);
+  assert.ok(!/约\s*\d+\s*秒后能突破/.test(opts[0].label), `不应再用约 T 秒后能突破：${opts[0].label}`);
+  if (opts[0].breaks >= 1) {
+    assert.ok(opts[0].label.includes('参悟功法后 2 分钟内可连破至'), opts[0].label);
   }
 
   // 都买不起且再修炼不到 120 秒能突破
@@ -288,7 +288,7 @@ check('第5条 战败引导：优先级、买完后的 T、目标条、对比主
   g.gongfa.yinqijue = 2;
   g.stones = 1e9;
   assert.strictEqual(NB.currentGoal(g).id, 'spend');
-  assert.ok(NB.currentGoal(g).text.includes('把灵石用来参悟功法/修建洞府'));
+  assert.ok(NB.currentGoal(g).text.includes('把灵石用来参悟功法'), NB.currentGoal(g).text);
   g.stones = 0;
   assert.strictEqual(NB.currentGoal(g).id, 'realm3');
   g.realmIndex = 3;

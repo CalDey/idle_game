@@ -733,6 +733,26 @@
     return Math.min(15 * 3600, base + bonus);
   }
 
+  function buyGongfa(id, n) {
+    const item = (window.GameConfig.GONGFA_LIST || []).find((g) => g.id === id);
+    if (!item) return 0;
+    if ((state.realmIndex || 0) < item.unlockRealmIndex) return 0;
+    if (!state.gongfa) state.gongfa = {};
+    const limit = n === Infinity ? Infinity : Math.max(0, Math.floor(n || 0));
+    let bought = 0;
+    while (bought < limit) {
+      const cost = getGongfaCost(item);
+      if (state.stones < cost) break;
+      state.stones -= cost;
+      state.gongfa[id] = (state.gongfa[id] || 0) + 1;
+      bought += 1;
+    }
+    if (bought > 0 && window.Daily && typeof window.Daily.hook === 'function') {
+      window.Daily.hook(state, 'home_upgrade', 1, Date.now());
+    }
+    return bought;
+  }
+
   function buyDongfu(id, n) {
     const item = window.GameConfig.DONGFU_LIST.find((d) => d.id === id);
     if (!item) return 0;
@@ -1351,6 +1371,7 @@
     getHomeDisplayTier,
     getHomeBgDisplayTier,
     getOfflineCapSeconds,
+    buyGongfa,
     buyDongfu,
     getTalentCost,
     getBreakthroughSuccessRate,

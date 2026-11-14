@@ -655,8 +655,14 @@ function breakAt(GS, roll) {
   assert.strictEqual(JSON.stringify(s), snap, '估算后存档完全还原');
   assert.deepStrictEqual(plain(opts.map((o) => o.key)), ['break', 'peach', 'gongfa'], '按固定优先级，不按立即战力');
   assert.strictEqual(opts.filter((o) => o.best).length, 1);
-  assert.strictEqual(opts[0].best, true, '优先级最高的一项标 ★');
-  assert.strictEqual(opts[0].key, 'break');
+  assert.strictEqual(opts[0].key, 'break', '排序仍是突破在前');
+  const spendOpt = opts.find((o) => o.key === 'gongfa');
+  if (spendOpt && opts[0].gain > 0 && spendOpt.gain >= opts[0].gain * 1.5) {
+    assert.strictEqual(spendOpt.best, true, '灵石连锁增益比突破高 50% 以上时把 ★ 给灵石项');
+    assert.ok(!opts[0].best);
+  } else {
+    assert.strictEqual(opts[0].best, true, '优先级最高的一项标 ★');
+  }
   assert.deepStrictEqual(plain(NB.cpGainOptions(s)).map((o) => o.key), plain(opts).map((o) => o.key), '估算确定（固定种子）');
   // 不可用的隐藏
   s.stones = 0; s.qi = 0; s.tree.peaches = 0;
