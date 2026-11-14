@@ -130,4 +130,15 @@ const U = load(['js/ui-text.js']).window.UIText;
   assert.ok(pos('hero-lines-data.js') > 0 && pos('hero-lines-data.js') < pos('hero-voice.js'));
 }
 
+// 世界观剧透修订：去掉暗示「被栽培 / 催熟 / 账」的句子
+{
+  const all = text('index.html') + text('js/ui-text.js') + text('js/hero-lines-data.js');
+  ['第一笔栽培', '尚未写明田主', '果香来得也越早', '更甜的催熟', '不一定只是为了你', '长得太快', '账上另有一行', '鬼后斩下的那一半', '九幽的事，由我来收', '进里域', '又熟了一点点'].forEach((w) =>
+    assert.ok(!all.includes(w), `仍有旧文案：${w}`)
+  );
+  assert.strictEqual(U.data.peach.upgrade, '树开始蕴养。根系往更深的地方钻。');
+  assert.strictEqual(U.data.reincarnation.subtitle, '天神境起，可兵解重修。道果永留。');
+  assert.ok(U.data.gates['九幽鬼母'].lockLog.includes('先去第 21 章第 210 关击败【九幽鬼母】'));
+}
+
 console.log('worldbuilding-text tests passed');
