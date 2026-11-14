@@ -928,7 +928,7 @@ function breakAt(GS, roll) {
     return { A: sandbox.GameAudio, created: () => created, listeners, storage };
   }
   const a = makeAudio();
-  assert.deepStrictEqual(plain(a.A.prefs()), { music: false, sfx: false, volume: 0.9 }, '默认全关，音量沿用原主音量');
+  assert.deepStrictEqual(plain(a.A.prefs()), { music: false, sfx: false, volume: 0.9, asked: false }, '默认全关，音量沿用原主音量');
   assert.strictEqual(a.A.play('tuna'), false);
   a.A.setSfx(true);
   assert.strictEqual(a.A.play('tuna'), false, '无手势不出声');
@@ -941,12 +941,12 @@ function breakAt(GS, roll) {
   assert.strictEqual(a.A.startMusic(), true);
   // 偏好持久化 + 坏数据兜底
   const b = makeAudio({ xiuxian_audio: a.storage.getItem('xiuxian_audio') });
-  assert.deepStrictEqual(plain(b.A.prefs()), { music: true, sfx: true, volume: 0.9 });
+  assert.deepStrictEqual(plain(b.A.prefs()), { music: true, sfx: true, volume: 0.9, asked: true });
   assert.strictEqual(b.created(), 0, '已开启也要等手势');
   b.listeners.keydown();
   assert.strictEqual(b.created(), 1, '手势后自动起 BGM');
   const c = makeAudio({ xiuxian_audio: '{bad' });
-  assert.deepStrictEqual(plain(c.A.prefs()), { music: false, sfx: false, volume: 0.9 });
+  assert.deepStrictEqual(plain(c.A.prefs()), { music: false, sfx: false, volume: 0.9, asked: false });
   // 不含音频文件；来源许可写入仓库；接线
   const audioSrc = text('js/audio.js');
   assert.ok(!/\.(mp3|ogg|wav|m4a)\b/i.test(audioSrc), '纯合成，无外部音频');

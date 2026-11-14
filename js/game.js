@@ -17,6 +17,26 @@
 
   const GameState = window.GameState;
 
+  const HOME_BG_SRC = [
+    'assets/home/scene_base.webp?v=125',
+    'assets/home/scene_xuan.webp?v=125',
+    'assets/home/scene_xian.webp?v=125'
+  ];
+  const prefetchedHomeBg = Object.create(null);
+
+  function prefetchHomeBackgrounds(tier) {
+    const cur = Math.max(0, Math.min(HOME_BG_SRC.length - 1, Number(tier) || 0));
+    const urls = [HOME_BG_SRC[cur]];
+    if (cur + 1 < HOME_BG_SRC.length) urls.push(HOME_BG_SRC[cur + 1]);
+    urls.forEach((src) => {
+      if (!src || prefetchedHomeBg[src]) return;
+      prefetchedHomeBg[src] = true;
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = src;
+    });
+  }
+
   let lastTickTime = performance.now();
   let autoSaveTimer = 0;
   const AUTO_SAVE_INTERVAL_MS = 4000;
@@ -47,6 +67,7 @@
     els.qiProgressBar = document.getElementById('qi-progress-bar');
     els.breakthroughRate = document.getElementById('breakthrough-rate');
     els.breakthroughPenalty = document.getElementById('breakthrough-penalty');
+    els.breakthroughTribHint = document.getElementById('breakthrough-trib-hint');
     els.btnBreakthrough = document.getElementById('btn-breakthrough');
 
     els.logBox = document.getElementById('cultivation-log');
@@ -688,11 +709,7 @@
     }
 
     const bgDisplayTier = GameState.getHomeBgDisplayTier();
-    const HOME_BG_SRC = [
-      'assets/home/scene_base.webp?v=125',
-      'assets/home/scene_xuan.webp?v=125',
-      'assets/home/scene_xian.webp?v=125'
-    ];
+    prefetchHomeBackgrounds(bgDisplayTier);
     if (!els.homeBg) els.homeBg = document.getElementById('home-bg');
     if (els.homeBg) {
       const nextBg = HOME_BG_SRC[bgDisplayTier] || HOME_BG_SRC[0];
@@ -1208,6 +1225,10 @@
       : stage.isMajorTribulation
       ? '渡劫晋升'
       : '突破境界';
+    if (els.breakthroughTribHint) {
+      const showTribHint = Boolean(stage.isMajorTribulation) && !stage.isMaxStage;
+      els.breakthroughTribHint.hidden = !showTribHint;
+    }
 
     if (els.badgeBreakthrough) {
       els.badgeBreakthrough.classList.toggle('visible', canBreak);
@@ -1681,24 +1702,39 @@
     applyHeroAppearance(GameState.state.heroId);
     renderRoleList();
 
+    // 预取当前档与下一档洞府背景，避免切品阶时 #home-bg 闪空
+    prefetchHomeBackgrounds(GameState.getHomeBgDisplayTier());
     renderUpgradeLists();
     renderReincarnationUI();
     updateHeaderAndMeditationUI();
     updateSaveTimestampUI();
 
+    const kickAudioPrompt = () => {
+      if (els.offlineModal && els.offlineModal.classList.contains('active')) return;
+      if (window.GameAudio && typeof window.GameAudio.maybePromptConsent === 'function') {
+        window.GameAudio.maybePromptConsent();
+      }
+    };
+
+    let openingPlayed = false;
     if (isNew) {
       // 开篇五屏（世界观 batch5）：全新存档先播开篇，看完 / 跳过后再写开局日志
-      const firstLog = () => addLog('初入仙途，盘膝吐纳。运转《搬血淬体诀》，感应天地灵气。', 'success');
-      if (!(window.Story && window.Story.playOpening(firstLog))) firstLog();
+      const firstLog = () => {
+        addLog('初入仙途，盘膝吐纳。运转《搬血淬体诀》，感应天地灵气。', 'success');
+        kickAudioPrompt();
+      };
+      openingPlayed = Boolean(window.Story && window.Story.playOpening(firstLog));
+      if (!openingPlayed) firstLog();
     } else {
       addLog('神识归位，继续吐纳天地灵机。');
       // 新档首次进入时没看完开篇就关了页面：下次进来补播（旧档 openingSeen 为 true，不会触发）
-      if (window.Story) window.Story.playOpening();
+      openingPlayed = Boolean(window.Story && window.Story.playOpening(kickAudioPrompt));
     }
 
     if (offlineReport) {
       showOfflineModal(offlineReport);
     }
+    if (!openingPlayed) kickAudioPrompt();
 
     // 绑定事件
     els.meditationZone.addEventListener('pointerdown', handleMeditationTap);
@@ -1770,6 +1806,7 @@
 
     els.btnCloseOffline.addEventListener('click', () => {
       els.offlineModal.classList.remove('active');
+      kickAudioPrompt();
     });
 
     if (els.btnOpenLog && els.logModal) {

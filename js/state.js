@@ -406,56 +406,96 @@
     });
   }
 
+  function clampNonNeg(value, fallback, asInt) {
+    const n = toFiniteNumber(value, fallback);
+    const v = asInt ? Math.floor(n) : n;
+    return v > 0 ? v : 0;
+  }
+
+  function clampRealmIndex(value) {
+    const list = window.GameConfig && window.GameConfig.REALM_STAGES;
+    const max = list && list.length ? list.length - 1 : 41;
+    const n = Math.floor(toFiniteNumber(value, 0));
+    if (n < 0) return 0;
+    if (n > max) return max;
+    return n;
+  }
+
   function coerceStateNumbers(s) {
     if (!s || typeof s !== 'object') return s;
-    s.qi = toFiniteNumber(s.qi, 0);
-    s.stones = toFiniteNumber(s.stones, 0);
-    s.lingyu = toFiniteNumber(s.lingyu, 0);
-    s.realmIndex = toFiniteNumber(s.realmIndex, 0);
-    s.pityBonus = toFiniteNumber(s.pityBonus, 0);
-    s.reincarnationCount = toFiniteNumber(s.reincarnationCount, 0);
-    s.daoGuo = toFiniteNumber(s.daoGuo, 0);
-    s.totalDaoGuo = toFiniteNumber(s.totalDaoGuo, 0);
-    s.totalClicks = toFiniteNumber(s.totalClicks, 0);
+    s.qi = clampNonNeg(s.qi, 0, false);
+    s.stones = clampNonNeg(s.stones, 0, false);
+    s.lingyu = clampNonNeg(s.lingyu, 0, false);
+    s.realmIndex = clampRealmIndex(s.realmIndex);
+    s.pityBonus = clampNonNeg(s.pityBonus, 0, false);
+    s.reincarnationCount = clampNonNeg(s.reincarnationCount, 0, true);
+    s.daoGuo = clampNonNeg(s.daoGuo, 0, false);
+    s.totalDaoGuo = clampNonNeg(s.totalDaoGuo, 0, false);
+    s.totalClicks = clampNonNeg(s.totalClicks, 0, true);
     s.lastSaveTime = toFiniteNumber(s.lastSaveTime, Date.now());
     s.createdAt = toFiniteNumber(s.createdAt, s.lastSaveTime || Date.now());
-    s.playTimeMs = toFiniteNumber(s.playTimeMs, 0);
-    s.lifetimeQi = toFiniteNumber(s.lifetimeQi, 0);
-    s.failBreakthroughs = toFiniteNumber(s.failBreakthroughs, 0);
-    s.peachesPicked = toFiniteNumber(s.peachesPicked, 0);
-    s.decomposed = toFiniteNumber(s.decomposed, 0);
-    s.lifeBestStage = toFiniteNumber(s.lifeBestStage, 0);
-    s.breakAttempts = toFiniteNumber(s.breakAttempts, 0);
+    s.playTimeMs = clampNonNeg(s.playTimeMs, 0, true);
+    s.lifetimeQi = clampNonNeg(s.lifetimeQi, 0, false);
+    s.failBreakthroughs = clampNonNeg(s.failBreakthroughs, 0, true);
+    s.peachesPicked = clampNonNeg(s.peachesPicked, 0, true);
+    s.decomposed = clampNonNeg(s.decomposed, 0, true);
+    s.lifeBestStage = clampNonNeg(s.lifeBestStage, 0, true);
+    s.breakAttempts = clampNonNeg(s.breakAttempts, 0, true);
     if (s.tree && typeof s.tree === 'object') {
-      s.tree.peaches = toFiniteNumber(s.tree.peaches, 0);
-      s.tree.lv = toFiniteNumber(s.tree.lv, 1);
+      s.tree.peaches = clampNonNeg(s.tree.peaches, 0, false);
+      const lv = Math.floor(toFiniteNumber(s.tree.lv, 1));
+      s.tree.lv = lv >= 1 ? lv : 1;
       s.tree.upEnd = toFiniteNumber(s.tree.upEnd, 0);
       s.tree.regenAt = toFiniteNumber(s.tree.regenAt, s.lastSaveTime || Date.now());
     }
     if (s.stage && typeof s.stage === 'object') {
-      s.stage.best = toFiniteNumber(s.stage.best, 0);
-      s.stage.cur = toFiniteNumber(s.stage.cur, 1);
+      s.stage.best = clampNonNeg(s.stage.best, 0, true);
+      const cur = Math.floor(toFiniteNumber(s.stage.cur, 1));
+      s.stage.cur = cur >= 1 ? cur : 1;
       s.stage.idleAt = toFiniteNumber(s.stage.idleAt, s.lastSaveTime || Date.now());
-      s.stage.wins = toFiniteNumber(s.stage.wins, 0);
-      s.stage.fails = toFiniteNumber(s.stage.fails, 0);
-      s.stage.losses = toFiniteNumber(s.stage.losses, 0);
-      s.stage.streak = toFiniteNumber(s.stage.streak, 0);
-      s.stage.maxStreak = toFiniteNumber(s.stage.maxStreak, 0);
-      s.stage.speed = toFiniteNumber(s.stage.speed, 2);
+      s.stage.wins = clampNonNeg(s.stage.wins, 0, true);
+      s.stage.fails = clampNonNeg(s.stage.fails, 0, true);
+      s.stage.losses = clampNonNeg(s.stage.losses, 0, true);
+      s.stage.streak = clampNonNeg(s.stage.streak, 0, true);
+      s.stage.maxStreak = clampNonNeg(s.stage.maxStreak, 0, true);
+      const spd = toFiniteNumber(s.stage.speed, 2);
+      s.stage.speed = spd > 0 ? spd : 2;
     }
     if (s.mijing && typeof s.mijing === 'object') {
-      s.mijing.used = toFiniteNumber(s.mijing.used, 0);
-      s.mijing.runs = toFiniteNumber(s.mijing.runs, 0);
-      s.mijing.clears = toFiniteNumber(s.mijing.clears, 0);
-      s.mijing.bestWave = toFiniteNumber(s.mijing.bestWave, 0);
+      s.mijing.used = clampNonNeg(s.mijing.used, 0, true);
+      s.mijing.runs = clampNonNeg(s.mijing.runs, 0, true);
+      s.mijing.clears = clampNonNeg(s.mijing.clears, 0, true);
+      s.mijing.bestWave = clampNonNeg(s.mijing.bestWave, 0, true);
+    }
+    if (s.login && typeof s.login === 'object') {
+      s.login.streak = clampNonNeg(s.login.streak, 0, true);
+    }
+    if (s.dayTaps && typeof s.dayTaps === 'object') {
+      s.dayTaps.count = clampNonNeg(s.dayTaps.count, 0, true);
+    }
+    if (s.pity && typeof s.pity === 'object') coerceNumericMap(s.pity, 0);
+    if (s.tower && typeof s.tower === 'object') {
+      if ('best' in s.tower) s.tower.best = clampNonNeg(s.tower.best, 0, true);
+      if ('claimed' in s.tower) s.tower.claimed = clampNonNeg(s.tower.claimed, 0, true);
+      if ('fails' in s.tower) s.tower.fails = clampNonNeg(s.tower.fails, 0, true);
+    }
+    if (s.daily && typeof s.daily === 'object') {
+      if ('points' in s.daily) s.daily.points = clampNonNeg(s.daily.points, 0, false);
     }
     coerceNumericMap(s.gongfa, 0);
     coerceNumericMap(s.dongfu, 0);
     coerceNumericMap(s.talents, 0);
     if (s.home && typeof s.home === 'object') {
-      s.home.bgMaxTier = toFiniteNumber(s.home.bgMaxTier, 0);
+      s.home.bgMaxTier = clampNonNeg(s.home.bgMaxTier, 0, true);
       coerceNumericMap(s.home.maxTier, 0);
     }
+    // gongfa/dongfu/talents/pity/home.maxTier: also drop negatives after finite coerce
+    [s.gongfa, s.dongfu, s.talents, s.pity, s.home && s.home.maxTier].forEach((map) => {
+      if (!map || typeof map !== 'object') return;
+      Object.keys(map).forEach((key) => {
+        map[key] = clampNonNeg(map[key], 0, false);
+      });
+    });
     return s;
   }
 
@@ -1343,6 +1383,8 @@
     resumeFromBackground,
     settleAwayProgress,
     applyOfflineWindow,
+    coerceStateNumbers,
+    clampRealmIndex,
     SAVE_KEY,
     SAVE_BACKUP_KEY,
     SAVE_CORRUPT_KEY,

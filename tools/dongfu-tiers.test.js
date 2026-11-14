@@ -47,4 +47,20 @@ assert.ok(/coverScale[^;]*1080/.test(game) && game.includes('1935'), 'layoutHome
 const html = text('index.html');
 assert.ok(/id="home-bg"[^>]*src="assets\/home\/scene_base\.webp/.test(html), '初始 #home-bg 仍回退到 scene_base');
 
-console.log('dongfu-tiers.test.js ok: fan/xuan/xian mapped');
+// 凡品 scene_base 的 ?v= 须与 game.js / index.html / style.css 三处一致
+const baseVers = [];
+const gm = game.match(/assets\/home\/scene_base\.webp\?v=(\d+)/);
+const hm = html.match(/id="home-bg"[^>]*src="assets\/home\/scene_base\.webp\?v=(\d+)/);
+const cm = css.match(/assets\/home\/scene_base\.webp\?v=(\d+)/);
+assert.ok(gm && hm && cm, '三处都应带 scene_base 版本号');
+assert.strictEqual(hm[1], gm[1], 'index.html 与 game.js 的 scene_base 版本须一致');
+assert.strictEqual(cm[1], gm[1], 'style.css 与 game.js 的 scene_base 版本须一致');
+
+// 切品阶闪空：init 用 new Image 预取当前档与下一档，禁止 getImageData
+assert.ok(/function prefetchHomeBackgrounds/.test(game), '应有预加载函数');
+assert.ok(/new Image\s*\(/.test(game), '须用 new Image() 预取');
+assert.ok(!/getImageData/.test(game), '不得使用 getImageData');
+assert.ok(game.includes('prefetchHomeBackgrounds(GameState.getHomeBgDisplayTier())'), 'init 应在渲染前预取当前档');
+assert.ok(/urls\.push\(HOME_BG_SRC\[cur \+ 1\]\)/.test(game) || /HOME_BG_SRC\[cur \+ 1\]/.test(game), '须同时预取下一档');
+
+console.log('dongfu-tiers.test.js ok: fan/xuan/xian mapped, versions aligned, bg prefetched');

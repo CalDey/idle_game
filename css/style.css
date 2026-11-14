@@ -233,7 +233,7 @@ body {
 }
 
 .res-label {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.1;
   color: rgba(244, 239, 228, 0.82);
   display: flex;
@@ -246,7 +246,7 @@ body {
 }
 
 .res-rate {
-  font-size: 9.5px;
+  font-size: 12px;
   line-height: 1.1;
   color: var(--accent-jade);
   white-space: nowrap;
@@ -860,6 +860,17 @@ body {
 
 .breakthrough-info strong {
   color: var(--accent-gold-bright);
+}
+
+.breakthrough-trib-hint {
+  margin-top: 1px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--accent-gold);
+}
+
+.breakthrough-trib-hint[hidden] {
+  display: none;
 }
 
 .btn {
@@ -1856,9 +1867,19 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   }
 
   .path-entry {
-    max-width: 7.8em;
-    font-size: 11px;
-    padding: 4px 6px;
+    max-width: none;
+    font-size: 12px;
+    padding: 3px 5px;
+    white-space: normal;
+    overflow: visible;
+    line-height: 1.2;
+    height: auto;
+  }
+
+  .path-entry #path-entry-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
   }
 }
 
@@ -2045,13 +2066,13 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .battle-top-bar {
   flex: none;
-  height: 14px;
+  height: 16px;
   padding: 0 2px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -2070,7 +2091,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .battle-form-hint {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -2345,11 +2366,26 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   -webkit-user-drag: none;
 }
 
-/* 敌人头像居中放大到脸部 */
+/* 敌人头像居中放大到脸部（全局 scale 不变；女性 Boss 按下项单独锚定） */
 .board-unit.is-enemy .unit-avatar-img {
   object-position: 54% 28%;
   transform-origin: 54% 18%;
   transform: scale(1.45);
+}
+
+/* 四名女性 Boss 圆框头像：按立绘脸部位置分别设 object-position，不加大全局 scale。
+   血蝠夫人 / 青鳞蛇姬脸偏上，原 28% 会切到框外；冰魄蛛后 / 玄冰龙女保持原 54% 28%。 */
+.board-unit.is-enemy .unit-avatar-img[src*="boss_xuefu"] {
+  object-position: 54% 10%;
+}
+.board-unit.is-enemy .unit-avatar-img[src*="boss_qinglin"] {
+  object-position: 48% 8%;
+}
+.board-unit.is-enemy .unit-avatar-img[src*="boss_zhuhou"] {
+  object-position: 54% 28%;
+}
+.board-unit.is-enemy .unit-avatar-img[src*="boss_longnv"] {
+  object-position: 54% 28%;
 }
 
 .unit-avatar-fallback {
@@ -2712,10 +2748,10 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .battle-log-line {
   flex: none;
-  height: 13px;
-  line-height: 13px;
+  height: 16px;
+  line-height: 16px;
   padding: 0 2px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -3685,7 +3721,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=1") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=125") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -8233,7 +8269,7 @@ button.mijing-bless-card:active {
   position: relative;
 }
 
-@media (max-width: 375px) {
+@media (max-width: 430px) {
   .mijing-wave-rewards-wrap::after {
     content: '';
     position: absolute;

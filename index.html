@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=126" />
+  <link rel="stylesheet" href="css/style.css?v=127" />
 </head>
 
 <body>
@@ -122,6 +122,7 @@
             <div class="breakthrough-info">
               <div>破境成功率：<strong id="breakthrough-rate">92.0%</strong></div>
               <div id="breakthrough-penalty">失败损耗 25% 所需灵气</div>
+              <div id="breakthrough-trib-hint" class="breakthrough-trib-hint" hidden>大境界门槛大幅提升</div>
             </div>
             <div class="breakthrough-actions">
               <button id="btn-path-open" class="path-entry" type="button"><img class="gi gi-14" src="assets/icons/gf_taiqingjue@64.webp?v=18" alt="" aria-hidden="true"><span id="path-entry-text">本命道途</span><span id="badge-path" class="home-upgrade-badge" aria-hidden="true"></span></button>
@@ -309,7 +310,7 @@
 
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
-        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=1"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-home-fortune" class="home-fortune-marker" type="button" hidden aria-label="洞府机缘"><span class="home-fortune-glow" aria-hidden="true"></span><span id="home-fortune-label">机缘</span></button></div></div>
+        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=125"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-home-fortune" class="home-fortune-marker" type="button" hidden aria-label="洞府机缘"><span class="home-fortune-glow" aria-hidden="true"></span><span id="home-fortune-label">机缘</span></button></div></div>
       </section>
 
       <!-- 页签3：轮回转世 -->
@@ -673,6 +674,17 @@
     </div>
   </div>
 
+  <div id="audio-consent-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-labelledby="audio-consent-title" aria-describedby="audio-consent-message">
+      <h2 id="audio-consent-title" class="modal-title">音律</h2>
+      <div id="audio-consent-message" class="modal-body">是否开启背景音乐与音效？开启后将以较低音量播放，之后可在设置中随时开关。</div>
+      <div class="modal-actions">
+        <button id="btn-audio-consent-no" data-modal-close class="btn" type="button">暂不</button>
+        <button id="btn-audio-consent-yes" class="btn btn-primary" type="button">开启</button>
+      </div>
+    </div>
+  </div>
+
   <div id="compare-modal" class="modal-backdrop">
     <div class="modal-dialog compare-dialog">
       <h2 class="modal-title">装备对比</h2>
@@ -921,7 +933,7 @@
   <script src="js/beasts.js?v=2"></script>
   <script src="js/ui-text.js?v=3"></script>
   <script src="js/equip.js?v=23"></script>
-  <script src="js/state.js?v=126"></script>
+  <script src="js/state.js?v=127"></script>
   <script src="js/titles.js?v=125"></script>
   <script src="js/grow.js?v=1"></script>
   <script src="js/battle.js?v=123"></script>
@@ -932,11 +944,11 @@
   <script src="js/stage-ui.js?v=126"></script>
   <script src="js/story-data.js?v=115"></script>
   <script src="js/story.js?v=126"></script>
-  <script src="js/audio.js?v=126"></script>
+  <script src="js/audio.js?v=127"></script>
   <script src="js/newbie.js?v=126"></script>
   <script src="js/tribulation-data.js?v=117"></script>
   <script src="js/tribulation.js?v=126"></script>
-  <script src="js/game.js?v=126"></script>
+  <script src="js/game.js?v=127"></script>
   <script src="js/events-data.js?v=116"></script>
   <script src="js/idle-events.js?v=116"></script>
   <script src="js/daily.js?v=1"></script>
