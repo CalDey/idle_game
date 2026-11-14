@@ -7398,3 +7398,14 @@ button.mijing-bless-card:active {
   margin-top: 4px;
   font-size: 11px;
 }
+
+/* 开篇五屏（世界观 batch5）：无名凡人视角，不显示立绘与 Boss 剪影，文字框居中稍大 */
+.story-modal.is-opening .story-portraits {
+  display: none;
+}
+
+.story-modal.is-opening .story-text {
+  font-size: 16px;
+  line-height: 1.9;
+  letter-spacing: 0.06em;
+}

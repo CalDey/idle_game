@@ -360,4 +360,16 @@
     "tiandao": "长到这里，就够了。"
   }
 };
+  // 开篇五屏（世界观 batch5）：只给全新存档首次进入时播一次，旁白逐屏点按。
+  // 来源：/workspace/docs/worldbuilding/开篇与新手引导.md「一、开场剧情」及文末 JSON opening.screens（逐字照搬）。
+  window.StoryData.opening = {
+    source: 'docs/worldbuilding/开篇与新手引导.md 一、开场剧情（5 屏）',
+    screens: [
+      { id: 'open_1', text: '你在乱坟边醒来。精血在骨里作响，像有人把雷按进了肉里。' },
+      { id: 'open_2', text: '远处是破村和土路。白日像凡人世界，夜里已有东西在闻活人的气息。' },
+      { id: 'open_3', text: '洞府很简陋。案上只有残篇《搬血淬体诀》，没有师父。吐纳，或者被吃掉。' },
+      { id: 'open_4', text: '你盘膝坐下。风灌进四肢，骨头发烫。这是仙途的第一口血。' },
+      { id: 'open_5', text: '树影里似乎有人看着你。也许只是风。先活过搬血再说。' }
+    ]
+  };
 })();

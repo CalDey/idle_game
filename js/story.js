@@ -186,6 +186,8 @@
     if (!l) return;
     e.modal.setAttribute('data-who', l.who);
     e.modal.classList.toggle('is-last-words', l.kind === 'last');
+    // 开篇是无名凡人视角：不显示主角立绘与 Boss 剪影
+    e.modal.classList.toggle('is-opening', Boolean(l.opening));
     if (e.name) e.name.textContent = l.name || (l.who === 'narrator' ? '' : '');
     if (e.text) e.text.textContent = l.text;
     if (l.who === 'hero' && e.hero) {
@@ -210,7 +212,7 @@
     open = false;
     const e = ensureEls();
     if (e) {
-      e.modal.classList.remove('active', 'is-last-words');
+      e.modal.classList.remove('active', 'is-last-words', 'is-opening');
       e.modal.setAttribute('aria-hidden', 'true');
     }
     queue = [];
@@ -248,8 +250,16 @@
     };
     const lines = [];
     parts.forEach((p) => {
-      seen[p.key] = true;
-      resolveLines(p.lines, { bossId: p.bossId, squad, heroName }).forEach((l) => lines.push(l));
+      if (p.key === OPENING_KEY) {
+        const st = S();
+        if (st) st.openingSeen = true;
+      } else {
+        seen[p.key] = true;
+      }
+      resolveLines(p.lines, { bossId: p.bossId, squad, heroName }).forEach((l) => {
+        if (p.key === OPENING_KEY) l.opening = true;
+        lines.push(l);
+      });
       ctxBossId = p.bossId || ctxBossId;
     });
     if (window.GameState && window.GameState.saveGame) window.GameState.saveGame();
@@ -268,11 +278,34 @@
     return true;
   }
 
+  // 开篇五屏（世界观 batch5）：state.openingSeen === false（全新存档）时待播；旧档读档即为 true
+  const OPENING_KEY = 'opening';
+
+  function openingPart() {
+    const op = data().opening;
+    const screens = op && Array.isArray(op.screens) ? op.screens : [];
+    const lines = screens.filter((x) => x && x.text).map((x) => ({ speaker: '旁白', text: x.text }));
+    return lines.length ? { key: OPENING_KEY, lines, kind: 'opening' } : null;
+  }
+
+  function openingPending(s) {
+    const st = s || S();
+    return Boolean(st && st.openingSeen === false && openingPart());
+  }
+
+  // game.js 进游戏时调用：需要播则播完再回调 done，返回 true 表示已弹出
+  function playOpening(done) {
+    if (open || !openingPending()) return false;
+    return play([openingPart()], done);
+  }
+
   // stage-ui 开战前调用：需要播剧情则播完再回调 resume，返回 true 表示已拦下
+  // 开篇若还没播（例如被直接关掉页面），先播开篇再接章节剧情，同一个弹窗连播
   function beforeBattle(stageNum, resume) {
     if (open) return true;
-    const parts = pendingBefore(stageNum, seenMap());
-    if (!parts) return false;
+    const parts = pendingBefore(stageNum, seenMap()) || [];
+    if (openingPending()) parts.unshift(openingPart());
+    if (!parts.length) return false;
     return play(parts, resume);
   }
 
@@ -301,6 +334,9 @@
     play,
     beforeBattle,
     afterBossWin,
+    openingPart,
+    openingPending,
+    playOpening,
     isOpen,
     finish
   };

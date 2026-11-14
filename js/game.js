@@ -1611,9 +1611,13 @@
     updateSaveTimestampUI();
 
     if (isNew) {
-      addLog('初入仙途，盘膝吐纳。运转《搬血淬体诀》，感应天地灵气。', 'success');
+      // 开篇五屏（世界观 batch5）：全新存档先播开篇，看完 / 跳过后再写开局日志
+      const firstLog = () => addLog('初入仙途，盘膝吐纳。运转《搬血淬体诀》，感应天地灵气。', 'success');
+      if (!(window.Story && window.Story.playOpening(firstLog))) firstLog();
     } else {
       addLog('神识归位，继续吐纳天地灵机。');
+      // 新档首次进入时没看完开篇就关了页面：下次进来补播（旧档 openingSeen 为 true，不会触发）
+      if (window.Story) window.Story.playOpening();
     }
 
     if (offlineReport) {

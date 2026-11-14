@@ -247,6 +247,8 @@
       breakAttempts: 0,
       unlockSeen: {},
       storySeen: {},
+      // 开篇五屏（世界观 batch5）：只给全新存档播一次；旧档读档时视为已看过
+      openingSeen: false,
       ...v2Fields
     };
   }
@@ -700,6 +702,7 @@
       breakAttempts: normalizeBreakAttempts(saved),
       unlockSeen: normalizeUnlockSeen(saved.unlockSeen),
       storySeen: normalizeStorySeen(saved.storySeen, saved),
+      openingSeen: saved.openingSeen !== false,
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
       playTimeMs: saved.playTimeMs || 0,
       lifetimeQi: saved.lifetimeQi || 0,
@@ -1009,6 +1012,7 @@
     fresh.breakAttempts = normalizeBreakAttempts(state);
     fresh.unlockSeen = normalizeUnlockSeen(state.unlockSeen) || {};
     fresh.storySeen = normalizeStorySeen(state.storySeen, state);
+    fresh.openingSeen = true;
     fresh.titles = {
       owned: [...((state.titles && state.titles.owned) || ['churu'])],
       worn: (state.titles && state.titles.worn) || 'churu',

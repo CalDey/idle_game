@@ -897,5 +897,82 @@ function breakAt(GS, roll) {
   assert.ok(text('js/stage-ui.js').includes("window.GameAudio.play('boss')"));
 }
 
+// ---------- 世界观 batch5：开篇五屏（只给全新存档；旧档视为已看；先开篇后章节剧情） ----------
+{
+  function fakeEl(id) {
+    const cls = new Set();
+    const attrs = {};
+    const handlers = {};
+    return {
+      id, textContent: '', src: '',
+      classList: { add: (...c) => c.forEach((x) => cls.add(x)), remove: (...c) => c.forEach((x) => cls.delete(x)), toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c) },
+      setAttribute: (k, v) => { attrs[k] = String(v); }, getAttribute: (k) => attrs[k], removeAttribute: (k) => { delete attrs[k]; },
+      addEventListener: (t, fn) => { handlers[t] = fn; }, click: () => handlers.click && handlers.click({ stopPropagation() {} })
+    };
+  }
+  function boot(storage) {
+    const rt = loadRuntime(storage);
+    const elsById = {};
+    rt.sandbox.document = { getElementById: (id) => (elsById[id] = elsById[id] || fakeEl(id)) };
+    ['js/codex-data.js', 'js/story-data.js', 'js/story.js'].forEach((rel) => vm.runInNewContext(text(rel), rt.sandbox, { filename: rel }));
+    return { ...rt, ST: rt.sandbox.window.Story, SD: rt.sandbox.window.StoryData, el: (id) => rt.sandbox.document.getElementById(id) };
+  }
+  const doc = text('docs/../js/story-data.js');
+  const fresh = boot(memoryStorage());
+  const r = fresh.GS.loadGame();
+  assert.strictEqual(r.isNew, true);
+  assert.strictEqual(fresh.GS.state.openingSeen, false, '全新存档待播');
+  const screens = fresh.SD.opening.screens;
+  assert.deepStrictEqual(plain(screens.map((x) => x.id)), ['open_1', 'open_2', 'open_3', 'open_4', 'open_5']);
+  assert.ok(screens[0].text.startsWith('你在乱坟边醒来') && screens[4].text.includes('先活过搬血再说'));
+  screens.forEach((x) => assert.ok(x.text.length <= 60, '每屏 ≤ 60 字'));
+  assert.ok(doc.includes('开篇与新手引导.md'), '注明来源');
+  // 播放：5 屏旁白，无立绘；跳过即记为已看并回调
+  let logged = 0;
+  assert.strictEqual(fresh.ST.playOpening(() => { logged += 1; }), true);
+  assert.strictEqual(fresh.GS.state.openingSeen, true, '一开播即记已看');
+  const modal = fresh.el('story-modal');
+  assert.ok(modal.classList.contains('active') && modal.classList.contains('is-opening'));
+  assert.strictEqual(fresh.el('story-text').textContent, screens[0].text);
+  fresh.el('btn-story-skip').click();
+  assert.strictEqual(logged, 1, '跳过后才写开局日志');
+  assert.ok(!modal.classList.contains('active') && !modal.classList.contains('is-opening'));
+  assert.strictEqual(fresh.ST.playOpening(), false, '只播一次');
+  // 存档往返：已看过的不再播；没看完就关页的新档下次进来仍待播
+  const st2 = memoryStorage();
+  const n2 = boot(st2);
+  n2.GS.loadGame();
+  n2.GS.saveGame();
+  const n3 = boot(st2);
+  n3.GS.loadGame();
+  assert.strictEqual(n3.GS.state.openingSeen, false, '新档未看过仍待播');
+  // 旧档（无字段）一律视为已看
+  const o = boot(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 0 }) }));
+  o.GS.loadGame();
+  assert.strictEqual(o.GS.state.openingSeen, true, '旧档不弹');
+  assert.strictEqual(o.ST.playOpening(), false);
+  // 轮回后也不再播
+  fresh.GS.state.realmIndex = 27;
+  fresh.GS.performReincarnation();
+  assert.strictEqual(fresh.GS.state.openingSeen, true);
+  // 与 P1-1 不冲突：开篇还没播时打第 1 关，先开篇再第 1 章开头，同一弹窗连播
+  const c = boot(memoryStorage());
+  c.GS.loadGame();
+  let resumed = 0;
+  assert.strictEqual(c.ST.beforeBattle(1, () => { resumed += 1; }), true);
+  assert.ok(c.el('story-modal').classList.contains('is-opening'), '先开篇');
+  for (let i = 0; i < 5; i += 1) c.el('btn-story-next').click();
+  assert.ok(!c.el('story-modal').classList.contains('is-opening'), '接着章节剧情');
+  assert.ok(c.el('story-modal').classList.contains('active'));
+  assert.strictEqual(resumed, 0);
+  c.el('btn-story-skip').click();
+  assert.strictEqual(resumed, 1, '播完才开战');
+  assert.ok(c.GS.state.storySeen['c1:intro'] && c.GS.state.openingSeen === true);
+  // 接线
+  const game = text('js/game.js');
+  assert.ok(game.includes('window.Story.playOpening(firstLog)'), '新档：开篇后写开局日志');
+  assert.ok(text('css/style.css').includes('.story-modal.is-opening .story-portraits'));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');
