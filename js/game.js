@@ -287,17 +287,29 @@
     updateHeaderAndMeditationUI();
   }
 
+  // 界面文案（js/ui-text.js）；数据缺失时回退旧文案
+  function uiText(group, vars, fallback, stage, kind) {
+    const U = window.UIText;
+    if (!U) return fallback;
+    if (group === 'breakthrough') return U.breakthrough(stage && stage.majorId, kind, vars, fallback);
+    return U.t(group, kind, vars, fallback);
+  }
+
+  function gateText(boss, kind, fallback) {
+    return window.UIText ? window.UIText.gate(boss, kind, fallback) : fallback;
+  }
+
   // 境界突破 / 渡劫
   function attemptBreakthrough() {
     const s = GameState.state;
     const stage = GameState.getCurrentStage();
     if (stage.isMaxStage) {
-      addLog('道友已臻至至尊后大圆满，可前往【轮回】转世重修，凝聚无上道果！', 'gold');
+      addLog(uiText('breakthrough', null, '道友已臻至至尊后大圆满，可前往【轮回】转世重修，凝聚无上道果！', stage, 'successMax'), 'gold');
       return;
     }
     const gate = window.Equip && Equip.tribulationLock(GameState.state);
     if (gate) {
-      addLog(`大境界渡劫前需先击败【${gate.boss}】（第 ${gate.chapter} 章）。`, 'warn');
+      addLog(gateText(gate.boss, 'lockLog', `大境界渡劫前需先击败【${gate.boss}】（第 ${gate.chapter} 章）。`), 'warn');
       switchToTab('tab-stage');
       return;
     }
@@ -312,9 +324,15 @@
     if (result.success) {
       const nextStage = result.nextStage;
       if (stage.isMajorTribulation) {
-        addLog(`天降祥瑞，雷劫散尽！恭喜道友渡劫成功，正式踏入【${nextStage.fullName}】！`, 'gold');
+        addLog(
+          uiText('breakthrough', { next: nextStage.fullName }, `天降祥瑞，雷劫散尽！恭喜道友渡劫成功，正式踏入【${nextStage.fullName}】！`, stage, 'successTribulation'),
+          'gold'
+        );
       } else {
-        addLog(`气海翻腾，水到渠成！成功突破至【${nextStage.fullName}】！`, 'success');
+        addLog(
+          uiText('breakthrough', { next: nextStage.fullName }, `气海翻腾，水到渠成！成功突破至【${nextStage.fullName}】！`, stage, 'successMinor'),
+          'success'
+        );
       }
       if (result.guaranteed) {
         const left = GameState.GUARANTEED_BREAKS - (s.breakAttempts || 0);
@@ -333,7 +351,7 @@
     } else {
       // 突破失败：按所需灵气比例损失（不超过 reqQi×比例），并增加气运补偿
       addLog(
-        `${actionName}受挫，心神震荡，散去 ${formatNumber(result.loss)} 灵气（下次破境成功率 +4%）。`,
+        uiText('breakthrough', { loss: formatNumber(result.loss) }, `${actionName}受挫，心神震荡，散去 ${formatNumber(result.loss)} 灵气（下次破境成功率 +4%）。`, stage, 'failure'),
         'warn'
       );
       GameState.saveGame();
@@ -560,7 +578,7 @@
         s.home.maxTier[id] = newMax;
         if (homeSyncedOnce) {
           const tName = (HOME_TIERS[newMax] && HOME_TIERS[newMax].name) || '';
-          const msg = `洞府进阶：${item.name}·${tName}`;
+          const msg = uiText('dongfu', { name: item.name, tier: tName }, `洞府进阶：${item.name}·${tName}`, null, 'tierup');
           addLog(msg, 'success');
           revealedInfo = { tier: newMax, text: msg };
         }
@@ -637,6 +655,8 @@
     if (els.homeTitle) {
       const bgTierName = (HOME_TIERS[bgDisplayTier] && HOME_TIERS[bgDisplayTier].name) || '凡品';
       els.homeTitle.textContent = `洞府 · ${bgTierName} · 总等级 ${totalLv}`;
+      // 标题牌空间有限：完整文案（含副句）放在悬停提示里
+      els.homeTitle.title = uiText('dongfu', { tier: bgTierName, lv: totalLv }, '', null, 'title');
     }
 
     homeSyncedOnce = true;
@@ -891,7 +911,7 @@
     if (!item) return;
     const bought = GameState.buyDongfu(id, n);
     if (bought > 0) {
-      addLog(`消耗灵石扩建【${item.name}】至 Lv.${GameState.state.dongfu[id]}！`, 'success');
+      addLog(dongfuBuildText(item.name, GameState.state.dongfu[id]), 'success');
       renderUpgradeLists();
       renderHomeUpgradeModal();
       updateHeaderAndMeditationUI();
@@ -976,11 +996,11 @@
     els.pendingDaoguo.textContent = `+${pending} 道果`;
 
     if (canReincarnate) {
-      els.reincarnateReqHint.textContent = `当前境界已达天神境以上，兵解转世可立即凝结 ${pending} 枚道果！`;
+      els.reincarnateReqHint.textContent = uiText('reincarnation', { n: pending }, `当前境界已达天神境以上，兵解转世可立即凝结 ${pending} 枚道果！`, null, 'ready');
       els.btnReincarnate.disabled = false;
     } else {
       const currentName = GameState.getCurrentStage().fullName;
-      els.reincarnateReqHint.textContent = `需突破至【天神初】方可开启轮回转世（当前：${currentName}，${realmGapText(s.realmIndex, REINCARNATION_MIN_STAGE)}）。`;
+      els.reincarnateReqHint.textContent = `${uiText('reincarnation', null, '需突破至【天神初】方可开启轮回转世。', null, 'locked')}（当前：${currentName}，${realmGapText(s.realmIndex, REINCARNATION_MIN_STAGE)}）`;
       els.btnReincarnate.disabled = true;
     }
     const reincarnateLocked = document.getElementById('reincarnate-locked');
@@ -1048,11 +1068,11 @@
 
     openConfirmModal(
       '轮回转世确认',
-      `转世重修将重置当前境界、灵气、灵石以及功法与洞府等级，但会永久获得 ${pending} 枚【道果】并保留所有道果秘术加成。是否立即踏入轮回？`,
+      uiText('reincarnation', { n: pending }, `转世重修将重置当前境界、灵气、灵石以及功法与洞府等级，但会永久获得 ${pending} 枚【道果】并保留所有道果秘术加成。是否立即踏入轮回？`, null, 'confirm'),
       () => {
         const res = GameState.performReincarnation();
         if (res.ok) {
-          addLog(`历经百劫，轮回重修！凝结 ${res.gain} 枚不朽道果，先天资质大幅跃升！`, 'gold');
+          addLog(uiText('reincarnation', { n: res.gain }, `历经百劫，轮回重修！凝结 ${res.gain} 枚不朽道果，先天资质大幅跃升！`, null, 'success'), 'gold');
           renderUpgradeLists();
           renderReincarnationUI();
           updateHeaderAndMeditationUI();
@@ -1108,7 +1128,7 @@
     els.btnBreakthrough.textContent = stage.isMaxStage
       ? '境界圆满'
       : gateLocked
-      ? `先败 ${gate.boss}`
+      ? gateText(gate.boss, 'button', `先败 ${gate.boss}`)
       : stage.isMajorTribulation
       ? '渡劫晋升'
       : '突破境界';
@@ -1126,6 +1146,28 @@
     updateUpgradeButtonsState();
   }
 
+  // 离线弹窗标题与氛围句按时长分档（片刻 / 归来 / 久关 / 已满）；上限小时数仍按 getOfflineCapSeconds()
+  function applyOfflineFlavor(report) {
+    const U = window.UIText;
+    if (!U) return;
+    const entry = U.offline(U.offlineTier(report));
+    const titleEl = document.getElementById('offline-title');
+    const flavorEl = document.getElementById('offline-flavor');
+    if (titleEl && entry && entry.title) titleEl.textContent = entry.title;
+    if (flavorEl && entry && entry.body) flavorEl.textContent = entry.body;
+    if (report.capped && els.offlineCapNote) {
+      const capSec = typeof GameState.getOfflineCapSeconds === 'function' ? GameState.getOfflineCapSeconds() : 12 * 3600;
+      els.offlineCapNote.textContent = `（单次离线闭关上限 ${Math.round(capSec / 3600)} 小时）`;
+    }
+  }
+
+  function dongfuBuildText(name, lv) {
+    const fallback = `消耗灵石扩建【${name}】至 Lv.${lv}！`;
+    const tpl = window.UIText && window.UIText.t('dongfu', 'upgrade', { name }, null);
+    // 文案原句不含等级，这里保留「至 Lv.X」以免丢信息
+    return tpl ? tpl.replace(`扩建【${name}】`, `扩建【${name}】至 Lv.${lv}`) : fallback;
+  }
+
   function showOfflineModal(report) {
     if (!report) return;
     els.offlineDuration.textContent = formatDuration(report.effectiveSeconds);
@@ -1136,11 +1178,18 @@
     if (offlinePeach) offlinePeach.textContent = `+${formatNumber(report.peachGain || 0)}`;
     if (offlineLingyu) offlineLingyu.textContent = `+${formatNumber(report.lingyuGain || 0)}`;
     els.offlineCapNote.style.display = report.capped ? 'block' : 'none';
+    applyOfflineFlavor(report);
     els.offlineModal.classList.add('active');
+    const offlineVars = {
+      duration: formatDuration(report.effectiveSeconds),
+      qi: formatNumber(report.qiGain),
+      stone: formatNumber(report.stoneGain)
+    };
+    const offlineLogTpl = window.UIText && window.UIText.offline('log');
     addLog(
-      `闭关归来（离线 ${formatDuration(report.effectiveSeconds)}），共获 ${formatNumber(
-        report.qiGain
-      )} 灵气、${formatNumber(report.stoneGain)} 灵石。`,
+      offlineLogTpl && offlineLogTpl.body
+        ? window.UIText.fmt(offlineLogTpl.body, offlineVars)
+        : `闭关归来（离线 ${offlineVars.duration}），共获 ${offlineVars.qi} 灵气、${offlineVars.stone} 灵石。`,
       'gold'
     );
   }

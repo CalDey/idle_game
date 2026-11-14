@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=93" />
+  <link rel="stylesheet" href="css/style.css?v=94" />
 </head>
 
 <body>
@@ -130,6 +130,7 @@
         <div id="gear-locked" class="gufeng-card gear-locked">
           <div class="card-title">法宝未启</div>
           <p class="gear-locked-text">突破至搬血中后，仙桃树赠桃三十枚，摘桃可得法宝</p>
+          <p class="gear-locked-flavor">搬血中之后，树才会认你。赠桃三十枚，不是礼物，是第一笔栽培。</p>
           <div class="lock-art" aria-hidden="true"><svg class="lock-silhouette" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60 14C51 14 45 21 45 30C45 37 49 43 55 45L52 50L30 60L24 106H96L90 60L68 50L65 45C71 43 75 37 75 30C75 21 69 14 60 14Z" fill="currentColor"/><rect x="47" y="70" width="26" height="20" rx="3" fill="#0b0a1c"/><path d="M52 70V64a8 8 0 0 1 16 0v6" stroke="#0b0a1c" stroke-width="4"/></svg></div>
           <p class="lock-cond" data-lock-realm="1"></p>
           <p class="lock-chain" data-realm-chain></p>
@@ -311,7 +312,7 @@
           <div class="card-header">
             <span class="card-title"><img class="gi" src="assets/icons/nav_reincarnate@64.webp?v=18" alt=""
                 aria-hidden="true">轮回转世</span>
-            <span class="card-subtitle">天神境及以上可兵解重修，凝结永久道果</span>
+            <span class="card-subtitle">天神境起，可兵解重修。道果永留。至于果最终归于谁，账上另有一行。</span>
           </div>
 
           <div class="reincarnate-stats">
@@ -329,7 +330,7 @@
             <div class="breakthrough-info">
               <div>本次转世可凝结：<img class="gi gi-16" src="assets/icons/res_daoguo@64.webp?v=18" alt=""
                   aria-hidden="true"><strong id="pending-daoguo">+0 道果</strong></div>
-              <div id="reincarnate-req-hint">需突破至【天神初】方可开启轮回转世。</div>
+              <div id="reincarnate-req-hint">需突破至【天神初】，才开得了这一次轮回。开了，不等于能把上一世全部带走。</div>
             </div>
             <button id="btn-reincarnate" class="btn btn-primary" disabled><img class="gi gi-18"
                 src="assets/icons/nav_reincarnate@64.webp?v=18" alt="" aria-hidden="true">轮回转世</button>
@@ -539,9 +540,10 @@
   <!-- 离线收益弹窗 -->
   <div id="offline-modal" class="modal-backdrop">
     <div class="modal-dialog">
-      <h2 class="modal-title">闭关收益结算</h2>
+      <h2 id="offline-title" class="modal-title">闭关归来</h2>
       <div class="modal-body">
-        <div>道友神游归来，本次离线闭关时长：<strong id="offline-duration">0秒</strong></div>
+        <div id="offline-flavor" class="offline-flavor">神识归位。你不在的这段时辰里，吐纳未停，洞府未歇。收获已写下，账——若有账——也一并无声地添过一笔。</div>
+        <div>本次离线闭关时长：<strong id="offline-duration">0秒</strong></div>
         <div id="offline-cap-note" style="display:none; color: var(--accent-gold); font-size: 12px; margin-top: 2px;">
           （已达单次离线闭关 12 小时上限）
         </div>
@@ -667,7 +669,7 @@
           <div id="home-upgrade-list" class="home-upgrade-list"></div>
         </div>
         <div id="home-modal-pane-gongfa" class="home-modal-pane" data-home-pane="gongfa" hidden>
-          <div class="home-gongfa-hint">消耗灵石参悟功法，提升每秒灵气</div>
+          <div class="home-gongfa-hint">以灵石参悟功法。气进得越快，果香来得也越早。</div>
           <div id="gongfa-list" class="upgrade-list"></div>
         </div>
       </div>
@@ -676,20 +678,23 @@
 
   <script src="js/no-zoom.js?v=22"></script>
   <script src="js/config.js?v=77"></script>
+  <script src="js/ui-text.js?v=1"></script>
   <script src="js/equip.js?v=22"></script>
   <script src="js/state.js?v=36"></script>
   <script src="js/titles.js?v=23"></script>
   <script src="js/battle.js?v=38"></script>
   <script src="js/bonds.js?v=1"></script>
   <script src="js/mijing.js?v=2"></script>
-  <script src="js/gear.js?v=32"></script>
-  <script src="js/stage-ui.js?v=54"></script>
+  <script src="js/gear.js?v=33"></script>
+  <script src="js/stage-ui.js?v=55"></script>
   <script src="js/newbie.js?v=2"></script>
-  <script src="js/game.js?v=50"></script>
+  <script src="js/game.js?v=51"></script>
   <script src="js/events-data.js?v=2"></script>
   <script src="js/idle-events.js?v=2"></script>
-  <script src="js/codex-data.js?v=1"></script>
+  <script src="js/codex-data.js?v=2"></script>
   <script src="js/codex.js?v=1"></script>
+  <script src="js/hero-lines-data.js?v=1"></script>
+  <script src="js/hero-voice.js?v=1"></script>
 </body>
 
 </html>

@@ -621,6 +621,32 @@
     }, 600);
   }
 
+  // 角色台词飘字（数据见 js/hero-voice.js / js/hero-lines-data.js）：只做展示，不阻塞战斗节奏
+  function spawnVoiceFloat(unit, text, kind) {
+    const layer = $('battle-float-layer');
+    if (!layer || !unit || !text) return;
+    const span = document.createElement('span');
+    let cls = `battle-voice is-${kind || 'line'}`;
+    if (unit.c >= COLS - 2) cls += ' at-right-edge';
+    if (unit.c <= 1) cls += ' at-left-edge';
+    span.className = cls;
+    span.style.left = `${(((unit.c + 0.5) / COLS) * 100).toFixed(2)}%`;
+    span.style.top = `${(((unit.r + 0.5) / ROWS) * 100).toFixed(2)}%`;
+    span.textContent = text;
+    layer.appendChild(span);
+    setTimeout(() => {
+      if (span.parentNode) span.parentNode.removeChild(span);
+    }, 2400);
+  }
+
+  function heroVoiceLine(kind, unit) {
+    if (!unit || unit.side !== 'player' || !unit.heroId) return;
+    const HV = window.HeroVoice;
+    if (!HV || typeof HV.battleLine !== 'function') return;
+    const text = HV.battleLine(unit.heroId, kind);
+    if (text) spawnVoiceFloat(unit, text, kind);
+  }
+
   function spawnBoardHealFloat(c, r, amount) {
     const layer = $('battle-float-layer');
     if (!layer) return;
@@ -1353,6 +1379,7 @@
       const defUnit = currentSession.unitMap[mainEv.targetId];
       if (atkUnit) syncUnitBarsAndState(atkUnit);
       if (defUnit) syncUnitBarsAndState(defUnit);
+      if (mainEv.targetDied && defUnit && defUnit.side === 'player') heroVoiceLine('defeat', defUnit);
       if (Array.isArray(mainEv.splash)) {
         for (let i = 0; i < mainEv.splash.length; i++) {
           const sp = mainEv.splash[i];
@@ -1495,6 +1522,9 @@
       window.Codex.showBossQuote(enemy);
     }
     render();
+    if (session.playerUnits.length > 0) {
+      heroVoiceLine('deploy', session.playerUnits[Math.floor(Math.random() * session.playerUnits.length)]);
+    }
 
     playTimer = setTimeout(stepPlayback, getMoveDelay());
     return true;

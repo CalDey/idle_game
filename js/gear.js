@@ -1,6 +1,17 @@
 // 法宝页：摘桃、对比、分解、树升级。
 (function () {
   const fmt = (n) => window.GameConfig.formatNumber(n);
+
+  // 仙桃树文案（js/ui-text.js）；缺数据时回退旧文案
+  function gearText(key, vars, fallback) {
+    return window.UIText ? window.UIText.t('peach', key, vars, fallback) : fallback;
+  }
+
+  function peachUpgradeText(nextLv) {
+    const tpl = gearText('upgrade', null, '');
+    // 文案原句不含等级，保留「至 LvX」
+    return tpl ? tpl.replace('树开始蕴养', `树开始蕴养至 Lv${nextLv}`) : `仙桃树开始蕴养至 Lv${nextLv}`;
+  }
   let log = function () {};
   let onChange = function () {};
 
@@ -157,7 +168,7 @@
     $('peach-count').textContent = `${tree.peaches}/${cap}`;
     const remain = Math.max(0, (tree.regenAt || 0) + window.GameConfig.PEACH.INTERVAL_MS - Date.now());
     $('peach-next').textContent =
-      tree.peaches >= cap ? '仙桃已满' : `下一枚 ${window.GameConfig.formatDuration(Math.ceil(remain / 1000))}`;
+      tree.peaches >= cap ? gearText('full', null, '仙桃已满') : `下一枚 ${window.GameConfig.formatDuration(Math.ceil(remain / 1000))}`;
     const cost = window.GameConfig.treeUpgradeCost(tree.lv);
     const secs = Math.round(window.GameConfig.treeUpgradeMs(tree.lv) / 1000);
     const stage = window.GameConfig.treeStage(tree.lv);
@@ -383,7 +394,7 @@
     if ((s.lingyu || 0) < cost) return;
     s.lingyu -= cost;
     tree.upEnd = Date.now() + window.GameConfig.treeUpgradeMs(tree.lv);
-    log(`仙桃树开始蕴养至 Lv${tree.lv + 1}`, 'success');
+    log(peachUpgradeText(tree.lv + 1), 'success');
     window.GameState.saveGame();
     onChange();
     renderTree();
@@ -446,7 +457,7 @@
     if (changed.leveled) {
       const nextStage = window.GameConfig.treeStage(s.tree && s.tree.lv);
       if (nextStage.q > prevStage.q) {
-        log(`仙桃树进阶：【${nextStage.name}】！`, 'gold');
+        log(gearText('stageup', { stageName: nextStage.name }, `仙桃树进阶：【${nextStage.name}】！`), 'gold');
         showReveal({ q: nextStage.q }, `仙桃树进阶：${nextStage.name}`);
       } else {
         log('仙桃树升级完成。', 'gold');
