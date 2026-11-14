@@ -7948,3 +7948,73 @@ button.mijing-bless-card:active {
 .home-up-payback {
   color: var(--text-muted);
 }
+
+
+/* 秘境开局预估强度与结算逐波奖励（滚动条隐藏） */
+.mijing-probe,
+.mijing-wave-rewards,
+.mijing-wave-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mijing-cleared {
+  margin-top: 8px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--accent-gold-bright);
+}
+
+.mijing-wave-list,
+.mijing-wave-rewards {
+  max-height: 28vh;
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mijing-wave-list::-webkit-scrollbar,
+.mijing-wave-rewards::-webkit-scrollbar,
+.mijing-wave-list::-webkit-scrollbar-button,
+.mijing-wave-rewards::-webkit-scrollbar-button,
+.mijing-wave-list::-webkit-scrollbar-track,
+.mijing-wave-rewards::-webkit-scrollbar-track,
+.mijing-wave-list::-webkit-scrollbar-thumb,
+.mijing-wave-rewards::-webkit-scrollbar-thumb {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.mijing-wave-list li,
+.mijing-wave-rewards li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(212, 175, 95, 0.12);
+}
+
+.mijing-wave-rewards li.is-cleared {
+  color: var(--text-main, #f4efe4);
+}
+
+.mijing-wave-rewards li.is-missed {
+  opacity: 0.62;
+}
+
+.mijing-wave-idx {
+  flex: none;
+  white-space: nowrap;
+}
+
+.mijing-wave-cp,
+.mijing-wave-rw {
+  text-align: right;
+}

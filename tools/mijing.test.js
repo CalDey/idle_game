@@ -635,6 +635,42 @@ check('测力可分片预热，结果与同步测力一致', async () => {
   }
 });
 
+
+check('v1 波次强度与推荐战力隔离在 estimateWaveStrength / recommendedCp，只读测力缓存', () => {
+  assert.ok(typeof M.estimateWaveStrength === 'function' && typeof M.recommendedCp === 'function');
+  const st = simState(W, 10, 2);
+  st.stage = { best: 39, cur: 40, squad: SQUAD.slice() };
+  if (B.ensureFormation) B.ensureFormation(st);
+  M.clearStrengthCache();
+  const cheap = M.estimateWaveStrength(st, 39, 1, { cachedOnly: true });
+  assert.ok(cheap > 0, '无缓存时用下限估值，不强制同步测力');
+  const w8 = M.estimateWaveStrength(st, 39, 8);
+  const rec = M.recommendedCp(st, 39);
+  assert.strictEqual(rec, w8, '推荐战力取第 8 波预估强度');
+  const waves = M.estimateAllWaves(st, 39);
+  assert.strictEqual(waves.length, 8);
+  for (let i = 1; i < 8; i++) {
+    assert.ok(waves[i].strength >= waves[i - 1].strength, '波次强度单调不降');
+  }
+  assert.strictEqual(waves[7].kind, 'boss');
+  assert.strictEqual(waves[3].kind, 'elite');
+  const measured = M.measureStrength(st, 39);
+  const floor = Math.max((B.playerStats(st).cp || 0) * ((CFG.MIJING && CFG.MIJING.ANCHOR_FLOOR_MULT) || 0.85), 0);
+  const anchor = M.anchorCp(39, Math.max(measured, floor));
+  assert.strictEqual(M.estimateWaveStrength(st, 39, 8), Math.round(anchor * M.wavePlan(8).mult));
+  assert.strictEqual(M.peekMeasuredStrength(st, 39), measured);
+});
+
+check('开局展示推荐战力与每波预估，结算列出逐波奖励和已通 X/8；不做失败补偿', () => {
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('mijingIntroProbeHtml') && ui.includes('推荐战力'));
+  assert.ok(ui.includes('mijingResultWavesHtml') && ui.includes('已通 ${done}/${M.WAVES}'));
+  assert.ok(ui.includes('warmupStrength(s, ref, () => {'));
+  assert.ok(!ui.includes('返还半次') && !ui.includes('failureRefund') && !/补偿次数/.test(ui), '本批不做失败补偿');
+  const css = text('css/style.css');
+  assert.ok(css.includes('.mijing-wave-list') && css.includes('scrollbar-width: none'));
+});
+
 Promise.all(pending)
   .then(() => {
     console.log(`mijing.test.js ok: ${passed} checks`);

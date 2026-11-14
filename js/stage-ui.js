@@ -2757,6 +2757,47 @@
     return `${LINGYU_ICON} 灵玉 +${fmt(rw.lingyu)} · ${PEACH_ICON} 仙桃 +${fmt(rw.peaches)}`;
   }
 
+  function mijingKindLabel(kind) {
+    if (kind === 'elite') return '精英';
+    if (kind === 'boss') return 'Boss';
+    return '普通';
+  }
+
+  // 开局前：推荐战力 + 每波预估强度。优先读测力缓存，未完成时用下限估值。
+  function mijingIntroProbeHtml(s, ref) {
+    const M = MJ();
+    if (!M || typeof M.estimateWaveStrength !== 'function' || typeof M.recommendedCp !== 'function') return '';
+    const opts = { cachedOnly: true };
+    const rec = M.recommendedCp(s, ref, opts);
+    const pending = typeof M.peekMeasuredStrength === 'function' && M.peekMeasuredStrength(s, ref) == null;
+    let rows = '';
+    for (let w = 1; w <= M.WAVES; w++) {
+      const kind = mijingKindLabel(M.wavePlan(w).kind);
+      rows += `<li><span class="mijing-wave-idx">第 ${w} 波·${kind}</span><span class="mijing-wave-cp">约 ${fmt(M.estimateWaveStrength(s, ref, w, opts))}</span></li>`;
+    }
+    const note = pending ? '<div class="mijing-note">强度测算中，先显示估值</div>' : '';
+    return (
+      `<div class="mijing-probe">` +
+      `<div class="mijing-reward-row">推荐战力：<strong>${fmt(rec)}</strong></div>` +
+      `<ul class="mijing-wave-list">${rows}</ul>${note}</div>`
+    );
+  }
+
+  function mijingResultWavesHtml(ref, cleared) {
+    const M = MJ();
+    if (!M || typeof M.waveReward !== 'function') return '';
+    const done = Math.max(0, Math.min(M.WAVES, Number(cleared) || 0));
+    let rows = '';
+    for (let w = 1; w <= M.WAVES; w++) {
+      const rw = M.waveReward(ref, w);
+      const kind = mijingKindLabel(M.wavePlan(w).kind);
+      const got = w <= done;
+      rows += `<li class="${got ? 'is-cleared' : 'is-missed'}"><span class="mijing-wave-idx">第 ${w} 波·${kind}${got ? '' : '（未过）'}</span><span class="mijing-wave-rw">${rewardLineHtml(rw)}</span></li>`;
+    }
+    return `<div class="mijing-cleared">已通 ${done}/${M.WAVES}</div><ul class="mijing-wave-rewards">${rows}</ul>`;
+  }
+
+
   function renderMijingModal() {
     const titleEl = $('mijing-modal-title');
     const bodyEl = $('mijing-modal-body');
@@ -2782,6 +2823,7 @@
         '<li>沿用当前队伍与布阵；每波开战满血，失败即结束，按已过波次结算。</li>' +
         `<li>每日 <b>${M.DAILY_ATTEMPTS}</b> 次（按本地日期零点重置），开启即消耗。</li>` +
         '</ul>' +
+        (M.isUnlocked(s) ? mijingIntroProbeHtml(s, ref) : '') +
         (M.isUnlocked(s) ? `<div class="mijing-reward-row">全通奖励约：${rewardLineHtml(full)}</div>` : '') +
         `<div class="mijing-note" data-tone="${chk.ok ? 'info' : 'warn'}">${chk.ok ? `今日剩余 ${left}/${M.DAILY_ATTEMPTS} 次` : escHtml(chk.message)}</div>`;
       actions =
@@ -2818,6 +2860,7 @@
       const list = M.blessingList(r.blessings);
       body =
         `<div class="mijing-result-big">${r.full ? '八波尽破，劫运散去' : `已过 ${r.cleared}/${M.WAVES} 波`}</div>` +
+        mijingResultWavesHtml(r.ref, r.cleared) +
         `<div class="mijing-reward-row is-gain">获得：${rewardLineHtml(r)}</div>` +
         (list.length
           ? `<div class="mijing-note">本局劫运（已消散）：${escHtml(list.map((b) => (b.stacks > 1 ? `${b.name}×${b.stacks}` : b.name)).join(' · '))}</div>`
@@ -2838,7 +2881,9 @@
     if (!M || !s || typeof M.warmupStrength !== 'function' || typeof M.isUnlocked !== 'function') return;
     if (!M.isUnlocked(s)) return;
     const ref = Math.max(1, Math.min(300, (s.stage && s.stage.best) || 0));
-    M.warmupStrength(s, ref);
+    M.warmupStrength(s, ref, () => {
+      if (mijingModalOpen && mijingModalMode === 'intro') renderMijingModal();
+    });
   }
 
   function openMijingModal(mode) {

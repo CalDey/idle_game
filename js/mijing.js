@@ -415,6 +415,46 @@
     return anchorCp(ref, Math.max(measured, floorByCp));
   }
 
+  function peekMeasuredStrength(state, ref) {
+    const key = strengthSig(state, ref);
+    return strengthCache.has(key) ? strengthCache.get(key) : null;
+  }
+
+  /**
+   * v1 预估波次强度（数值策划稍后可整函数替换，勿改 UI）。
+   * 用现有测力锚点 × WAVE_PLAN 倍率；opts.cachedOnly 时只读缓存，未命中则用战力下限估算，避免卡主线程。
+   */
+  function estimateWaveStrength(state, ref, wave, opts) {
+    const o = opts || {};
+    let measured = peekMeasuredStrength(state, ref);
+    if (measured == null && !o.cachedOnly) {
+      measured = measureStrength(state, ref);
+    }
+    const floorByCp = fullSquadCp(state) * mijingCfg().ANCHOR_FLOOR_MULT;
+    const fallback = Math.max(floorByCp || 0, refCp(ref));
+    const raw = measured == null ? fallback : Math.max(measured, floorByCp || 0);
+    const anchor = anchorCp(ref, raw);
+    return Math.round(anchor * wavePlan(wave).mult);
+  }
+
+  /**
+   * v1 推荐战力（数值策划稍后可整函数替换，勿改 UI）。
+   * 取第 8 波（Boss）预估强度，作为开局建议面对的最高敌方战力。
+   */
+  function recommendedCp(state, ref, opts) {
+    return estimateWaveStrength(state, ref, WAVES, opts);
+  }
+
+  function estimateAllWaves(state, ref, opts) {
+    const out = [];
+    for (let w = 1; w <= WAVES; w++) {
+      const plan = wavePlan(w);
+      out.push({ wave: w, kind: plan.kind, strength: estimateWaveStrength(state, ref, w, opts) });
+    }
+    return out;
+  }
+
+
   function fullSquadCp(state) {
     const B = battle();
     if (!B || typeof B.playerStats !== 'function') return 0;
@@ -712,6 +752,10 @@
     warmupStrength,
     clearStrengthCache,
     computeAnchor,
+    peekMeasuredStrength,
+    estimateWaveStrength,
+    recommendedCp,
+    estimateAllWaves,
     waveEnemy,
     waveSeed,
     buildMods,
