@@ -776,18 +776,47 @@ function breakAt(GS, roll) {
   const SD = sandbox.window.StoryData;
   const ST = sandbox.window.Story;
   const BOSSES = CFG.BATTLE.BOSSES;
-  assert.strictEqual(SD.chapters.length, 6, '前 6 章');
+  assert.strictEqual(SD.chapters.length, 30, '第 1–30 章');
+  const bossNames = BOSSES.map((b) => b.name).filter(Boolean);
+  const nameById = {};
+  BOSSES.forEach((b) => { if (b && b.id) nameById[b.id] = b.name; });
+  const guoziChapters = new Set();
   SD.chapters.forEach((ch) => {
-    assert.ok(ch.intro.length > 0, `第 ${ch.chapter} 章 intro`);
+    assert.strictEqual(ch.chapter, SD.chapters.indexOf(ch) + 1, '章节连续');
+    assert.strictEqual(ch.intro.length, 4, `第 ${ch.chapter} 章 intro 应为 4 句`);
     assert.strictEqual(ch.bosses.length, 1, '每章 1 个 Boss');
     const b = ch.bosses[0];
     assert.strictEqual(b.stage, ch.chapter * 10, 'Boss 在 10 的倍数关');
     assert.strictEqual(b.bossId, BOSSES[ch.chapter - 1].id, 'bossId 与 config 一致');
-    assert.ok(b.pre.length && b.post.length && b.lastWords);
-    [...ch.intro, ...b.pre, ...b.post].forEach((l) => {
+    assert.strictEqual(b.pre.length, 3, `第 ${ch.chapter} 章 pre 应为 3 句`);
+    assert.strictEqual(b.post.length, 2, `第 ${ch.chapter} 章 post 应为 2 句`);
+    assert.ok(b.lastWords);
+    const lines = [...ch.intro, ...b.pre, ...b.post];
+    lines.forEach((l) => {
       if (!['旁白', 'Boss', '无名修士'].includes(l.speaker)) assert.ok(l.fallback, `heroId 台词必带 fallback：${l.speaker}`);
     });
+    const fields = [];
+    lines.forEach((l) => {
+      if (l && l.text) fields.push(l.text);
+      if (l && l.fallback) fields.push(l.fallback);
+    });
+    if (b.lastWords) fields.push(b.lastWords);
+    fields.forEach((t) => {
+      assert.ok(!t.includes('收割'), `不应出现「收割」：第 ${ch.chapter} 章`);
+      assert.ok(!t.includes('至高天'), `不应出现「至高天」：第 ${ch.chapter} 章`);
+      if (t.includes('果子')) guoziChapters.add(ch.chapter);
+      const ids = [];
+      String(t).replace(/\{boss(?::([a-z0-9_]+))?\}/gi, (m, id) => { ids.push(id || b.bossId); return m; });
+      const filled = ST.fill(t, b.bossId);
+      assert.ok(!filled.includes('{'), `渲染后不应残留「{」：第 ${ch.chapter} 章 ${filled}`);
+      ids.forEach((id) => {
+        const name = nameById[id];
+        assert.ok(name && bossNames.includes(name), `占位符应解析为真实 Boss 名：{boss${id ? ':' + id : ''}}`);
+        assert.ok(filled.includes(name), `渲染结果应含 ${name}`);
+      });
+    });
   });
+  assert.deepStrictEqual([...guoziChapters], [26], '「果子」只出现在第 26 章');
   assert.strictEqual(Object.keys(SD.lastWords).length, 30, '30 个 Boss 遗言');
   BOSSES.slice(0, 30).forEach((b) => assert.ok(SD.lastWords[b.id], `遗言 ${b.id}`));
   const raw = text('js/story-data.js');
@@ -810,14 +839,16 @@ function breakAt(GS, roll) {
   assert.strictEqual(ST.pendingBefore(10, {})[0].key, 'b10:pre');
   assert.strictEqual(ST.pendingBefore(10, { 'b10:pre': true }), null, '看过不再播');
   assert.strictEqual(ST.pendingBefore(11, {})[0].key, 'c2:intro');
-  assert.strictEqual(ST.pendingBefore(61, {}), null, '第 7 章暂无剧情');
+  assert.strictEqual(ST.pendingBefore(61, {})[0].key, 'c7:intro', '第 7 章章首在第 61 关播放');
   const after10 = ST.pendingAfter(10, {})[0];
   assert.strictEqual(after10.lines[0].kind, 'last', '先遗言');
   assert.strictEqual(after10.lines[after10.lines.length - 1].kind, 'codex', '最后提示图鉴已收录');
   assert.ok(after10.lines[after10.lines.length - 1].text.includes(`图鉴已收录【${BOSSES[0].name}】`));
   assert.ok(after10.lines.length > 2, '前 6 章有战后剧情');
   const after70 = ST.pendingAfter(70, {})[0];
-  assert.strictEqual(after70.lines.length, 2, '第 7 章起：遗言 + 图鉴已收录');
+  assert.strictEqual(after70.lines[0].kind, 'last', '第 7 章也先遗言');
+  assert.strictEqual(after70.lines[after70.lines.length - 1].kind, 'codex');
+  assert.strictEqual(after70.lines.length, 4, '第 7 章：遗言 + 战后 2 句 + 图鉴已收录');
   assert.strictEqual(ST.pendingAfter(15, {}), null, '非 Boss 关');
   assert.strictEqual(ST.pendingAfter(10, { 'b10:post': true }), null);
   // 说话人：不在队伍的角色用 fallback 改为旁白
