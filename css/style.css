@@ -5624,3 +5624,53 @@ button.mijing-bless-card:active {
   opacity: 0.9;
   color: rgba(244, 239, 228, 0.8);
 }
+
+/* === 新手体验 P2-6：挑战为主按钮；自走棋固定站位的突进动画 === */
+.stage-action-row {
+  height: 46px;
+  align-items: center;
+}
+
+.stage-action-row .stage-btn-main {
+  flex: 2 1 auto;
+  min-height: 46px;
+  height: 46px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  box-shadow: 0 0 14px rgba(230, 201, 138, 0.35), inset 0 0 10px rgba(255, 240, 200, 0.18);
+}
+
+.stage-action-row .stage-btn-toggle:not(.stage-btn-squad) {
+  min-width: 52px;
+  padding: 4px 8px;
+}
+
+.stage-action-row .stage-btn-squad {
+  min-width: 66px;
+  padding: 4px 7px;
+}
+
+/* 我方钉在阵位格：攻击 = 向目标突进再弹回（位移量由 JS 依显示格计算，见 stage-ui.js lungeVector） */
+.board-unit.is-attacking .unit-body {
+  transform: none;
+  animation: unitLunge 0.26s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
+@keyframes unitLunge {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  40% {
+    transform: translate3d(var(--lunge-x, 0px), var(--lunge-y, -6px), 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-unit.is-attacking .unit-body {
+    animation-duration: 0.12s;
+  }
+}

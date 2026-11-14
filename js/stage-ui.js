@@ -337,6 +337,103 @@
     el.style.zIndex = String(10 + 2 * row + bonus);
   }
 
+  // ---------- 固定站位（P2-6，纯视觉） ----------
+  // 战斗内核里的单位仍会移动（数值不变）；画面上我方单位钉在开战时的阵位格，攻击时向目标突进再弹回。
+  // 敌方显示在其逻辑格；若与我方阵位或其他敌人重叠，则挪到最近的空格（优先靠近其出生格）。
+  let unitAnchors = {};
+  let unitLogical = {};
+
+  function cellKey(c, r) {
+    return `${c},${r}`;
+  }
+
+  function computeDisplayCells(units, anchors, logical) {
+    const out = {};
+    const taken = {};
+    const list = units || [];
+    for (let i = 0; i < list.length; i++) {
+      const u = list[i];
+      if (!u || u.side !== 'player') continue;
+      const a = anchors[u.id] || logical[u.id] || { c: u.c, r: u.r };
+      out[u.id] = { c: a.c, r: a.r };
+      if (u.alive !== false) taken[cellKey(a.c, a.r)] = true;
+    }
+    for (let i = 0; i < list.length; i++) {
+      const u = list[i];
+      if (!u || u.side === 'player') continue;
+      const p = logical[u.id] || { c: u.c, r: u.r };
+      let best = { c: p.c, r: p.r };
+      if (u.alive !== false && taken[cellKey(p.c, p.r)]) {
+        const home = anchors[u.id] || p;
+        let bestScore = Infinity;
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            if (taken[cellKey(c, r)]) continue;
+            const d = Math.max(Math.abs(c - p.c), Math.abs(r - p.r));
+            const h = Math.abs(c - home.c) + Math.abs(r - home.r);
+            const score = d * 100 + h;
+            if (score < bestScore) {
+              bestScore = score;
+              best = { c, r };
+            }
+          }
+        }
+      }
+      out[u.id] = best;
+      if (u.alive !== false) taken[cellKey(best.c, best.r)] = true;
+    }
+    return out;
+  }
+
+  // 攻击突进向量（像素）：朝目标显示格前冲，停在目标前约 0.6 格，最多 1.5 格、最少 8px，然后弹回。
+  function lungeVector(from, to, cellW, cellH) {
+    const cw = cellW > 0 ? cellW : 54;
+    const ch = cellH > 0 ? cellH : 54;
+    const dx = ((to.c - from.c) || 0) * cw;
+    const dy = ((to.r - from.r) || 0) * ch;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (!dist) return { x: 0, y: -6 };
+    const cell = Math.min(cw, ch);
+    const mag = Math.max(8, Math.min(dist - cell * 0.6, cell * 1.5));
+    return { x: Math.round((dx / dist) * mag), y: Math.round((dy / dist) * mag) };
+  }
+
+  function sessionDisplayCells() {
+    const units = currentSession ? currentSession.units : null;
+    if (!units) return null;
+    return computeDisplayCells(units, unitAnchors, unitLogical);
+  }
+
+  function displayCellOf(unitId, c, r) {
+    const map = sessionDisplayCells();
+    return (map && map[unitId]) || { c, r };
+  }
+
+  function boardCellPx() {
+    const board = $('battle-board');
+    if (!board) return { w: 54, h: 54 };
+    const st = board.style;
+    const read = (name) => (st && typeof st.getPropertyValue === 'function' ? parseFloat(st.getPropertyValue(name)) : NaN);
+    const w = read('--cell-w') || (board.clientWidth || 0) / COLS || 54;
+    const h = read('--cell-h') || (board.clientHeight || 0) / ROWS || 54;
+    return { w, h };
+  }
+
+  // 按显示格重新摆放所有单位（移动事件后调用；仅改 left/top，不动战斗数据）
+  function layoutAllUnits() {
+    const map = sessionDisplayCells();
+    if (!map || !currentSession) return;
+    const units = currentSession.units;
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      const dom = unitDomMap[u.id];
+      const d = map[u.id];
+      if (!dom || !d) continue;
+      const ultReady = u.side === 'player' && u.alive && (u.rage || 0) >= (u.maxRage || 100);
+      applyUnitPosition(dom.el, d.c, d.r, u.isBoss, ultReady);
+    }
+  }
+
   function getHeroCfg(u) {
     if (!u || u.side !== 'player') return null;
     const heroes = (window.GameConfig && window.GameConfig.HEROES) || [];
@@ -438,8 +535,12 @@
     if (!container) return;
     container.innerHTML = '';
     unitDomMap = {};
+    unitAnchors = {};
+    unitLogical = {};
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
+      unitAnchors[u.id] = { c: u.c, r: u.r };
+      unitLogical[u.id] = { c: u.c, r: u.r };
       const dom = createUnitElement(u);
       unitDomMap[u.id] = dom;
       container.appendChild(dom.el);
@@ -463,7 +564,9 @@
     }
     const ultReady = u.side === 'player' && u.alive && (u.rage || 0) >= (u.maxRage || 100);
     dom.el.classList.toggle('is-ult-ready', ultReady);
-    applyUnitPosition(dom.el, u.c, u.r, u.isBoss, ultReady);
+    unitLogical[u.id] = { c: u.c, r: u.r };
+    const disp = displayCellOf(u.id, u.c, u.r);
+    applyUnitPosition(dom.el, disp.c, disp.r, u.isBoss, ultReady);
     dom.el.title = `${u.name} 生命 ${dispNum(u.hp)}/${dispNum(u.maxHp)}`;
     if (!u.alive) {
       dom.el.classList.add('is-dead');
@@ -500,7 +603,8 @@
     if (currentSession && currentSession.units) {
       for (let i = 0; i < currentSession.units.length; i++) {
         const u = currentSession.units[i];
-        if (u.isBoss && u.c === c && u.r === r) {
+        const ud = u.isBoss ? displayCellOf(u.id, u.c, u.r) : null;
+        if (ud && ud.c === c && ud.r === r) {
           cls += ' on-boss';
           break;
         }
@@ -553,21 +657,21 @@
     if (fx) fx.innerHTML = '';
   }
 
-  function pulseAttackAndHit(attackerId, targetId, dc, dr) {
+  function pulseAttackAndHit(attackerId, targetId, fromCell, toCell) {
     const atkDom = unitDomMap[attackerId];
     const defDom = unitDomMap[targetId];
     if (atkDom && atkDom.bodyEl) {
       clearTimeout(atkDom.atkTimer);
-      const lx = Math.max(-1, Math.min(1, dc || 0)) * 9;
-      const ly = Math.max(-1, Math.min(1, dr || 0)) * 9;
-      atkDom.bodyEl.style.setProperty('--lunge-x', `${lx}px`);
-      atkDom.bodyEl.style.setProperty('--lunge-y', `${ly}px`);
+      const px = boardCellPx();
+      const v = lungeVector(fromCell, toCell, px.w, px.h);
+      atkDom.bodyEl.style.setProperty('--lunge-x', `${v.x}px`);
+      atkDom.bodyEl.style.setProperty('--lunge-y', `${v.y}px`);
       atkDom.el.classList.remove('is-attacking');
       void atkDom.el.offsetWidth;
       atkDom.el.classList.add('is-attacking');
       atkDom.atkTimer = setTimeout(() => {
         atkDom.el.classList.remove('is-attacking');
-      }, 150);
+      }, 280);
     }
     if (defDom) {
       clearTimeout(defDom.hitTimer);
@@ -684,7 +788,8 @@
       casterDom.el.classList.remove('is-ult-ready', 'is-ult-casting');
       const casterUnit = currentSession && currentSession.unitMap[ultEv.casterId];
       if (casterUnit) {
-        applyUnitPosition(casterDom.el, casterUnit.c, casterUnit.r, casterUnit.isBoss, false);
+        const cd = displayCellOf(casterUnit.id, casterUnit.c, casterUnit.r);
+        applyUnitPosition(casterDom.el, cd.c, cd.r, casterUnit.isBoss, false);
       }
       void casterDom.el.offsetWidth;
       casterDom.el.classList.add('is-ult-casting');
@@ -695,13 +800,19 @@
     }
     delete manualUltReadyAt[ultEv.casterId];
 
-    spawnUltBoardFx(ultEv.primaryC, ultEv.primaryR, isEnemyUlt);
+    const primaryCell = ultEv.primaryId
+      ? displayCellOf(ultEv.primaryId, ultEv.primaryC, ultEv.primaryR)
+      : ultEv.targets && ultEv.targets.length
+      ? displayCellOf((ultEv.targets.find((t) => !t.isSplash) || ultEv.targets[0]).unitId, ultEv.primaryC, ultEv.primaryR)
+      : { c: ultEv.primaryC, r: ultEv.primaryR };
+    spawnUltBoardFx(primaryCell.c, primaryCell.r, isEnemyUlt);
 
     const targets = ultEv.targets || [];
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];
       flashUnitHit(t.unitId);
-      spawnBoardFloat(t.c, t.r, t.dmg, t.crit, !t.isSplash);
+      const tc = displayCellOf(t.unitId, t.c, t.r);
+      spawnBoardFloat(tc.c, tc.r, t.dmg, t.crit, !t.isSplash);
       const u = currentSession && currentSession.unitMap[t.unitId];
       if (u) {
         syncUnitBarsAndState(u);
@@ -711,7 +822,8 @@
     const heals = ultEv.heals || [];
     for (let i = 0; i < heals.length; i++) {
       const h = heals[i];
-      spawnBoardHealFloat(h.c, h.r, h.amount);
+      const hc = displayCellOf(h.unitId, h.c, h.r);
+      spawnBoardHealFloat(hc.c, hc.r, h.amount);
       const u = currentSession && currentSession.unitMap[h.unitId];
       if (u) {
         syncUnitBarsAndState(u);
@@ -771,7 +883,8 @@
       const dom = unitDomMap[caster.id];
       if (dom) {
         dom.el.classList.remove('is-ult-ready');
-        applyUnitPosition(dom.el, caster.c, caster.r, caster.isBoss, false);
+        const cd = displayCellOf(caster.id, caster.c, caster.r);
+        applyUnitPosition(dom.el, cd.c, cd.r, caster.isBoss, false);
         if (dom.rageFill) dom.rageFill.style.width = '0%';
       }
     }
@@ -1214,7 +1327,12 @@
         const mvUnit = currentSession.unitMap[mainEv.unitId];
         const mvUltReady =
           mvUnit && mvUnit.side === 'player' && mvUnit.alive && (mvUnit.rage || 0) >= (mvUnit.maxRage || 100);
-        applyUnitPosition(dom.el, mainEv.toC, mainEv.toR, Boolean(mvUnit && mvUnit.isBoss), Boolean(mvUltReady));
+        unitLogical[mainEv.unitId] = { c: mainEv.toC, r: mainEv.toR };
+        if (currentSession && currentSession.units) {
+          layoutAllUnits();
+        } else {
+          applyUnitPosition(dom.el, mainEv.toC, mainEv.toR, Boolean(mvUnit && mvUnit.isBoss), Boolean(mvUltReady));
+        }
       }
       if (logLine) {
         const readyHint =
@@ -1226,10 +1344,10 @@
     }
 
     if (mainEv.type === 'attack') {
-      const dc = mainEv.targetC - mainEv.attackerC;
-      const dr = mainEv.targetR - mainEv.attackerR;
-      pulseAttackAndHit(mainEv.attackerId, mainEv.targetId, dc, dr);
-      spawnBoardFloat(mainEv.targetC, mainEv.targetR, mainEv.dmg, mainEv.crit, false);
+      const fromCell = displayCellOf(mainEv.attackerId, mainEv.attackerC, mainEv.attackerR);
+      const toCell = displayCellOf(mainEv.targetId, mainEv.targetC, mainEv.targetR);
+      pulseAttackAndHit(mainEv.attackerId, mainEv.targetId, fromCell, toCell);
+      spawnBoardFloat(toCell.c, toCell.r, mainEv.dmg, mainEv.crit, false);
 
       const atkUnit = currentSession.unitMap[mainEv.attackerId];
       const defUnit = currentSession.unitMap[mainEv.targetId];
@@ -1238,7 +1356,8 @@
       if (Array.isArray(mainEv.splash)) {
         for (let i = 0; i < mainEv.splash.length; i++) {
           const sp = mainEv.splash[i];
-          spawnBoardFloat(sp.c, sp.r, sp.dmg, false, false);
+          const spc = displayCellOf(sp.unitId, sp.c, sp.r);
+          spawnBoardFloat(spc.c, spc.r, sp.dmg, false, false);
           const spUnit = currentSession.unitMap[sp.unitId];
           if (spUnit) syncUnitBarsAndState(spUnit);
         }
@@ -2607,6 +2726,7 @@
   }
 
   window.StageUI = {
+    _formation: { computeDisplayCells, lungeVector },
     init,
     tick,
     render,

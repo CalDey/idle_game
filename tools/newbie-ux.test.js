@@ -406,5 +406,67 @@ function breakAt(GS, roll) {
   assert.ok(html.includes('突破失败会损失部分灵气；下次成功率+4%，可叠加，最高+35%。'));
 }
 
+// ---------- P2-6 固定站位 + 突进；挑战主按钮 ----------
+{
+  const { GS, Battle, sandbox } = loadRuntime(memoryStorage());
+  vm.runInNewContext(text('js/stage-ui.js'), sandbox, { filename: 'js/stage-ui.js' });
+  const F = sandbox.window.StageUI._formation;
+  // 纯函数：我方显示在阵位格；敌方逻辑格与我方阵位冲突时挪开
+  const units = [
+    { id: 'p1', side: 'player', c: 2, r: 2, alive: true },
+    { id: 'e1', side: 'enemy', c: 2, r: 4, alive: true },
+    { id: 'e2', side: 'enemy', c: 3, r: 3, alive: true }
+  ];
+  const anchors = { p1: { c: 2, r: 4 }, e1: { c: 2, r: 1 }, e2: { c: 3, r: 1 } };
+  const logical = { p1: { c: 2, r: 2 }, e1: { c: 2, r: 4 }, e2: { c: 3, r: 3 } };
+  const d = F.computeDisplayCells(units, anchors, logical);
+  assert.deepStrictEqual(plain(d.p1), { c: 2, r: 4 }, '我方钉在阵位');
+  assert.deepStrictEqual(plain(d.e2), { c: 3, r: 3 }, '无冲突的敌方显示在逻辑格');
+  assert.notDeepStrictEqual(plain(d.e1), { c: 2, r: 4 }, '敌方不与我方阵位重叠');
+  assert.strictEqual(Math.max(Math.abs(d.e1.c - 2), Math.abs(d.e1.r - 4)), 1, '挪到最近空格');
+  assert.ok(d.e1.r < 4, '优先靠近其出生格一侧');
+  // 突进向量：朝目标方向，长度在 [8px, 1.5 格]
+  const v = F.lungeVector({ c: 2, r: 4 }, { c: 2, r: 1 }, 50, 50);
+  assert.strictEqual(v.x, 0);
+  assert.ok(v.y < 0 && -v.y <= 75 && -v.y >= 8);
+  const adj = F.lungeVector({ c: 2, r: 4 }, { c: 3, r: 4 }, 50, 50);
+  assert.ok(adj.x >= 8 && adj.x <= 25 && adj.y === 0, '相邻目标轻冲');
+  assert.deepStrictEqual(plain(F.lungeVector({ c: 1, r: 1 }, { c: 1, r: 1 }, 50, 50)), { x: 0, y: -6 });
+
+  // 真实战斗回放：我方显示格全程不变，任意时刻存活单位不重叠
+  GS.loadGame();
+  GS.state.realmIndex = 9;
+  const s = GS.state;
+  for (let seed = 1; seed <= 6; seed += 1) {
+    const session = Battle.createSession(s, Battle.enemyFor(5 + seed), seed);
+    const anc = {};
+    const lg = {};
+    session.units.forEach((u) => { anc[u.id] = { c: u.c, r: u.r }; lg[u.id] = { c: u.c, r: u.r }; });
+    let moved = 0;
+    for (let guard = 0; guard < 400 && !session.finished; guard += 1) {
+      const evs = session.step({ autoUlt: true }) || [];
+      evs.forEach((ev) => { if (ev.type === 'move') { lg[ev.unitId] = { c: ev.toC, r: ev.toR }; moved += 1; } });
+      const disp = F.computeDisplayCells(session.units, anc, lg);
+      const seen = {};
+      session.units.forEach((u) => {
+        const c = disp[u.id];
+        if (u.side === 'player') assert.deepStrictEqual(plain(c), plain(anc[u.id]), '我方显示格不漂移');
+        if (u.alive) {
+          const k = `${c.c},${c.r}`;
+          assert.ok(!seen[k], `存活单位显示重叠 seed=${seed} ${k}`);
+          seen[k] = true;
+        }
+      });
+    }
+    assert.ok(session.finished, '战斗能结束');
+  }
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('pulseAttackAndHit(mainEv.attackerId, mainEv.targetId, fromCell, toCell)'));
+  assert.ok(ui.includes('layoutAllUnits()'), '移动事件按显示格重排');
+  const css = text('css/style.css');
+  assert.ok(/@keyframes unitLunge/.test(css), '突进-弹回动画');
+  assert.ok(/\.stage-action-row \.stage-btn-main \{[^}]*height: 46px[^}]*font-size: 18px/.test(css), '挑战按钮放大为主按钮');
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');
