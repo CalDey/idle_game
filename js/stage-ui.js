@@ -1087,7 +1087,7 @@
     }
   }
 
-  // 失败后「去摘桃 / 去参悟功法 / 去突破」：只显示当前可用的，标出战力增益最多的一项（Newbie.cpGainOptions 估算）
+  // 失败后引导：按 Newbie.cpGainOptions 的固定优先级，第一个标 ★，最多 3 条。
   function renderFailGainActions(actionsEl) {
     const opts = window.Newbie && window.Newbie.cpGainOptions ? window.Newbie.cpGainOptions(window.GameState.state) : [];
     const byKey = {};
@@ -1098,17 +1098,20 @@
       btn.hidden = !o;
       btn.classList.toggle('is-best', Boolean(o && o.best));
       btn.classList.toggle('btn-primary', Boolean(o && o.best));
+      const lab = btn.querySelector('.fail-label');
+      if (lab) lab.textContent = o ? o.label : '';
       const em = btn.querySelector('.fail-gain');
-      if (em) em.textContent = o ? `${o.best ? '★ ' : ''}战力+${fmt(o.gain)}` : '';
+      if (em) em.textContent = o && o.best ? '★' : '';
       if (o) shown += 1;
     });
-    // 按增益排序显示
     opts.forEach((o) => {
       const btn = actionsEl.querySelector(`[data-gain-key="${o.key}"]`);
       if (btn) actionsEl.appendChild(btn);
     });
+    const jumpBtn = $('btn-goto-power');
+    if (jumpBtn) actionsEl.appendChild(jumpBtn);
     actionsEl.hidden = shown === 0;
-    return shown;
+    return { shown, opts };
   }
 
   function showFailOverlay(enemy, player, timeout, fails) {
@@ -1132,7 +1135,9 @@
       titleEl.textContent = `${prefix} · 此战惜败，可再战或调整布阵`;
     }
 
-    const shownGains = renderFailGainActions(actionsEl);
+    const gainView = renderFailGainActions(actionsEl);
+    const shownGains = gainView && gainView.shown;
+    const gainOpts = (gainView && gainView.opts) || [];
     const jumpBtn = $('btn-goto-power');
     const exceed = window.Newbie && typeof window.Newbie.recGapExceeds === 'function'
       ? window.Newbie.recGapExceeds(player && player.cp, recCp)
@@ -1140,13 +1145,16 @@
     if (jumpBtn) jumpBtn.hidden = !exceed;
     if (exceed) actionsEl.hidden = false;
     const shown = shownGains || (exceed ? 1 : 0);
-    if (fails >= 2) {
+    const best = gainOpts[0];
+    if (best && best.key === 'gongfa') {
+      subEl.textContent = '灵石闲置会拖慢突破，先参悟功法';
+    } else if (fails >= 2) {
       subEl.textContent = shown
-        ? `本关已连败 ${fails} 次，先提升战力再战（★ 为提升最多）`
+        ? `本关已连败 ${fails} 次，先提升战力再战（★ 为主推荐）`
         : `本关已连败 ${fails} 次，可调整布阵或等待资源积累`;
     } else {
       subEl.textContent = shown
-        ? '失败不损分毫，提升战力后再战（★ 为提升最多）'
+        ? '失败不损分毫，提升战力后再战（★ 为主推荐）'
         : '失败不损分毫，可调整布阵或提升战力后再战';
     }
     clearTimeout(resultOverlayTimer);
@@ -3280,6 +3288,8 @@
     const btnClaim = $('btn-stage-claim');
     const btnGotoPeach = $('btn-goto-peach');
     const btnGotoGongfa = $('btn-goto-gongfa');
+    const btnGotoPending = $('btn-goto-pending');
+    const btnGotoWait = $('btn-goto-wait');
     const squadModal = $('squad-modal');
     const btnSquadClose = $('btn-squad-close');
     const btnSquadCancel = $('btn-squad-cancel');
@@ -3414,6 +3424,23 @@
         e.stopPropagation();
         hideResultOverlay();
         switchTab('tab-upgrades');
+      });
+    }
+    if (btnGotoPending) {
+      btnGotoPending.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
+        switchTab('tab-gear');
+        const s = window.GameState && window.GameState.state;
+        if (s && s.pending && window.GearUI && typeof window.GearUI.openCompare === 'function') {
+          window.GearUI.openCompare(s.pending);
+        }
+      });
+    }
+    if (btnGotoWait) {
+      btnGotoWait.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
       });
     }
 

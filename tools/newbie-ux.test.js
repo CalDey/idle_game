@@ -167,9 +167,14 @@ function oldSave(fields) {
   s.stage.best = 1;
   assert.strictEqual(goal().id, 'gongfa');
   s.gongfa[Object.keys(s.gongfa)[0]] = 2;
+  // 参悟一层之后若灵石还买得起，先提醒把灵石花掉；花完才进入下一重突破。
+  if (NB.canAffordUpgrade(s)) {
+    assert.strictEqual(goal().id, 'spend');
+    s.stones = 0;
+  }
   assert.strictEqual(goal().id, 'realm3');
   s.realmIndex = 3;
-  assert.strictEqual(goal().id, 'stage10');
+  assert.strictEqual(goal().text, '突破至洞天中', '洞天初之后继续逐重显示突破，不跳到通关1-10');
   s.stage.best = 10;
   assert.strictEqual(goal().text, '突破至洞天中');
   s.realmIndex = 8;
@@ -619,11 +624,11 @@ function breakAt(GS, roll) {
   const snap = JSON.stringify(s);
   const opts = NB.cpGainOptions(s);
   assert.strictEqual(JSON.stringify(s), snap, '估算后存档完全还原');
-  assert.deepStrictEqual(plain(opts.map((o) => o.key).sort()), ['break', 'gongfa', 'peach']);
-  for (let i = 1; i < opts.length; i += 1) assert.ok(opts[i - 1].gain >= opts[i].gain, '按增益排序');
+  assert.deepStrictEqual(plain(opts.map((o) => o.key)), ['break', 'peach', 'gongfa'], '按固定优先级，不按立即战力');
   assert.strictEqual(opts.filter((o) => o.best).length, 1);
-  assert.strictEqual(opts[0].best, true, '标记增益最多的一项');
-  assert.deepStrictEqual(plain(NB.cpGainOptions(s)), plain(opts), '估算确定（固定种子）');
+  assert.strictEqual(opts[0].best, true, '优先级最高的一项标 ★');
+  assert.strictEqual(opts[0].key, 'break');
+  assert.deepStrictEqual(plain(NB.cpGainOptions(s)).map((o) => o.key), plain(opts).map((o) => o.key), '估算确定（固定种子）');
   // 不可用的隐藏
   s.stones = 0; s.qi = 0; s.tree.peaches = 0;
   assert.deepStrictEqual(plain(NB.cpGainOptions(s)), []);
@@ -638,7 +643,7 @@ function breakAt(GS, roll) {
   s.tree.peaches = 5;
   assert.ok(!NB.cpGainOptions(s).some((o) => o.key === 'peach'), '法宝未开启不显示去摘桃');
   const html = text('index.html');
-  ['btn-goto-peach', 'btn-goto-gongfa', 'btn-goto-break'].forEach((id) => assert.ok(html.includes(`id="${id}"`), id));
+  ['btn-goto-peach', 'btn-goto-gongfa', 'btn-goto-break', 'btn-goto-pending', 'btn-goto-wait'].forEach((id) => assert.ok(html.includes(`id="${id}"`), id));
   assert.ok(html.includes('去参悟功法'));
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('renderFailGainActions(actionsEl)'));

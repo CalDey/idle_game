@@ -317,6 +317,8 @@
     if (btnReplace) {
       btnReplace.classList.toggle('btn-primary', diff.better);
       btnReplace.classList.toggle('is-recommended', diff.better);
+      const plus = Math.max(0, Math.round(Number(diff.delta) || 0));
+      btnReplace.textContent = diff.better ? `替换（战力 +${fmt(plus)}）` : '替换';
     }
     if (btnDecompose) btnDecompose.classList.toggle('btn-primary', !diff.better);
     $('compare-modal').classList.add('active');

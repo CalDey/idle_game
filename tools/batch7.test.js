@@ -148,6 +148,9 @@ check('P2 新机缘：洞天纳神篇与仙姬派遣都会弹卡并跳到对应�
   const game = text('js/game.js');
   assert.ok(nb.includes("u.key === 'dispatch'") && nb.includes('openDispatch'), '去派遣会打开派遣界面');
   assert.ok(game.includes('openDispatch:') && game.includes('Dispatch.ui.open'), 'game 把 openDispatch 接到 Dispatch.ui.open');
+  assert.strictEqual(NB.unlockArtSrc('dispatch'), '', '派遣卡无配图，用字标，不请求 404 图');
+  assert.strictEqual(NB.unlockArtSrc('gongfa:taiqingjue'), '', '洞天纳神篇无配图，用字标');
+  assert.ok(NB.unlockArtSrc('gear'), '已有配图的 key 仍请求图片');
 
   // 旧档：已解锁的直接记为已看，不刷屏
   const { GS: GS2, NB: NB2 } = loadRuntime(memoryStorage({
@@ -206,6 +209,101 @@ check('建议：首次进闯关前，若法宝卡还没弹过则先弹出；不�
   const game = text('js/game.js');
   assert.ok(/targetId === 'tab-stage'[\s\S]{0,200}promptGearBeforeStage/.test(game), '第一次打开闯关页时触发');
   assert.ok(text('js/newbie.js').includes('shouldShowGearBeforeStage') && text('js/newbie.js').includes('promptGearBeforeStage'));
+});
+
+
+check('第5条 战败引导：优先级、买完后的 T、目标条、对比主按钮、自动分解不拆更强装备', () => {
+  const { GS, NB, sandbox } = loadRuntime();
+  GS.loadGame();
+  const s = GS.state;
+  const E = sandbox.window.Equip;
+
+  // 待换更强法宝优先于突破/摘桃/功法
+  s.realmIndex = 4;
+  s.qi = 1e12;
+  s.stones = 1e9;
+  s.tree.peaches = 8;
+  s.equip.weapon = { s: 'weapon', q: 0, lv: 1, m: 8, sub: [] };
+  const better = { s: 'weapon', q: 4, lv: 8, m: 40, sub: [] };
+  s.pending = better;
+  assert.ok(E.powerWithSwap(s, better) > E.combatPower(s), '测试用装备确实更强');
+  const snap = JSON.stringify(s);
+  let opts = NB.cpGainOptions(s);
+  assert.strictEqual(JSON.stringify(s), snap, '估算后存档还原');
+  assert.strictEqual(opts[0].key, 'pending');
+  assert.strictEqual(opts[0].best, true);
+  assert.ok(opts[0].label.includes('有更好的法宝没换上'));
+  assert.ok(opts.length <= 3);
+
+  // 没有待换时，灵气够突破排第一
+  s.pending = null;
+  opts = NB.cpGainOptions(s);
+  assert.strictEqual(opts[0].key, 'break');
+  assert.ok(opts[0].label.includes('可以突破了'));
+
+  // 灵气不够时，有桃则摘桃优先于功法
+  s.qi = 0;
+  opts = NB.cpGainOptions(s);
+  assert.strictEqual(opts[0].key, 'peach');
+  assert.ok(opts[0].label.includes('还有 8 个仙桃没摘'));
+
+  // 没桃、有闲置灵石：T 必须按买完后的灵气/秒
+  s.tree.peaches = 0;
+  s.stones = 1e9;
+  s.qi = 0;
+  const stage = GS.getCurrentStage();
+  const qiBefore = GS.getQiPerSec();
+  const tIfCurrent = Math.ceil(stage.reqQi / qiBefore);
+  const detail = NB.estimateSpendDetail(s);
+  assert.ok(detail, '应该能买功法/洞府');
+  assert.ok(detail.qiPerSecAfter > qiBefore, '买完后灵气更快');
+  const tAfter = Math.ceil(stage.reqQi / detail.qiPerSecAfter);
+  assert.strictEqual(detail.eta, tAfter, 'T 用买完后的速度，不能用当前速度凑');
+  assert.ok(detail.eta !== tIfCurrent || qiBefore === detail.qiPerSecAfter, '若速度快了，T 必须变短');
+  opts = NB.cpGainOptions(s);
+  assert.strictEqual(opts[0].key, 'gongfa');
+  assert.ok(opts[0].label.includes('灵石闲置'));
+  if (detail.eta <= 120) {
+    assert.ok(opts[0].label.includes(`约 ${detail.eta} 秒后能突破`));
+    assert.strictEqual(opts[0].gain, detail.breakGain, 'T≤120 时按突破战力增益');
+  }
+
+  // 都买不起且再修炼不到 120 秒能突破
+  s.stones = 0;
+  s.tree.peaches = 0;
+  s.pending = null;
+  s.qi = Math.max(0, stage.reqQi - GS.getQiPerSec() * 30);
+  opts = NB.cpGainOptions(s);
+  assert.ok(opts[0] && opts[0].key === 'wait', `应出现再修炼，实际 ${opts[0] && opts[0].key}`);
+  assert.ok(opts[0].label.includes('再修炼约'));
+  assert.ok(opts[0].eta <= 120);
+
+  // 目标条：参悟一层后补花灵石；洞天初后逐重突破
+  GS.loadGame();
+  const g = GS.state;
+  g.realmIndex = 2;
+  g.peachesPicked = 30;
+  g.tree.peaches = 0;
+  g.stage.best = 1;
+  g.gongfa.yinqijue = 2;
+  g.stones = 1e9;
+  assert.strictEqual(NB.currentGoal(g).id, 'spend');
+  assert.ok(NB.currentGoal(g).text.includes('把灵石用来参悟功法/修建洞府'));
+  g.stones = 0;
+  assert.strictEqual(NB.currentGoal(g).id, 'realm3');
+  g.realmIndex = 3;
+  assert.strictEqual(NB.currentGoal(g).text, '突破至洞天中');
+  g.realmIndex = 4;
+  assert.strictEqual(NB.currentGoal(g).text, '突破至洞天后');
+
+  const gear = text('js/gear.js');
+  assert.ok(gear.includes("btnReplace.textContent = diff.better") && gear.includes('替换（战力 +'), '更强时替换为主按钮并写出战力');
+  assert.ok(/const worse = newCp <= oldCp/.test(gear), '自动分解只处理不更强的装备');
+  assert.ok(/auto\.on && worse && item\.q <= \(auto\.maxQ/.test(gear), '更强的装备不会被自动分解');
+
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('openCompare') && ui.includes('btn-goto-pending'), '战败「换上更好法宝」打开对比弹窗');
+  assert.ok(ui.includes('灵石闲置会拖慢突破，先参悟功法'));
 });
 
 check('不改平衡数值，且不用 getImageData / 浏览器自动化', () => {

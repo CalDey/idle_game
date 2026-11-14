@@ -13,8 +13,9 @@
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png?v=16" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
+  <!-- og:image 不加 ?v=：分享缩略图不纳入 bump-version 全局缓存号，见 tools/bump-version.js。 -->
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=128" />
+  <link rel="stylesheet" href="css/style.css?v=129" />
 </head>
 
 <body>
@@ -259,11 +260,13 @@
                 <div id="battle-result-title" class="battle-result-title">败 · 还差约 8% 战力</div>
                 <div id="battle-result-sub" class="battle-result-sub">提升装备或功法后可再来挑战</div>
                 <div id="battle-fail-actions" class="battle-fail-actions" hidden>
+                  <button id="btn-goto-pending" class="btn" type="button" data-gain-key="pending" hidden><span class="fail-label">有更好的法宝没换上</span><em class="fail-gain"></em></button>
                   <button id="btn-goto-peach" class="btn" type="button" data-gain-key="peach" hidden><img class="gi gi-16"
-                      src="assets/icons/res_peach@64.webp?v=18" alt="" aria-hidden="true">去摘桃<em class="fail-gain"></em></button>
+                      src="assets/icons/res_peach@64.webp?v=18" alt="" aria-hidden="true"><span class="fail-label">去摘桃</span><em class="fail-gain"></em></button>
                   <button id="btn-goto-gongfa" class="btn" type="button" data-gain-key="gongfa" hidden><img class="gi gi-16"
-                      src="assets/icons/nav_upgrades@64.webp?v=18" alt="" aria-hidden="true">去参悟功法<em class="fail-gain"></em></button>
-                  <button id="btn-goto-break" class="btn" type="button" data-gain-key="break" hidden>去突破<em class="fail-gain"></em></button>
+                      src="assets/icons/nav_upgrades@64.webp?v=18" alt="" aria-hidden="true"><span class="fail-label">去参悟功法</span><em class="fail-gain"></em></button>
+                  <button id="btn-goto-break" class="btn" type="button" data-gain-key="break" hidden><span class="fail-label">去突破</span><em class="fail-gain"></em></button>
+                  <button id="btn-goto-wait" class="btn" type="button" data-gain-key="wait" hidden><span class="fail-label">再修炼即可突破</span><em class="fail-gain"></em></button>
                   <button id="btn-goto-power" class="btn" type="button" hidden>先回洞府/突破</button>
                 </div>
               </div>
@@ -310,7 +313,7 @@
 
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
-        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=128"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-home-fortune" class="home-fortune-marker" type="button" hidden aria-label="洞府机缘"><span class="home-fortune-glow" aria-hidden="true"></span><span id="home-fortune-label">机缘</span></button></div></div>
+        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=129"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-home-fortune" class="home-fortune-marker" type="button" hidden aria-label="洞府机缘"><span class="home-fortune-glow" aria-hidden="true"></span><span id="home-fortune-label">机缘</span></button></div></div>
       </section>
 
       <!-- 页签3：轮回转世 -->
@@ -928,39 +931,39 @@
     </div>
   </div>
 
-  <script src="js/no-zoom.js?v=128"></script>
-  <script src="js/config.js?v=128"></script>
-  <script src="js/beasts.js?v=128"></script>
-  <script src="js/ui-text.js?v=128"></script>
-  <script src="js/equip.js?v=128"></script>
-  <script src="js/state.js?v=128"></script>
-  <script src="js/titles.js?v=128"></script>
-  <script src="js/grow.js?v=128"></script>
-  <script src="js/battle.js?v=128"></script>
-  <script src="js/bonds.js?v=128"></script>
-  <script src="js/mijing.js?v=128"></script>
-  <script src="js/tower.js?v=128"></script>
-  <script src="js/gear.js?v=128"></script>
-  <script src="js/stage-ui.js?v=128"></script>
-  <script src="js/story-data.js?v=128"></script>
-  <script src="js/story.js?v=128"></script>
-  <script src="js/audio.js?v=128"></script>
-  <script src="js/newbie.js?v=128"></script>
-  <script src="js/tribulation-data.js?v=128"></script>
-  <script src="js/tribulation.js?v=128"></script>
-  <script src="js/game.js?v=128"></script>
-  <script src="js/events-data.js?v=128"></script>
-  <script src="js/idle-events.js?v=128"></script>
-  <script src="js/daily.js?v=128"></script>
-  <script src="js/home-fortune.js?v=128"></script>
-  <script src="js/codex-data.js?v=128"></script>
-  <script src="js/codex.js?v=128"></script>
-  <script src="js/hero-lines-data.js?v=128"></script>
-  <script src="js/hero-voice.js?v=128"></script>
-  <script src="js/skill-text-data.js?v=128"></script>
-  <script src="js/dispatch.js?v=128"></script>
-  <script src="js/path.js?v=128"></script>
-  <script src="js/beasts-ui.js?v=128"></script>
+  <script src="js/no-zoom.js?v=129"></script>
+  <script src="js/config.js?v=129"></script>
+  <script src="js/beasts.js?v=129"></script>
+  <script src="js/ui-text.js?v=129"></script>
+  <script src="js/equip.js?v=129"></script>
+  <script src="js/state.js?v=129"></script>
+  <script src="js/titles.js?v=129"></script>
+  <script src="js/grow.js?v=129"></script>
+  <script src="js/battle.js?v=129"></script>
+  <script src="js/bonds.js?v=129"></script>
+  <script src="js/mijing.js?v=129"></script>
+  <script src="js/tower.js?v=129"></script>
+  <script src="js/gear.js?v=129"></script>
+  <script src="js/stage-ui.js?v=129"></script>
+  <script src="js/story-data.js?v=129"></script>
+  <script src="js/story.js?v=129"></script>
+  <script src="js/audio.js?v=129"></script>
+  <script src="js/newbie.js?v=129"></script>
+  <script src="js/tribulation-data.js?v=129"></script>
+  <script src="js/tribulation.js?v=129"></script>
+  <script src="js/game.js?v=129"></script>
+  <script src="js/events-data.js?v=129"></script>
+  <script src="js/idle-events.js?v=129"></script>
+  <script src="js/daily.js?v=129"></script>
+  <script src="js/home-fortune.js?v=129"></script>
+  <script src="js/codex-data.js?v=129"></script>
+  <script src="js/codex.js?v=129"></script>
+  <script src="js/hero-lines-data.js?v=129"></script>
+  <script src="js/hero-voice.js?v=129"></script>
+  <script src="js/skill-text-data.js?v=129"></script>
+  <script src="js/dispatch.js?v=129"></script>
+  <script src="js/path.js?v=129"></script>
+  <script src="js/beasts-ui.js?v=129"></script>
 </body>
 
 </html>

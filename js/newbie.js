@@ -133,8 +133,14 @@
     realmGoal('realm2', 2, '（开启闯关）'),
     { id: 'stage1', tab: 'tab-stage', text: () => '通关1-1', done: (s) => bestStage(s) >= 1 },
     { id: 'gongfa', tab: 'tab-upgrades', text: () => '去洞府参悟一层功法', done: (s) => sumLv(s.gongfa) >= 2 },
-    realmGoal('realm3', 3),
-    { id: 'stage10', tab: 'tab-stage', text: () => '通关1-10（首领山魈娘娘）', done: (s) => bestStage(s) >= 10 }
+    {
+      id: 'spend',
+      tab: 'tab-upgrades',
+      text: () => '把灵石用来参悟功法/修建洞府',
+      // 灵石还买得起时继续提醒；通关 1-10 或到化灵初后让位给逐重突破，避免中后期一直挡着目标条。
+      done: (s) => !canAffordUpgrade(s) || bestStage(s) >= 10 || (s.realmIndex || 0) >= 6
+    },
+    realmGoal('realm3', 3)
   ];
 
   function bossNameForStage(stageNum) {
@@ -386,36 +392,122 @@
     return Math.max(0, after - base);
   }
 
-  // 用现有灵石从最便宜的功法开始买，最多 60 级
-  function estimateGongfaGain(s) {
-    const CFG = window.GameConfig;
+  function withState(s, fn) {
     const GS = window.GameState;
-    const list = (CFG && CFG.GONGFA_LIST) || [];
-    const open = list.filter((g) => (s.realmIndex || 0) >= (g.unlockRealmIndex || 0));
-    if (!open.some((g) => (s.stones || 0) >= GS.getGongfaCost(g))) return null;
+    if (!GS) return fn();
+    const held = GS.state;
+    try {
+      if (s && s !== held) GS.state = s;
+      return fn();
+    } finally {
+      if (s && s !== held) GS.state = held;
+    }
+  }
+
+  function canAffordUpgrade(s) {
+    const GS = window.GameState;
+    const CFG = window.GameConfig;
+    if (!s || !GS) return false;
+    const realm = s.realmIndex || 0;
+    const stones = s.stones || 0;
+    const gongfa = ((CFG && CFG.GONGFA_LIST) || []).some((item) => realm >= (item.unlockRealmIndex || 0) && stones >= GS.getGongfaCost(item));
+    const dongfu = ((CFG && CFG.DONGFU_LIST) || []).some((item) => realm >= (item.unlockRealmIndex || 0) && stones >= GS.getDongfuCost(item));
+    return gongfa || dongfu;
+  }
+
+  function cheapestUpgrade(s) {
+    const GS = window.GameState;
+    const CFG = window.GameConfig;
+    const realm = s.realmIndex || 0;
+    let pick = null;
+    let kind = '';
+    let cost = Infinity;
+    ((CFG && CFG.GONGFA_LIST) || []).forEach((item) => {
+      if (realm < (item.unlockRealmIndex || 0)) return;
+      const c = GS.getGongfaCost(item);
+      if (c <= (s.stones || 0) && c < cost) { pick = item; kind = 'gongfa'; cost = c; }
+    });
+    ((CFG && CFG.DONGFU_LIST) || []).forEach((item) => {
+      if (realm < (item.unlockRealmIndex || 0)) return;
+      const c = GS.getDongfuCost(item);
+      if (c <= (s.stones || 0) && c < cost) { pick = item; kind = 'dongfu'; cost = c; }
+    });
+    return pick ? { item: pick, kind, cost } : null;
+  }
+
+  // 模拟把买得起的功法/洞府买完（最多 60 次）。必须在 GameState.state 上跑，因为造价和灵气/秒都读全局 state。
+  function simulateSpendStones(s) {
+    if (!s.gongfa) s.gongfa = {};
+    if (!s.dongfu) s.dongfu = {};
+    for (let i = 0; i < 60; i += 1) {
+      const p = cheapestUpgrade(s);
+      if (!p) break;
+      s.stones -= p.cost;
+      if (p.kind === 'gongfa') s.gongfa[p.item.id] = (s.gongfa[p.item.id] || 0) + 1;
+      else s.dongfu[p.item.id] = (s.dongfu[p.item.id] || 0) + 1;
+    }
+  }
+
+  function realmCpGain(s) {
+    const list = (window.GameConfig && window.GameConfig.REALM_STAGES) || [];
+    const idx = s.realmIndex || 0;
+    if (!list[idx + 1]) return 0;
     const base = cpOf(s);
-    const prevLv = Object.assign({}, s.gongfa || {});
-    const prevStones = s.stones;
+    const prev = s.realmIndex;
     let after = base;
     try {
-      if (!s.gongfa) s.gongfa = {};
-      for (let i = 0; i < 60; i += 1) {
-        let pick = null;
-        let pickCost = Infinity;
-        open.forEach((g) => {
-          const c = GS.getGongfaCost(g);
-          if (c <= s.stones && c < pickCost) { pick = g; pickCost = c; }
-        });
-        if (!pick) break;
-        s.stones -= pickCost;
-        s.gongfa[pick.id] = (s.gongfa[pick.id] || 0) + 1;
-      }
+      s.realmIndex = prev + 1;
       after = cpOf(s);
     } finally {
-      s.gongfa = prevLv;
-      s.stones = prevStones;
+      s.realmIndex = prev;
     }
     return Math.max(0, after - base);
+  }
+
+  // 用现有灵石从最便宜的功法/洞府开始买。T 必须按买完后的灵气/秒算，不能用当前速度。
+  function estimateGongfaGain(s) {
+    const detail = estimateSpendDetail(s);
+    if (!detail) return null;
+    if (detail.eta != null && detail.eta <= 120) return detail.breakGain;
+    return detail.immediate;
+  }
+
+  function estimateSpendDetail(s) {
+    const GS = window.GameState;
+    if (!s || !GS || !canAffordUpgrade(s)) return null;
+    const stage = typeof GS.getCurrentStage === 'function' ? GS.getCurrentStage() : null;
+    const prevGongfa = Object.assign({}, s.gongfa || {});
+    const prevDongfu = Object.assign({}, s.dongfu || {});
+    const prevStones = s.stones;
+    const base = cpOf(s);
+    const qi0 = s.qi || 0;
+    const need = stage && !stage.isMaxStage ? Number(stage.reqQi) || 0 : 0;
+    let immediate = 0;
+    let qiPerSecAfter = 0;
+    try {
+      withState(s, () => {
+        simulateSpendStones(s);
+        immediate = Math.max(0, cpOf(s) - base);
+        qiPerSecAfter = (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
+      });
+    } finally {
+      s.gongfa = prevGongfa;
+      s.dongfu = prevDongfu;
+      s.stones = prevStones;
+    }
+    let eta = null;
+    if (need > 0 && qiPerSecAfter > 0) {
+      eta = Math.max(0, Math.ceil((need - qi0) / qiPerSecAfter));
+    } else if (need > 0 && qi0 >= need) {
+      eta = 0;
+    }
+    return {
+      immediate,
+      breakGain: realmCpGain(s),
+      eta,
+      qiPerSecAfter,
+      stones: prevStones
+    };
   }
 
   // 摘现有仙桃（最多 12 枚）按固定种子掷出法宝，比当前好就换上
@@ -450,20 +542,94 @@
     return Math.max(0, after - base);
   }
 
-  // 返回可用的提升途径（不可用的不返回），按战力增益从高到低，best 标记最多的一项
+  function estimatePendingGain(s) {
+    const E = window.Equip;
+    if (!s || !s.pending || !E || typeof E.powerWithSwap !== 'function') return null;
+    const cur = Math.round(E.combatPower(s));
+    const next = Math.round(E.powerWithSwap(s, s.pending));
+    const gain = next - cur;
+    return gain > 0 ? gain : null;
+  }
+
+  function estimateWaitEta(s) {
+    const GS = window.GameState;
+    if (!s || !GS || typeof GS.getCurrentStage !== 'function') return null;
+    const stage = GS.getCurrentStage();
+    if (!stage || stage.isMaxStage || (s.qi || 0) >= stage.reqQi) return null;
+    const per = withState(s, () => (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0);
+    if (per <= 0) return null;
+    const eta = Math.ceil((stage.reqQi - (s.qi || 0)) / per);
+    return eta > 0 && eta <= 120 ? eta : null;
+  }
+
+  // 战败引导：按固定优先级，第一个满足的标 ★，最多 3 条。不再按立即战力总排序。
   function cpGainOptions(s) {
     const out = [];
-    const add = (key, label, tab, fn) => {
-      let gain = null;
-      try { gain = fn(s); } catch (err) { gain = null; }
-      if (gain != null) out.push({ key, label, tab, gain });
-    };
-    add('peach', '去摘桃', 'tab-gear', estimatePeachGain);
-    add('gongfa', '去参悟功法', 'tab-upgrades', estimateGongfaGain);
-    add('break', '去突破', 'tab-cultivate', estimateBreakGain);
-    out.sort((a, b) => b.gain - a.gain);
-    if (out.length && out[0].gain > 0) out[0].best = true;
-    return out;
+    const pendingGain = estimatePendingGain(s);
+    if (pendingGain != null) {
+      out.push({
+        key: 'pending',
+        label: `有更好的法宝没换上 · 战力 +${fmt(pendingGain)}`,
+        tab: 'tab-gear',
+        gain: pendingGain,
+        priority: 1,
+        action: 'openCompare'
+      });
+    }
+    const breakGain = estimateBreakGain(s);
+    if (breakGain != null) {
+      out.push({
+        key: 'break',
+        label: `可以突破了 · 战力 +${fmt(breakGain)}`,
+        tab: 'tab-cultivate',
+        gain: breakGain,
+        priority: 2
+      });
+    }
+    const peachGain = estimatePeachGain(s);
+    if (peachGain != null) {
+      const n = Math.floor((s.tree && s.tree.peaches) || 0);
+      out.push({
+        key: 'peach',
+        label: peachGain > 0 ? `还有 ${n} 个仙桃没摘 · 预计战力 +${fmt(peachGain)}` : `还有 ${n} 个仙桃没摘`,
+        tab: 'tab-gear',
+        gain: peachGain,
+        priority: 3
+      });
+    }
+    const spend = estimateSpendDetail(s);
+    if (spend) {
+      const t = spend.eta;
+      const useBreak = t != null && t <= 120;
+      out.push({
+        key: 'gongfa',
+        label: useBreak
+          ? `灵石闲置 · 参悟功法让灵气更快，约 ${t} 秒后能突破`
+          : '灵石闲置 · 参悟功法让灵气更快',
+        tab: 'tab-upgrades',
+        gain: useBreak ? spend.breakGain : spend.immediate,
+        eta: t,
+        qiPerSecAfter: spend.qiPerSecAfter,
+        priority: 4
+      });
+    }
+    if (!out.length) {
+      const wait = estimateWaitEta(s);
+      if (wait != null) {
+        out.push({
+          key: 'wait',
+          label: `再修炼约 ${wait} 秒即可突破`,
+          tab: '',
+          gain: 0,
+          eta: wait,
+          priority: 5
+        });
+      }
+    }
+    out.sort((a, b) => (a.priority - b.priority) || (b.gain - a.gain));
+    const shown = out.slice(0, 3);
+    if (shown.length) shown[0].best = true;
+    return shown;
   }
 
   // ---------- 更换角色卡：品阶 + 一句简介 + 选中台词（batch3 P1-3） ----------
@@ -1081,6 +1247,8 @@
     stageDot,
     upgradeDot,
     unlockItemUnvisited,
+    canAffordUpgrade,
+    estimateSpendDetail,
     compareDiff,
     cpGainOptions,
     heroQuality,
