@@ -887,8 +887,49 @@
     return Math.abs(a.c - b.c) + Math.abs(a.r - b.r);
   }
 
+  // 秘境劫运等玩法的局内加成（mods）：缺省为 null，此时战斗结果与随机序列与原版完全一致
+  function normalizeBattleMods(mods) {
+    if (!mods || typeof mods !== 'object') return null;
+    const num = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
+    return {
+      atkMult: Math.max(0, num(mods.atkMult, 1)),
+      hpMult: Math.max(0, num(mods.hpMult, 1)),
+      defMult: Math.max(0, num(mods.defMult, 1)),
+      critAdd: num(mods.critAdd, 0),
+      critDmgAdd: num(mods.critDmgAdd, 0),
+      spdAdd: num(mods.spdAdd, 0),
+      rageStart: Math.max(0, num(mods.rageStart, 0)),
+      rageOnAtkAdd: Math.max(0, num(mods.rageOnAtkAdd, 0)),
+      ultDmgMult: Math.max(0, num(mods.ultDmgMult, 1)),
+      bossDmgMult: Math.max(0, num(mods.bossDmgMult, 1)),
+      frontDmgTakenMult: Math.max(0, num(mods.frontDmgTakenMult, 1)),
+      ultLifesteal: Math.max(0, num(mods.ultLifesteal, 0)),
+      freezeChance: Math.max(0, Math.min(1, num(mods.freezeChance, 0))),
+      atkSplash: Math.max(0, num(mods.atkSplash, 0)),
+      revives: Math.max(0, Math.floor(num(mods.revives, 0))),
+      reviveHpRatio: Math.max(0.01, Math.min(1, num(mods.reviveHpRatio, 0.3)))
+    };
+  }
+
+  function applyModsToPlayerUnits(playerUnits, M) {
+    const rageCap = ((cfg() && cfg().BATTLE && cfg().BATTLE.RAGE_MAX) || 100) - 1;
+    for (let i = 0; i < playerUnits.length; i++) {
+      const u = playerUnits[i];
+      u.atk *= M.atkMult;
+      u.hp *= M.hpMult;
+      u.maxHp *= M.hpMult;
+      u.def *= M.defMult;
+      u.crit = Math.max(0, Math.min(1, (u.crit || 0) + M.critAdd));
+      u.critDmg = (u.critDmg || 1.5) + M.critDmgAdd;
+      u.spd = (u.spd || 100) + M.spdAdd;
+      // 开局怒气不直接满怒，避免第一步就跳过战斗节奏
+      u.rage = Math.min(rageCap, (u.rage || 0) + M.rageStart);
+      if (M.frontDmgTakenMult !== 1 && u.r <= 5) u.dmgTakenMult = M.frontDmgTakenMult;
+    }
+  }
+
   // 创建分段式确定性自走棋会话
-  function createSession(stateOrPlayer, enemyOrStageNum, seed) {
+  function createSession(stateOrPlayer, enemyOrStageNum, seed, mods) {
     const B = (cfg() && cfg().BATTLE) || {};
     const maxRounds = B.MAX_ROUNDS || 24;
     const rageMax = B.RAGE_MAX || 100;
@@ -900,7 +941,10 @@
     const bossUltSplashMult = B.BOSS_ULT_SPLASH_MULT || 0.45;
 
     const rng = mulberry32(seed);
+    const M = normalizeBattleMods(mods);
     const playerUnits = buildPlayerUnits(stateOrPlayer);
+    if (M) applyModsToPlayerUnits(playerUnits, M);
+    let revivesLeft = M ? M.revives : 0;
     const enemyUnits = buildEnemyUnits(enemyOrStageNum);
     const enemyCount = enemyUnits.length;
     const isBossStage = enemyUnits.some((u) => u.isBoss);
@@ -977,6 +1021,13 @@
       if (!isUlt && attacker.atkBuffHits > 0 && attacker.atkBuffMult > 1) {
         d *= attacker.atkBuffMult;
       }
+      if (M) {
+        if (attacker.side === 'player') {
+          if (isUlt) d *= M.ultDmgMult;
+          if (defender.isBoss) d *= M.bossDmgMult;
+        }
+        if (defender.side === 'player' && defender.dmgTakenMult) d *= defender.dmgTakenMult;
+      }
       const crit = rng() < critChance;
       if (crit) d *= cd;
       return { dmg: d, crit };
@@ -994,6 +1045,13 @@
         // 满怒待释放大招的我方单位保底留 1 点血，确保手动模式下能放出大招
         target.hp = 1;
         target.unyieldingUsed = true;
+        return false;
+      }
+      if (target.hp <= 0 && target.side === 'player' && revivesLeft > 0) {
+        // 秘境劫运「不灭」：本场首个倒下的我方单位以部分生命重新站起
+        revivesLeft -= 1;
+        target.hp = Math.max(1, target.maxHp * (M ? M.reviveHpRatio : 0.3));
+        target.revived = true;
         return false;
       }
       if (target.hp <= 0) {
@@ -1281,6 +1339,23 @@
         }
       }
 
+      // 秘境劫运「噬魂」：绝技按造成伤害的比例为施法者回血
+      if (M && M.ultLifesteal > 0 && caster.alive && caster.hp > 0) {
+        let dealt = 0;
+        for (let i = 0; i < hitTargets.length; i++) dealt += hitTargets[i].dmg || 0;
+        const lsAmt = Math.max(1, Math.round(dealt * M.ultLifesteal));
+        caster.hp = Math.min(caster.maxHp, caster.hp + lsAmt);
+        heals.push({
+          unitId: caster.id,
+          name: caster.name,
+          c: caster.c,
+          r: caster.r,
+          amount: lsAmt,
+          hp: Math.round(caster.hp),
+          maxHp: Math.round(caster.maxHp)
+        });
+      }
+
       const hpA = Math.max(0, Math.round(sumSideHp('player')));
       const hpB = Math.max(0, Math.round(sumSideHp('enemy')));
       const ultEv = {
@@ -1537,10 +1612,32 @@
           const targetDied = applyDamageToUnit(target, res.dmg, true);
 
           if (actor.side === 'player' || actor.isBoss) {
-            actor.rage = Math.min(rageMax, actor.rage + rageOnAtk);
+            const rageGain = rageOnAtk + (M && actor.side === 'player' ? M.rageOnAtkAdd : 0);
+            actor.rage = Math.min(rageMax, actor.rage + rageGain);
           }
           if ((target.side === 'player' || target.isBoss) && target.hp > 0 && !targetDied) {
             target.rage = Math.min(rageMax, target.rage + rageOnHit);
+          }
+
+          // 秘境劫运：普攻溅射与冰霜减速（仅我方，且仅在挂了对应劫运时才消耗随机数）
+          const splashHits = [];
+          const splashDead = [];
+          let froze = false;
+          if (M && actor.side === 'player') {
+            if (M.atkSplash > 0) {
+              for (let i = 0; i < enemyUnits.length; i++) {
+                const e = enemyUnits[i];
+                if (!e.alive || e.id === target.id || chebyshevDist(target, e) > 1) continue;
+                const spRaw = res.dmg * M.atkSplash;
+                const died = applyDamageToUnit(e, spRaw, false);
+                if (died) splashDead.push(e);
+                splashHits.push({ unitId: e.id, c: e.c, r: e.r, dmg: Math.max(1, Math.round(spRaw)), died });
+              }
+            }
+            if (M.freezeChance > 0 && target.alive && target.hp > 0 && rng() < M.freezeChance) {
+              target.skipNextAtk = true;
+              froze = true;
+            }
           }
 
           const hpA = Math.max(0, Math.round(sumSideHp('player')));
@@ -1569,8 +1666,16 @@
             hpA,
             hpB
           };
+          if (splashHits.length > 0) atkEv.splash = splashHits;
+          if (froze) atkEv.froze = true;
           const out = [atkEv];
           events.push(atkEv);
+          for (let i = 0; i < splashDead.length; i++) {
+            const d = splashDead[i];
+            const spDieEv = { type: 'die', t: round, unitId: d.id, side: d.side, name: d.name, c: d.c, r: d.r, hpA, hpB };
+            events.push(spDieEv);
+            out.push(spDieEv);
+          }
 
           if (targetDied) {
             const dieEv = {
@@ -1806,6 +1911,7 @@
     ensureFormation,
     buildPlayerUnits,
     buildEnemyUnits,
+    normalizeBattleMods,
     createSession,
     simulate,
     simulateLegacy,

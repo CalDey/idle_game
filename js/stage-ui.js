@@ -50,8 +50,39 @@
   let squadModalOpen = false;
   let draftSquad = [];
 
+  // 秘境劫运：mijingView 为当前闯关页是否显示秘境；battleMode 标记正在播放的战斗归属
+  let mijingView = false;
+  let battleMode = 'stage';
+  let mijingModalOpen = false;
+  let mijingModalMode = '';
+  let mijingResult = null;
+  let mijingQuitArmed = false;
+  let mijingWinRateKey = '';
+  let mijingWinRateVal = 0.5;
+
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function MJ() {
+    return window.Mijing || null;
+  }
+
+  function mijingRun() {
+    const M = MJ();
+    return M ? M.activeRun(window.GameState.state) : null;
+  }
+
+  function inMijing() {
+    return Boolean(mijingView && mijingRun());
+  }
+
+  const MJ_ICON = (name) => `assets/icons/${name}@64.webp?v=18`;
+  const LINGYU_ICON = '<img class="gi gi-14" src="assets/icons/res_lingyu@64.webp?v=18" alt="" aria-hidden="true">';
+  const PEACH_ICON = '<img class="gi gi-14" src="assets/icons/res_peach@64.webp?v=18" alt="" aria-hidden="true">';
+
+  function escHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
   }
 
   function resolveEnemyImgUrl(enemy) {
@@ -797,7 +828,7 @@
     if (isPlaying || dragState) return;
     const formStr = serializeFormation(s.formation);
     const squadStr = window.Battle.getSquadIds(s).join(',');
-    const key = `${enemy.n}:${s.heroId}:${squadStr}:${formStr}`;
+    const key = `${enemy.n}:${enemy.mijingWave || 0}:${Math.round(enemy.cp)}:${s.heroId}:${squadStr}:${formStr}`;
     const container = $('battle-units');
     if (key === previewBoardKey && container && container.children.length > 0) {
       return;
@@ -824,12 +855,23 @@
     layoutBoard();
 
     const stageNum = st.cur;
-    const enemy = isPlaying && currentEnemy ? currentEnemy : window.Battle.enemyFor(stageNum);
+    const mjRun = inMijing() ? mijingRun() : null;
+    const enemy =
+      isPlaying && currentEnemy
+        ? currentEnemy
+        : mjRun
+          ? MJ().waveEnemy(mjRun, mjRun.wave)
+          : window.Battle.enemyFor(stageNum);
     const player = isPlaying && currentPlayer ? currentPlayer : window.Battle.playerStats(s);
     const activeSquadIds = window.Battle.getSquadIds(s);
     const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
 
-    renderChapterBar(enemy, st.best || 0);
+    if (mjRun) {
+      renderMijingBar(mjRun);
+    } else {
+      renderChapterBar(enemy, st.best || 0);
+    }
+    renderMijingEntry();
 
     const stageBox = $('battle-stage');
     const regionIdx = Math.min(5, Math.floor((enemy.chapter - 1) / 5));
@@ -841,7 +883,17 @@
 
     const enemyTitleEl = $('battle-stage-enemy-title');
     const formHintEl = $('battle-form-hint');
-    if (enemyTitleEl) {
+    if (enemyTitleEl && mjRun) {
+      const w = enemy.mijingWave || mjRun.wave;
+      const total = MJ().WAVES;
+      if (enemy.isBoss) {
+        const tag = enemy.mijingKind === 'boss' ? 'Boss' : '精英';
+        enemyTitleEl.textContent = `秘境 ${w}/${total} 波 · ${tag}【${enemy.name.replace(/^精英·/, '')}】`;
+      } else {
+        const mobCnt = 3 + Math.min(2, Math.floor(((enemy.stageInChapter || 1) - 1) / 3));
+        enemyTitleEl.textContent = `秘境 ${w}/${total} 波 · ${enemy.name} 等 ${mobCnt} 敌`;
+      }
+    } else if (enemyTitleEl) {
       if (enemy.isBoss) {
         enemyTitleEl.textContent = `第 ${stageNum} 关 · Boss【${enemy.name}】`;
       } else {
@@ -872,7 +924,7 @@
     if (cpPlayerEl) cpPlayerEl.textContent = fmt(Math.round(player.cp));
     if (cpEnemyEl) cpEnemyEl.textContent = fmt(Math.round(enemy.cp));
     if (winrateEl) {
-      const rate = getCachedWinRate(s, stageNum, player.cp);
+      const rate = mjRun ? getMijingWinRate(s, mjRun, player.cp) : getCachedWinRate(s, stageNum, player.cp);
       const label = window.Battle.winRateLabel(rate);
       winrateEl.textContent = label;
       winrateEl.dataset.level = rate >= 0.6 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
@@ -891,7 +943,9 @@
       btnSquad.title = isPlaying ? '编辑队伍（下一场生效）' : `编辑队伍（当前 ${activeSquadIds.length}/${maxSquad}）`;
     }
     if (btnChallenge) {
-      btnChallenge.textContent = isPlaying ? '跳 过' : '挑 战';
+      const needPick = Boolean(mjRun && Array.isArray(mjRun.choices) && mjRun.choices.length > 0);
+      btnChallenge.textContent = isPlaying ? '跳 过' : needPick ? '择 运' : mjRun ? '迎 战' : '挑 战';
+      btnChallenge.classList.toggle('ready-pulse', !isPlaying && needPick);
       btnChallenge.classList.toggle('is-disabled', !isPlaying && activeSquadIds.length === 0);
     }
     if (btnAuto) {
@@ -905,6 +959,7 @@
     }
 
     renderIdleCard();
+    renderMijingPanel(mjRun);
     if (squadModalOpen) {
       renderSquadModal();
     }
@@ -930,6 +985,12 @@
     isPlaying = false;
     currentSession = null;
     previewBoardKey = '';
+
+    if (battleMode === 'mijing') {
+      battleMode = 'stage';
+      finishMijingWave(sim, enemy);
+      return;
+    }
 
     const logLine = $('battle-log-line');
 
@@ -1093,13 +1154,22 @@
       const defUnit = currentSession.unitMap[mainEv.targetId];
       if (atkUnit) syncUnitBarsAndState(atkUnit);
       if (defUnit) syncUnitBarsAndState(defUnit);
+      if (Array.isArray(mainEv.splash)) {
+        for (let i = 0; i < mainEv.splash.length; i++) {
+          const sp = mainEv.splash[i];
+          spawnBoardFloat(sp.c, sp.r, sp.dmg, false, false);
+          const spUnit = currentSession.unitMap[sp.unitId];
+          if (spUnit) syncUnitBarsAndState(spUnit);
+        }
+      }
 
       if (logLine) {
         const dieNote = mainEv.targetDied ? '（击破）' : '';
         const newReady = currentSession.getReadyPlayerUnits();
         const readyHint =
           !st.auto && newReady.length > 0 ? ` · 点击【${newReady[0].name}】头像放大招` : '';
-        logLine.textContent = `第 ${mainEv.t} 回合 · ${mainEv.attackerName} 攻 ${mainEv.targetName} -${dispNum(mainEv.dmg)}${mainEv.crit ? '（暴击）' : ''}${dieNote}${readyHint}`;
+        const frozeNote = mainEv.froze ? '（冰封）' : '';
+        logLine.textContent = `第 ${mainEv.t} 回合 · ${mainEv.attackerName} 攻 ${mainEv.targetName} -${dispNum(mainEv.dmg)}${mainEv.crit ? '（暴击）' : ''}${frozeNote}${dieNote}${readyHint}`;
       }
 
       if (currentSession.finished) {
@@ -1179,11 +1249,23 @@
 
     const stageNum = st.cur;
     const player = window.Battle.playerStats(s);
-    const enemy = window.Battle.enemyFor(stageNum);
+    const mjRun = inMijing() ? mijingRun() : null;
+    if (mjRun && Array.isArray(mjRun.choices) && mjRun.choices.length > 0) {
+      openMijingModal('pick');
+      render();
+      return false;
+    }
+    const enemy = mjRun ? MJ().waveEnemy(mjRun, mjRun.wave) : window.Battle.enemyFor(stageNum);
 
-    s.seq = (s.seq || 0) + 1;
-    const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x9e3779b1)) >>> 0;
-    const session = window.Battle.createSession(s, enemy, seed);
+    let session;
+    if (mjRun) {
+      // 秘境每波种子由局种子决定：刷新页面重打同一波，结果不会因重开而改变
+      session = window.Battle.createSession(s, enemy, MJ().waveSeed(mjRun, mjRun.wave), MJ().buildMods(mjRun.blessings));
+    } else {
+      s.seq = (s.seq || 0) + 1;
+      const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x9e3779b1)) >>> 0;
+      session = window.Battle.createSession(s, enemy, seed);
+    }
     if (!session || session.emptySquad || session.playerUnits.length < 1) {
       const logLine = $('battle-log-line');
       if (logLine) {
@@ -1194,6 +1276,7 @@
     }
 
     isPlaying = true;
+    battleMode = mjRun ? 'mijing' : 'stage';
     currentSession = session;
     currentEnemy = enemy;
     currentPlayer = player;
@@ -1204,7 +1287,9 @@
 
     const logLine = $('battle-log-line');
     if (logLine) {
-      logLine.textContent = `第 1 回合 · 迎战【${enemy.name}】`;
+      logLine.textContent = mjRun
+        ? `秘境第 ${mjRun.wave} 波 · 迎战【${enemy.name}】`
+        : `第 1 回合 · 迎战【${enemy.name}】`;
     }
     render();
 
@@ -1225,8 +1310,10 @@
         if (readyUnit) {
           triggerUnitUlt(readyUnit.id);
         }
-      } else if (unlocked() && !isPlaying) {
+      } else if (unlocked() && !isPlaying && !mijingView) {
         startBattle(false);
+      } else if (inMijing() && !isPlaying) {
+        scheduleMijingNext();
       }
     }
     window.GameState.saveGame();
@@ -1268,7 +1355,7 @@
   function checkAutoRetryOnPowerUp(now) {
     const s = window.GameState.state;
     const st = ensureStageState();
-    if (!unlocked() || !st.auto || isPlaying || !haltedByLoss) return;
+    if (!unlocked() || !st.auto || isPlaying || !haltedByLoss || mijingView) return;
     if (now - lastAutoRetryAt < 30000) return;
     const curCp = Math.round(window.Battle.playerStats(s).cp);
     if (curCp > lossPlayerCp) {
@@ -1633,6 +1720,7 @@
     const s = window.GameState.state;
     const st = ensureStageState();
     if (!unlocked() || isPlaying || squadModalOpen || document.hidden) return false;
+    if (mijingView) return scheduleMijingNext();
     if (!st.auto || haltedByLoss || (st.best || 0) >= 300) return false;
     if (!window.Battle.canStartBattle(s).ok) return false;
 
@@ -1643,6 +1731,7 @@
       if (
         curSt.auto &&
         !isPlaying &&
+        !mijingView &&
         unlocked() &&
         !squadModalOpen &&
         !haltedByLoss &&
@@ -1799,6 +1888,456 @@
     return res;
   }
 
+  // ===== 秘境劫运 UI =====
+  function getMijingWinRate(state, run, playerCp) {
+    const formStr = serializeFormation(state && state.formation);
+    const squadStr = window.Battle.getSquadIds(state).join(',');
+    const blessStr = Object.keys(run.blessings || {}).sort().map((k) => `${k}${run.blessings[k]}`).join('');
+    const key = `${run.seed}:${run.wave}:${blessStr}:${Math.round(playerCp)}:${squadStr}:${formStr}`;
+    if (key !== mijingWinRateKey) {
+      mijingWinRateKey = key;
+      mijingWinRateVal = MJ().winRate(state, run, 20);
+    }
+    return mijingWinRateVal;
+  }
+
+  function renderMijingBar(run) {
+    const titleEl = $('stage-chapter-title');
+    const stepEl = $('stage-chapter-step');
+    const dotsEl = $('stage-chapter-dots');
+    const M = MJ();
+    const enemy = M.waveEnemy(run, run.wave);
+    if (titleEl) titleEl.textContent = `秘境劫运 · ${enemy.region}`;
+    if (stepEl) stepEl.textContent = `${run.cleared}/${M.WAVES}`;
+    if (dotsEl) {
+      let html = '';
+      for (let i = 1; i <= M.WAVES; i++) {
+        let cls = '';
+        if (i <= run.cleared) cls = ' passed';
+        else if (i === run.wave) cls = ' current';
+        const big = M.wavePlan(i).kind !== 'mob' ? ' boss' : '';
+        html += `<span class="chapter-dot${cls}${big}"></span>`;
+      }
+      dotsEl.innerHTML = html;
+    }
+  }
+
+  function renderMijingEntry() {
+    const btn = $('btn-mijing-entry');
+    const M = MJ();
+    if (!btn || !M) return;
+    const s = window.GameState.state;
+    const run = M.activeRun(s);
+    let text;
+    let state;
+    if (mijingView && run) {
+      text = '返回闯关';
+      state = 'back';
+    } else if (run) {
+      text = '续秘境';
+      state = 'resume';
+    } else if (!M.isUnlocked(s)) {
+      text = '秘境·未开';
+      state = 'locked';
+    } else {
+      const left = M.attemptsLeft(s, Date.now());
+      text = `秘境 ${left}/${M.DAILY_ATTEMPTS}`;
+      state = left > 0 ? 'ready' : 'empty';
+    }
+    if (btn.textContent !== text) btn.textContent = text;
+    if (btn.dataset.state !== state) btn.dataset.state = state;
+  }
+
+  function blessingChipText(run) {
+    const list = MJ().blessingList(run.blessings);
+    if (list.length === 0) return '劫运：暂无（每过 2 波三选一）';
+    return `劫运：${list.map((b) => (b.stacks > 1 ? `${b.name}×${b.stacks}` : b.name)).join(' · ')}`;
+  }
+
+  function renderMijingPanel(run) {
+    const idleCard = document.querySelector('#tab-stage .stage-idle-card:not(.mijing-run-card)');
+    const card = $('mijing-run-card');
+    if (idleCard) idleCard.style.display = run ? 'none' : '';
+    if (!card) return;
+    card.style.display = run ? '' : 'none';
+    if (!run) return;
+    const M = MJ();
+    const blessEl = $('mijing-run-bless');
+    const rewardEl = $('mijing-run-reward');
+    const btn = $('btn-mijing-detail');
+    if (blessEl) blessEl.textContent = blessingChipText(run);
+    if (rewardEl) {
+      const rw = M.rewardsFor(run.ref, run.cleared);
+      rewardEl.innerHTML = `已过 ${run.cleared}/${M.WAVES} 波 · ${LINGYU_ICON} +${fmt(rw.lingyu)} · ${PEACH_ICON} +${fmt(rw.peaches)}`;
+    }
+    if (btn) {
+      const needPick = Array.isArray(run.choices) && run.choices.length > 0;
+      btn.textContent = needPick ? '择运' : '劫运';
+      btn.classList.toggle('btn-primary', needPick);
+      btn.classList.toggle('ready-pulse', needPick);
+    }
+  }
+
+  function scheduleMijingNext() {
+    clearTimeout(autoNextTimer);
+    autoNextTimer = 0;
+    const st = ensureStageState();
+    const run = mijingRun();
+    if (!inMijing() || !st.auto || isPlaying || squadModalOpen || mijingModalOpen || document.hidden) return false;
+    if (!run || (Array.isArray(run.choices) && run.choices.length > 0)) return false;
+    if (!window.Battle.canStartBattle(window.GameState.state).ok) return false;
+    autoNextTimer = setTimeout(() => {
+      autoNextTimer = 0;
+      const r = mijingRun();
+      if (
+        inMijing() &&
+        ensureStageState().auto &&
+        !isPlaying &&
+        !squadModalOpen &&
+        !mijingModalOpen &&
+        r &&
+        !(Array.isArray(r.choices) && r.choices.length > 0)
+      ) {
+        startBattle(false);
+      }
+    }, 1000);
+    return true;
+  }
+
+  function enterMijing() {
+    if (isPlaying) {
+      const logLine = $('battle-log-line');
+      if (logLine) logLine.textContent = '本场战斗结束后再进入秘境';
+      return false;
+    }
+    if (!mijingRun()) return false;
+    clearTimeout(autoNextTimer);
+    autoNextTimer = 0;
+    if (dragState) cancelDrag();
+    hideResultOverlay();
+    mijingView = true;
+    previewBoardKey = '';
+    const logLine = $('battle-log-line');
+    const run = mijingRun();
+    if (logLine) {
+      logLine.textContent =
+        Array.isArray(run.choices) && run.choices.length > 0
+          ? '秘境中 · 请先择一劫运'
+          : `秘境中 · 点击迎战第 ${run.wave} 波`;
+    }
+    render();
+    return true;
+  }
+
+  function exitMijing() {
+    if (isPlaying) {
+      const logLine = $('battle-log-line');
+      if (logLine) logLine.textContent = '本场战斗结束后再返回闯关';
+      return false;
+    }
+    clearTimeout(autoNextTimer);
+    autoNextTimer = 0;
+    mijingView = false;
+    previewBoardKey = '';
+    const logLine = $('battle-log-line');
+    if (logLine) logLine.textContent = mijingRun() ? '秘境进度已保留 · 点击【续秘境】继续' : '准备就绪 · 点击挑战开始推关';
+    render();
+    scheduleAutoNextIfAllowed();
+    return true;
+  }
+
+  function onMijingEntryClick() {
+    const M = MJ();
+    if (!M) return;
+    if (mijingView && mijingRun()) {
+      exitMijing();
+      return;
+    }
+    if (mijingRun()) {
+      enterMijing();
+      return;
+    }
+    openMijingModal('intro');
+  }
+
+  function blessCardHtml(b, stacks, clickable) {
+    const rar = MJ().RARITIES[b.rarity];
+    const tag = clickable ? 'button type="button"' : 'div';
+    const endTag = clickable ? 'button' : 'div';
+    const stackText = clickable
+      ? b.max > 1
+        ? `已有 ${stacks}/${b.max} 层`
+        : '唯一'
+      : b.max > 1
+        ? `${stacks}/${b.max} 层`
+        : '';
+    return (
+      `<${tag} class="mijing-bless-card rar-${b.rarity}"${clickable ? ` data-bless-id="${b.id}"` : ''}>` +
+      `<img class="gi mijing-bless-icon" src="${MJ_ICON(b.icon)}" alt="" aria-hidden="true">` +
+      `<span class="mijing-bless-main"><span class="mijing-bless-name">${escHtml(b.name)}<span class="mijing-bless-rar">${rar.name}</span></span>` +
+      `<span class="mijing-bless-desc">${escHtml(b.desc)}</span></span>` +
+      (stackText ? `<span class="mijing-bless-stack">${stackText}</span>` : '') +
+      `</${endTag}>`
+    );
+  }
+
+  function rewardLineHtml(rw) {
+    return `${LINGYU_ICON} 灵玉 +${fmt(rw.lingyu)} · ${PEACH_ICON} 仙桃 +${fmt(rw.peaches)}`;
+  }
+
+  function renderMijingModal() {
+    const titleEl = $('mijing-modal-title');
+    const bodyEl = $('mijing-modal-body');
+    const actionsEl = $('mijing-modal-actions');
+    const M = MJ();
+    if (!titleEl || !bodyEl || !actionsEl || !M) return;
+    const s = window.GameState.state;
+    const run = M.activeRun(s);
+    let title = '秘境劫运';
+    let body = '';
+    let actions = '';
+
+    if (mijingModalMode === 'intro') {
+      const chk = M.canStart(s, Date.now());
+      const left = M.attemptsLeft(s, Date.now());
+      const best = (s.stage && s.stage.best) || 0;
+      const ref = Math.max(1, Math.min(300, best));
+      const full = M.rewardsFor(ref, M.WAVES);
+      body =
+        '<ul class="mijing-rules">' +
+        `<li>连战 <b>${M.WAVES}</b> 波，第 4 波精英、第 8 波 Boss；敌人强度按你的最高通关关卡（第 ${best} 关）折算。</li>` +
+        '<li>每过 2 波可从 3 个<b>劫运</b>中择一，可叠层，仅本局生效，结束即散。</li>' +
+        '<li>沿用当前队伍与布阵；每波开战满血，失败即结束，按已过波次结算。</li>' +
+        `<li>每日 <b>${M.DAILY_ATTEMPTS}</b> 次（按本地日期零点重置），开启即消耗。</li>` +
+        '</ul>' +
+        (M.isUnlocked(s) ? `<div class="mijing-reward-row">全通奖励约：${rewardLineHtml(full)}</div>` : '') +
+        `<div class="mijing-note" data-tone="${chk.ok ? 'info' : 'warn'}">${chk.ok ? `今日剩余 ${left}/${M.DAILY_ATTEMPTS} 次` : escHtml(chk.message)}</div>`;
+      actions =
+        '<button class="btn" type="button" data-mj-action="close">取消</button>' +
+        `<button class="btn btn-primary" type="button" data-mj-action="start"${chk.ok ? '' : ' disabled'}>开启秘境</button>`;
+    } else if (mijingModalMode === 'pick' && run && Array.isArray(run.choices)) {
+      title = `择一劫运 · 已过 ${run.cleared} 波`;
+      body =
+        '<div class="mijing-bless-list">' +
+        run.choices.map((id) => blessCardHtml(M.BLESSING_MAP[id], run.blessings[id] || 0, true)).join('') +
+        '</div>' +
+        `<div class="mijing-note">${escHtml(blessingChipText(run))}</div>`;
+      actions = '<button class="btn" type="button" data-mj-action="close">稍后再选</button>';
+    } else if (mijingModalMode === 'detail' && run) {
+      title = `秘境劫运 · 已过 ${run.cleared}/${M.WAVES} 波`;
+      const list = M.blessingList(run.blessings);
+      body =
+        (list.length
+          ? `<div class="mijing-bless-list is-compact">${list.map((b) => blessCardHtml(b, b.stacks, false)).join('')}</div>`
+          : '<div class="mijing-note">暂无劫运 · 每过 2 波可三选一</div>') +
+        `<div class="mijing-reward-row">现在结束可得：${rewardLineHtml(M.rewardsFor(run.ref, run.cleared))}</div>` +
+        `<div class="mijing-reward-row">全通可得：${rewardLineHtml(M.rewardsFor(run.ref, M.WAVES))}</div>`;
+      actions =
+        '<button class="btn" type="button" data-mj-action="close">继续秘境</button>' +
+        `<button class="btn btn-danger" type="button" data-mj-action="quit">${mijingQuitArmed ? '再点一次确认结束' : '结束并领取'}</button>`;
+    } else if (mijingModalMode === 'result' && mijingResult) {
+      const r = mijingResult;
+      title = r.full ? '秘境全通！' : r.reason === 'quit' ? '秘境结算 · 主动结束' : `秘境止步 · 第 ${r.cleared + 1} 波`;
+      const list = M.blessingList(r.blessings);
+      body =
+        `<div class="mijing-result-big">${r.full ? '八波尽破，劫运散去' : `已过 ${r.cleared}/${M.WAVES} 波`}</div>` +
+        `<div class="mijing-reward-row is-gain">获得：${rewardLineHtml(r)}</div>` +
+        (list.length
+          ? `<div class="mijing-note">本局劫运（已消散）：${escHtml(list.map((b) => (b.stacks > 1 ? `${b.name}×${b.stacks}` : b.name)).join(' · '))}</div>`
+          : '');
+      actions = '<button class="btn btn-primary" type="button" data-mj-action="back">返回闯关</button>';
+    } else {
+      closeMijingModal();
+      return;
+    }
+    titleEl.textContent = title;
+    bodyEl.innerHTML = body;
+    actionsEl.innerHTML = actions;
+  }
+
+  function openMijingModal(mode) {
+    const modal = $('mijing-modal');
+    if (!modal || !MJ()) return false;
+    if (dragState) cancelDrag();
+    clearTimeout(autoNextTimer);
+    autoNextTimer = 0;
+    mijingModalMode = mode;
+    mijingQuitArmed = false;
+    mijingModalOpen = true;
+    renderMijingModal();
+    if (!mijingModalOpen) return false;
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    return true;
+  }
+
+  function closeMijingModal() {
+    const modal = $('mijing-modal');
+    const wasMode = mijingModalMode;
+    const wasOpen = mijingModalOpen;
+    mijingModalOpen = false;
+    mijingModalMode = '';
+    mijingQuitArmed = false;
+    if (modal) {
+      const activeEl = document.activeElement;
+      if (activeEl && typeof modal.contains === 'function' && modal.contains(activeEl) && typeof activeEl.blur === 'function') {
+        activeEl.blur();
+      }
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    if (wasOpen && wasMode === 'result') {
+      mijingResult = null;
+      exitMijing();
+      return;
+    }
+    if (wasOpen) {
+      render();
+      scheduleAutoNextIfAllowed();
+    }
+  }
+
+  function startMijingRun() {
+    const M = MJ();
+    if (!M || isPlaying) return false;
+    const s = window.GameState.state;
+    s.seq = (s.seq || 0) + 1;
+    const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x85ebca6b)) >>> 0;
+    const res = M.startRun(s, Date.now(), seed);
+    if (!res.ok) {
+      renderMijingModal();
+      return false;
+    }
+    window.GameState.saveGame();
+    log(`开启秘境劫运（敌人强度按第 ${res.run.ref} 关），今日剩余 ${M.attemptsLeft(s, Date.now())} 次。`, 'success');
+    mijingModalOpen = false;
+    mijingModalMode = '';
+    const modal = $('mijing-modal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    enterMijing();
+    onChange();
+    scheduleMijingNext();
+    return true;
+  }
+
+  function pickMijingBlessing(id) {
+    const M = MJ();
+    const s = window.GameState.state;
+    const res = M ? M.pickBlessing(s, id) : { ok: false };
+    if (!res.ok) return false;
+    window.GameState.saveGame();
+    const stackNote = res.blessing.max > 1 ? `（${res.stacks}/${res.blessing.max} 层）` : '';
+    const logLine = $('battle-log-line');
+    if (logLine) logLine.textContent = `获得劫运【${res.blessing.name}】${stackNote} · ${res.blessing.desc}`;
+    closeMijingModal();
+    return true;
+  }
+
+  function showMijingResult(summary) {
+    mijingResult = summary;
+    openMijingModal('result');
+  }
+
+  function quitMijingRun() {
+    const M = MJ();
+    if (!M || isPlaying || !mijingRun()) return false;
+    const summary = M.endRun(window.GameState.state, 'quit');
+    window.GameState.saveGame();
+    log(`秘境劫运结束（已过 ${summary.cleared}/${M.WAVES} 波）：灵玉 +${fmt(summary.lingyu)}、仙桃 +${fmt(summary.peaches)}`, 'gold');
+    onChange();
+    mijingModalOpen = false;
+    showMijingResult(summary);
+    return true;
+  }
+
+  function finishMijingWave(sim, enemy) {
+    const M = MJ();
+    const s = window.GameState.state;
+    const logLine = $('battle-log-line');
+    const res = M ? M.onWaveResult(s, sim.win) : { ok: false };
+    if (!res.ok) {
+      render();
+      return;
+    }
+    if (res.ended) {
+      const summary = M.endRun(s, res.full ? 'clear' : 'fail');
+      if (logLine) {
+        logLine.textContent = res.full
+          ? `秘境全通！击破 Boss【${enemy.name}】`
+          : sim.timeout
+            ? `秘境第 ${res.wave} 波久战不下，秘境止步`
+            : `秘境第 ${res.wave} 波不敌 ${enemy.name}，秘境止步`;
+      }
+      log(
+        `${res.full ? '秘境劫运全通' : `秘境劫运止步第 ${res.wave} 波`}：灵玉 +${fmt(summary.lingyu)}、仙桃 +${fmt(summary.peaches)}`,
+        res.full ? 'gold' : 'warn'
+      );
+      window.GameState.saveGame();
+      onChange();
+      render();
+      showMijingResult(summary);
+      return;
+    }
+    if (logLine) {
+      logLine.textContent = res.needPick
+        ? `秘境第 ${res.wave} 波告捷 · 劫运将至，择一而行`
+        : `秘境第 ${res.wave} 波告捷 · 下一波：第 ${res.wave + 1} 波`;
+    }
+    window.GameState.saveGame();
+    onChange();
+    render();
+    if (res.needPick) {
+      openMijingModal('pick');
+    } else {
+      scheduleMijingNext();
+    }
+  }
+
+  function initMijingUI() {
+    const entry = $('btn-mijing-entry');
+    if (entry) entry.addEventListener('click', onMijingEntryClick);
+    const detailBtn = $('btn-mijing-detail');
+    if (detailBtn) {
+      detailBtn.addEventListener('click', () => {
+        const run = mijingRun();
+        if (!run) return;
+        openMijingModal(Array.isArray(run.choices) && run.choices.length > 0 ? 'pick' : 'detail');
+      });
+    }
+    const closeBtn = $('btn-mijing-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => closeMijingModal());
+    const modal = $('mijing-modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeMijingModal();
+          return;
+        }
+        const card = e.target.closest && e.target.closest('[data-bless-id]');
+        if (card) {
+          pickMijingBlessing(card.getAttribute('data-bless-id'));
+          return;
+        }
+        const actBtn = e.target.closest && e.target.closest('[data-mj-action]');
+        if (!actBtn || actBtn.disabled) return;
+        const act = actBtn.getAttribute('data-mj-action');
+        if (act === 'close' || act === 'back') closeMijingModal();
+        else if (act === 'start') startMijingRun();
+        else if (act === 'quit') {
+          if (!mijingQuitArmed) {
+            mijingQuitArmed = true;
+            renderMijingModal();
+          } else {
+            quitMijingRun();
+          }
+        }
+      });
+    }
+  }
+
   function tick() {
     const now = Date.now();
     if (unlocked() !== lastUnlocked) {
@@ -1810,6 +2349,7 @@
       renderNavUnlockState();
       if (unlocked()) {
         renderIdleCard();
+        renderMijingEntry();
       }
     }
   }
@@ -1875,6 +2415,9 @@
       if (e && e.key === 'Escape' && squadModalOpen) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         closeSquadModal();
+      } else if (e && e.key === 'Escape' && mijingModalOpen) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        closeMijingModal();
       }
     });
     if (squadHeroList) {
@@ -1897,6 +2440,7 @@
     if (btnChallenge) {
       btnChallenge.addEventListener('click', () => startBattle(true));
     }
+    initMijingUI();
     if (btnAuto) {
       btnAuto.addEventListener('click', toggleAuto);
     }
@@ -1963,6 +2507,13 @@
     closeSquadModal,
     getDraftSquad,
     toggleDraftHero,
-    saveSquad
+    saveSquad,
+    enterMijing,
+    exitMijing,
+    openMijingModal,
+    closeMijingModal,
+    pickMijingBlessing,
+    startMijingRun,
+    quitMijingRun
   };
 })();

@@ -119,6 +119,8 @@
       login: { last: '', streak: 0 },
       dayTaps: { date: '', count: 0 },
       titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
+      // 秘境劫运：每日次数（本地日期）与进行中的一局；旧存档缺省即为此值
+      mijing: { date: '', used: 0, runs: 0, clears: 0, bestWave: 0, run: null },
       ...v2Fields
     };
   }
@@ -445,7 +447,12 @@
       lifetimeQi: saved.lifetimeQi || 0,
       failBreakthroughs: saved.failBreakthroughs || 0,
       peachesPicked: saved.peachesPicked || 0,
-      decomposed: saved.decomposed || 0
+      decomposed: saved.decomposed || 0,
+      mijing: window.Mijing
+        ? window.Mijing.normalize(saved.mijing)
+        : saved.mijing && typeof saved.mijing === 'object'
+          ? saved.mijing
+          : { ...def.mijing }
     };
     if (Array.isArray(unlockedHeroes)) {
       merged.unlockedHeroes = unlockedHeroes;
@@ -622,6 +629,10 @@
     fresh.failBreakthroughs = state.failBreakthroughs || 0;
     fresh.peachesPicked = state.peachesPicked || 0;
     fresh.decomposed = state.decomposed || 0;
+    // 轮回不重置秘境当日次数，进行中的一局按开局快照继续（避免轮回刷次数）
+    if (state.mijing && typeof state.mijing === 'object') {
+      fresh.mijing = JSON.parse(JSON.stringify(state.mijing));
+    }
     fresh.flags = { ...(state.flags || {}) };
     fresh.login = { ...(state.login || {}) };
     fresh.dayTaps = { ...(state.dayTaps || {}) };

@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=85" />
+  <link rel="stylesheet" href="css/style.css?v=86" />
 </head>
 
 <body>
@@ -191,6 +191,7 @@
           <div class="stage-chapter-bar">
             <div class="chapter-top-row">
               <span id="stage-chapter-title" class="chapter-title">第 1 章 · 凡尘野地</span>
+              <button id="btn-mijing-entry" class="mijing-entry-pill" type="button" data-state="locked" aria-label="秘境劫运">秘境·未开</button>
               <span id="stage-chapter-step" class="chapter-step">1/10</span>
             </div>
             <div class="chapter-dots-row">
@@ -267,6 +268,15 @@
                   src="assets/icons/res_peach@64.webp?v=18" alt="" aria-hidden="true"> +0</div>
             </div>
             <button id="btn-stage-claim" class="btn stage-btn-claim" type="button" disabled>领取</button>
+          </div>
+
+          <div id="mijing-run-card" class="stage-idle-card mijing-run-card" style="display: none">
+            <img class="gi stage-idle-icon" src="assets/icons/ui_bagua@64.webp?v=18" alt="" aria-hidden="true">
+            <div class="stage-idle-info">
+              <div id="mijing-run-bless" class="stage-idle-time">劫运：暂无</div>
+              <div id="mijing-run-reward" class="stage-idle-reward">已过 0/8 波</div>
+            </div>
+            <button id="btn-mijing-detail" class="btn stage-btn-claim" type="button">劫运</button>
           </div>
         </div>
       </section>
@@ -365,6 +375,17 @@
           <button id="btn-squad-cancel" class="btn" type="button">取消</button>
           <button id="btn-squad-save" class="btn btn-primary" type="button">保存 (6/6)</button>
         </div>
+      </div>
+    </div>
+
+    <div id="mijing-modal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal-dialog mijing-dialog" role="dialog" aria-modal="true" aria-labelledby="mijing-modal-title">
+        <div class="card-header squad-modal-header">
+          <span id="mijing-modal-title" class="card-title"><img class="gi" src="assets/icons/ui_bagua@64.webp?v=18" alt="" aria-hidden="true">秘境劫运</span>
+          <button id="btn-mijing-close" class="home-modal-close" type="button" aria-label="关闭">✕</button>
+        </div>
+        <div id="mijing-modal-body" class="mijing-modal-body"></div>
+        <div id="mijing-modal-actions" class="modal-actions mijing-modal-actions"></div>
       </div>
     </div>
 
@@ -577,11 +598,12 @@
   <script src="js/no-zoom.js?v=22"></script>
   <script src="js/config.js?v=75"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=32"></script>
+  <script src="js/state.js?v=33"></script>
   <script src="js/titles.js?v=23"></script>
-  <script src="js/battle.js?v=35"></script>
+  <script src="js/battle.js?v=36"></script>
+  <script src="js/mijing.js?v=1"></script>
   <script src="js/gear.js?v=30"></script>
-  <script src="js/stage-ui.js?v=49"></script>
+  <script src="js/stage-ui.js?v=50"></script>
   <script src="js/game.js?v=46"></script>
 </body>
 
