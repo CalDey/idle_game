@@ -238,7 +238,7 @@ function oldSave(fields) {
   assert.ok(html.includes('id="goal-strip"'));
   assert.ok(html.includes('id="badge-stage"'));
   const nb = text('js/newbie.js');
-  assert.ok(nb.includes('g.gearPopup = true'), '解锁提示只弹一次并写入存档');
+  assert.ok(nb.includes('ensureGuide(s).gearPopup = true'), '解锁提示只弹一次并写入存档');
   assert.ok(text('js/gear.js').includes('window.Newbie.gearDot('));
 }
 
@@ -631,6 +631,67 @@ function breakAt(GS, roll) {
   assert.ok(/\.goal-strip::before,\s*\.goal-strip::after/.test(block), '卷轴轴头');
   assert.ok(!/url\(/.test(block), '不引用新图片');
   assert.ok(/\.goal-strip \{[^}]*height: 22px/.test(block), '高度不变，不挤压竖屏布局');
+}
+
+// ---------- batch2 P2-6 「新机缘开启」通用解锁卡 + 秘境开启二次确认 ----------
+{
+  const { GS, NB, sandbox } = loadRuntime(memoryStorage());
+  ['js/bonds.js', 'js/mijing.js'].forEach((rel) => vm.runInNewContext(text(rel), sandbox, { filename: rel }));
+  GS.loadGame();
+  const s = GS.state;
+  assert.deepStrictEqual(plain(s.unlockSeen), {}, '新档默认未看过');
+  assert.deepStrictEqual(plain(NB.UNLOCKS.map((u) => u.key)), ['gear', 'yaoyuan', 'mijing', 'bonds']);
+  assert.strictEqual(NB.pendingUnlock(s), null);
+  s.realmIndex = 1;
+  assert.strictEqual(NB.pendingUnlock(s).key, 'gear');
+  s.unlockSeen.gear = true;
+  assert.strictEqual(NB.pendingUnlock(s), null);
+  s.realmIndex = 6;
+  assert.strictEqual(NB.pendingUnlock(s).key, 'yaoyuan', '化灵初开启百草灵药园');
+  s.unlockSeen.yaoyuan = true;
+  s.stage.best = 10;
+  assert.strictEqual(NB.pendingUnlock(s).key, 'mijing', '首通第 10 关开启秘境');
+  s.unlockSeen.mijing = true;
+  const hasBond = sandbox.window.Bonds.activeBonds(sandbox.window.Battle.getSquadIds(s)).length > 0;
+  assert.strictEqual(Boolean(NB.pendingUnlock(s) && NB.pendingUnlock(s).key === 'bonds'), hasBond, '队伍有激活羁绊才弹');
+  NB.UNLOCKS.forEach((u) => { assert.ok(u.title && u.desc && u.go && u.tab && u.glyph, u.key); });
+  // 轮回保留
+  s.realmIndex = 27;
+  s.unlockSeen = { gear: true, yaoyuan: true };
+  GS.performReincarnation();
+  assert.deepStrictEqual(plain(GS.state.unlockSeen), { gear: true, yaoyuan: true });
+}
+{
+  // 旧档没有 unlockSeen：按已解锁补记，不补弹
+  const { GS, NB } = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 10, stage: { best: 20, cur: 21 } }) }));
+  GS.loadGame();
+  assert.strictEqual(GS.state.unlockSeen, null);
+  assert.strictEqual(NB.pendingUnlock(GS.state), null, '老玩家不补弹');
+  assert.strictEqual(GS.state.unlockSeen.gear, true);
+  assert.strictEqual(GS.state.unlockSeen.yaoyuan, true);
+  assert.strictEqual(GS.state.unlockSeen.mijing, true);
+  // 之后新解锁仍会弹：模拟法宝没弹过（guide 记录未弹）的极早期旧档
+  const r2 = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 0, guide: { step: 1, done: false, taps: 3, gearPopup: false, gearVisited: false } }) }));
+  r2.GS.loadGame();
+  assert.strictEqual(r2.NB.pendingUnlock(r2.GS.state), null);
+  r2.GS.state.realmIndex = 1;
+  assert.strictEqual(r2.NB.pendingUnlock(r2.GS.state).key, 'gear');
+  // 坏值不报错
+  const r3 = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 2, unlockSeen: 'x' }) }));
+  r3.GS.loadGame();
+  assert.doesNotThrow(() => r3.NB.pendingUnlock(r3.GS.state));
+}
+{
+  const html = text('index.html');
+  assert.ok(/class="unlock-art"[^>]*>.*<img alt=""/.test(html), '插画位');
+  const css = text('css/style.css');
+  assert.ok(/\.unlock-art \{[^}]*aspect-ratio: 16 \/ 9/.test(css), '插画位 16:9');
+  assert.ok(/\.unlock-art img \{[^}]*object-fit: cover/.test(css));
+  const nb = text('js/newbie.js');
+  assert.ok(nb.includes('img.src = `assets/ui/unlock_${u.key}.webp`'), '有图则加载 assets/ui/unlock_<key>.webp');
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('确认开启（消耗 1 次'), '开启秘境二次确认');
+  assert.ok(/if \(!mijingStartArmed\) \{\s*mijingStartArmed = true;/.test(ui));
 }
 
 module.exports = { loadRuntime, memoryStorage, text };

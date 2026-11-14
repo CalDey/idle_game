@@ -115,6 +115,16 @@
     return realm;
   }
 
+  // 「新机缘开启」卡片已看过的功能。旧档没有该字段 → null，由 Newbie 按当前已解锁的功能补记（老玩家不补弹）。
+  function normalizeUnlockSeen(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const out = {};
+    Object.keys(raw).forEach((k) => {
+      if (raw[k]) out[k] = true;
+    });
+    return out;
+  }
+
   function isBreakGuaranteed() {
     return (Number(state.breakAttempts) || 0) < GUARANTEED_BREAKS;
   }
@@ -196,6 +206,7 @@
       mijing: { date: '', used: 0, runs: 0, clears: 0, bestWave: 0, run: null },
       guide: defaultGuide(),
       breakAttempts: 0,
+      unlockSeen: {},
       ...v2Fields
     };
   }
@@ -647,6 +658,7 @@
       dayTaps: { ...def.dayTaps, ...(saved.dayTaps || {}) },
       guide: normalizeGuide(saved.guide, saved),
       breakAttempts: normalizeBreakAttempts(saved),
+      unlockSeen: normalizeUnlockSeen(saved.unlockSeen),
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
       playTimeMs: saved.playTimeMs || 0,
       lifetimeQi: saved.lifetimeQi || 0,
@@ -898,6 +910,7 @@
       : (state.grow && typeof state.grow === 'object' ? { ...state.grow, lv: { ...((state.grow && state.grow.lv) || {}) } } : state.grow);
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);
+    fresh.unlockSeen = normalizeUnlockSeen(state.unlockSeen) || {};
     fresh.titles = {
       owned: [...((state.titles && state.titles.owned) || ['churu'])],
       worn: (state.titles && state.titles.worn) || 'churu',
@@ -1024,6 +1037,7 @@
     isProgressedSave,
     GUARANTEED_BREAKS,
     normalizeBreakAttempts,
+    normalizeUnlockSeen,
     isBreakGuaranteed,
     applyBreakthroughAttempt,
     settleOffline,

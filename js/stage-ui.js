@@ -61,6 +61,8 @@
   let mijingModalMode = '';
   let mijingResult = null;
   let mijingQuitArmed = false;
+  // 开启秘境要二次确认：每次开启消耗 1 次当日次数（batch2 P2-6）
+  let mijingStartArmed = false;
   let mijingWinRateKey = '';
   let mijingWinRateVal = 0.5;
   let mijingRecommendedCp = 0;
@@ -2531,7 +2533,12 @@
         `<div class="mijing-note" data-tone="${chk.ok ? 'info' : 'warn'}">${chk.ok ? `今日剩余 ${left}/${M.DAILY_ATTEMPTS} 次` : escHtml(chk.message)}</div>`;
       actions =
         '<button class="btn" type="button" data-mj-action="close">取消</button>' +
-        `<button class="btn btn-primary" type="button" data-mj-action="start"${chk.ok ? '' : ' disabled'}>开启秘境</button>`;
+        `<button class="btn btn-primary" type="button" data-mj-action="start"${chk.ok ? '' : ' disabled'}>${
+          mijingStartArmed && chk.ok ? `确认开启（消耗 1 次，剩 ${left - 1} 次）` : '开启秘境'
+        }</button>`;
+      if (mijingStartArmed && chk.ok) {
+        body += `<div class="mijing-note mijing-start-confirm" data-tone="warn">开启即消耗今日 1 次秘境次数，中途结束不返还。再点一次确认开启。</div>`;
+      }
     } else if (mijingModalMode === 'pick' && run && Array.isArray(run.choices)) {
       title = `择一劫运 · 已过 ${run.cleared} 波`;
       body =
@@ -2580,6 +2587,7 @@
     autoNextTimer = 0;
     mijingModalMode = mode;
     mijingQuitArmed = false;
+    mijingStartArmed = false;
     mijingModalOpen = true;
     renderMijingModal();
     if (!mijingModalOpen) return false;
@@ -2595,6 +2603,7 @@
     mijingModalOpen = false;
     mijingModalMode = '';
     mijingQuitArmed = false;
+    mijingStartArmed = false;
     if (modal) {
       const activeEl = document.activeElement;
       if (activeEl && typeof modal.contains === 'function' && modal.contains(activeEl) && typeof activeEl.blur === 'function') {
@@ -2746,7 +2755,15 @@
         if (!actBtn || actBtn.disabled) return;
         const act = actBtn.getAttribute('data-mj-action');
         if (act === 'close' || act === 'back') closeMijingModal();
-        else if (act === 'start') startMijingRun();
+        else if (act === 'start') {
+          if (!mijingStartArmed) {
+            mijingStartArmed = true;
+            renderMijingModal();
+          } else {
+            mijingStartArmed = false;
+            startMijingRun();
+          }
+        }
         else if (act === 'quit') {
           if (!mijingQuitArmed) {
             mijingQuitArmed = true;

@@ -359,7 +359,6 @@
   let els = {};
   let started = false;
   let lastGoal = null;
-  let gearPopupTimer = 0;
   let lastFocusEl = null;
   let tickTimer = 0;
 
@@ -476,23 +475,149 @@
     }
   }
 
-  function maybeGearPopup(s) {
-    const guide = ensureGuide(s);
-    if (guide.gearPopup || (s.realmIndex || 0) < peachUnlockRealm() || gearPopupTimer) return;
-    gearPopupTimer = setTimeout(function tryShow() {
+  // ---------- 「新机缘开启」通用解锁卡（batch2 P2-6） ----------
+  // 插画位 16:9：有 assets/ui/unlock_<key>.webp（960×540，不透明）就加载，否则用 CSS 占位。
+  const UNLOCKS = [
+    {
+      key: 'gear',
+      title: '法宝已开启',
+      desc: '仙桃树赠桃三十枚，去法宝页摘桃可得法宝。',
+      go: '去摘桃',
+      tab: 'tab-gear',
+      glyph: '宝',
+      test: (s) => (s.realmIndex || 0) >= peachUnlockRealm()
+    },
+    {
+      key: 'yaoyuan',
+      title: '百草灵药园已开启',
+      desc: '洞府可栽种千年灵草，灵石产出大增。',
+      go: '去洞府',
+      tab: 'tab-upgrades',
+      glyph: '药',
+      test: (s) => (s.realmIndex || 0) >= dongfuUnlockRealm('yaoyuan', 6)
+    },
+    {
+      key: 'mijing',
+      title: '秘境劫运已开启',
+      desc: '每日两次闯秘境，三选一劫运，八波尽破得厚礼。',
+      go: '去秘境',
+      tab: 'tab-stage',
+      glyph: '劫',
+      test: (s) => {
+        const M = typeof window !== 'undefined' && window.Mijing;
+        if (M && typeof M.isUnlocked === 'function') return M.isUnlocked(s);
+        return ((s.stage && s.stage.best) || 0) >= 10;
+      }
+    },
+    {
+      key: 'bonds',
+      title: '仙缘羁绊已激活',
+      desc: '同缘仙姬同队出战即触发羁绊，全队更强。',
+      go: '看羁绊',
+      tab: 'tab-stage',
+      glyph: '缘',
+      test: (s) => {
+        const B = typeof window !== 'undefined' && window.Bonds;
+        const Bt = typeof window !== 'undefined' && window.Battle;
+        const battleRealm = (window.GameConfig && window.GameConfig.BATTLE && window.GameConfig.BATTLE.UNLOCK_REALM) || 2;
+        if (!B || !Bt || (s.realmIndex || 0) < battleRealm) return false;
+        try {
+          return B.activeBonds(Bt.getSquadIds(s)).length > 0;
+        } catch (err) {
+          return false;
+        }
+      }
+    }
+  ];
+
+  function dongfuUnlockRealm(id, fallback) {
+    const list = (window.GameConfig && window.GameConfig.DONGFU_LIST) || [];
+    const item = list.find((d) => d.id === id);
+    return item && item.unlockRealmIndex != null ? item.unlockRealmIndex : fallback;
+  }
+
+  function unlockedKeys(s) {
+    return UNLOCKS.filter((u) => {
+      try {
+        return Boolean(u.test(s));
+      } catch (err) {
+        return false;
+      }
+    }).map((u) => u.key);
+  }
+
+  // 旧档（unlockSeen 为 null）：已解锁的直接记为看过；法宝沿用 guide.gearPopup
+  function ensureUnlockSeen(s) {
+    if (!s.unlockSeen || typeof s.unlockSeen !== 'object') {
+      const seen = {};
+      unlockedKeys(s).forEach((k) => { seen[k] = true; });
+      const guide = ensureGuide(s);
+      if (!guide.gearPopup) delete seen.gear;
+      s.unlockSeen = seen;
+    }
+    if (ensureGuide(s).gearPopup) s.unlockSeen.gear = true;
+    return s.unlockSeen;
+  }
+
+  function pendingUnlock(s) {
+    const seen = ensureUnlockSeen(s);
+    const keys = unlockedKeys(s);
+    for (let i = 0; i < UNLOCKS.length; i += 1) {
+      const u = UNLOCKS[i];
+      if (!seen[u.key] && keys.indexOf(u.key) >= 0) return u;
+    }
+    return null;
+  }
+
+  let unlockTimer = 0;
+  let currentUnlock = null;
+
+  function markUnlockSeen(s, key) {
+    ensureUnlockSeen(s)[key] = true;
+    if (key === 'gear') ensureGuide(s).gearPopup = true;
+  }
+
+  function renderUnlockCard(u) {
+    if (!els.unlockModal) return;
+    const title = els.unlockModal.querySelector('#unlock-modal-title');
+    const body = els.unlockModal.querySelector('.unlock-body');
+    const art = els.unlockModal.querySelector('.unlock-art');
+    if (title) title.textContent = u.title;
+    if (body) body.textContent = u.desc;
+    if (els.btnUnlockGo) els.btnUnlockGo.textContent = u.go;
+    if (art) {
+      art.setAttribute('data-unlock-key', u.key);
+      art.classList.remove('has-art');
+      const glyph = art.querySelector('.unlock-art-glyph');
+      if (glyph) glyph.textContent = u.glyph;
+      const img = art.querySelector('img');
+      if (img) {
+        img.onload = () => { if (currentUnlock === u) art.classList.add('has-art'); };
+        img.onerror = () => art.classList.remove('has-art');
+        img.src = `assets/ui/unlock_${u.key}.webp`;
+      }
+    }
+  }
+
+  function maybeUnlockCard(s) {
+    if (unlockTimer || (els.unlockModal && els.unlockModal.classList.contains('active'))) return;
+    if (!pendingUnlock(s)) return;
+    unlockTimer = setTimeout(function tryShow() {
       const st = S();
-      const g = ensureGuide(st);
-      if (g.gearPopup) {
-        gearPopupTimer = 0;
+      const u = st && pendingUnlock(st);
+      if (!u) {
+        unlockTimer = 0;
         return;
       }
       if (anyModalOpen()) {
-        gearPopupTimer = setTimeout(tryShow, 1000);
+        unlockTimer = setTimeout(tryShow, 1000);
         return;
       }
-      gearPopupTimer = 0;
-      g.gearPopup = true;
+      unlockTimer = 0;
+      currentUnlock = u;
+      markUnlockSeen(st, u.key);
       window.GameState.saveGame();
+      renderUnlockCard(u);
       if (els.unlockModal) {
         els.unlockModal.classList.add('active');
         els.unlockModal.setAttribute('aria-hidden', 'false');
@@ -529,7 +654,7 @@
       guide.gearVisited = true;
       window.GameState.saveGame();
     }
-    maybeGearPopup(s);
+    maybeUnlockCard(s);
     renderGoal(s);
     renderGuide(s);
     renderDots(s);
@@ -577,8 +702,9 @@
     if (els.btnUnlockLater) els.btnUnlockLater.addEventListener('click', closeUnlockModal);
     if (els.btnUnlockGo) {
       els.btnUnlockGo.addEventListener('click', () => {
+        const u = currentUnlock || UNLOCKS[0];
         closeUnlockModal();
-        api.switchTab('tab-gear');
+        api.switchTab(u.tab);
         tick();
       });
     }
@@ -614,6 +740,10 @@
     upgradeDot,
     compareDiff,
     cpGainOptions,
+    UNLOCKS,
+    unlockedKeys,
+    ensureUnlockSeen,
+    pendingUnlock,
     topActiveModal,
     closeModal,
     handleEscKey,
