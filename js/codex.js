@@ -582,6 +582,11 @@
     els.list.scrollTop = 0;
     els.modal.classList.add('active');
     els.modal.setAttribute('aria-hidden', 'false');
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(syncTabsFade);
+    } else {
+      syncTabsFade();
+    }
   }
 
   function close() {

@@ -126,7 +126,7 @@ check('D4 图鉴 tab 右侧渐隐、隐藏滚动条保留、切换 tab 内容区
   assert.ok(/\.codex-tabs\s*\{[\s\S]*?overflow-x:\s*auto/.test(css), '仍可横滑');
   assert.ok(/\.codex-tabs::-webkit-scrollbar\s*\{[\s\S]*?display:\s*none/.test(css), '隐藏滚动条保留');
   assert.ok(/\.codex-dialog\s*\{[\s\S]*?height:\s*min\(620px,\s*calc\(100dvh - 32px\)\)/.test(css) || css.includes('height: min(620px, calc(100dvh - 32px))'));
-  assert.ok(/\.codex-list\s*\{[\s\S]*?min-height:\s*240px/.test(css) || css.includes('min-height: 240px'));
+  assert.ok(/\.codex-list\s*\{[\s\S]*?min-height:\s*min\(\s*240px/.test(css) || css.includes('min-height: min(240px, 40vh)'));
   assert.ok(js.includes('syncTabsFade') && js.includes('is-fade-right'));
   assert.ok(!/getImageData/.test(js + css));
 });

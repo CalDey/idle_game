@@ -7428,7 +7428,7 @@ button.mijing-bless-card:active {
 }
 
 .codex-list {
-  min-height: 240px;
+  min-height: min(240px, 40vh);
 }
 
 .codex-tabs-wrap {
@@ -7451,12 +7451,12 @@ button.mijing-bless-card:active {
 
 .codex-tabs-wrap::before {
   left: 0;
-  background: linear-gradient(to right, rgba(18, 14, 28, 0.96), transparent);
+  background: linear-gradient(to right, rgba(20, 18, 38, 0.96), transparent);
 }
 
 .codex-tabs-wrap::after {
   right: 0;
-  background: linear-gradient(to left, rgba(18, 14, 28, 0.96), transparent);
+  background: linear-gradient(to left, rgba(20, 18, 38, 0.96), transparent);
 }
 
 .codex-tabs-wrap.is-fade-left::before,
