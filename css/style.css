@@ -7193,3 +7193,62 @@ button.mijing-bless-card:active {
   padding: 4px 14px;
   font-size: 12px;
 }
+
+/* === 洞府机缘 === */
+.home-fortune-marker {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 6;
+  min-height: 34px;
+  height: 34px;
+  padding: 0 14px 0 12px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid var(--accent-gold-bright);
+  background: linear-gradient(180deg, rgba(72, 56, 24, 0.94) 0%, rgba(28, 20, 12, 0.96) 100%);
+  color: var(--accent-gold-bright);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow:
+    0 0 10px rgba(245, 199, 106, 0.45),
+    0 3px 10px rgba(0, 0, 0, 0.55);
+}
+
+.home-fortune-marker[hidden] {
+  display: none;
+}
+
+.home-fortune-marker.has-event {
+  animation: homeFortunePulse 1.8s ease-in-out infinite;
+}
+
+.home-fortune-glow {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f5c76a;
+  box-shadow: 0 0 8px #f5c76a, 0 0 14px rgba(245, 199, 106, 0.7);
+  pointer-events: none;
+}
+
+@keyframes homeFortunePulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(245, 199, 106, 0.4), 0 3px 10px rgba(0, 0, 0, 0.55); }
+  50% { box-shadow: 0 0 16px rgba(245, 199, 106, 0.8), 0 3px 10px rgba(0, 0, 0, 0.55); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-fortune-marker.has-event {
+    animation: none;
+  }
+}

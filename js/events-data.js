@@ -77,7 +77,7 @@
     },
     {
       "id": "evt_peach_under_tree",
-      "pool": "idle",
+      "pool": ["idle", "home"],
       "tags": [
         "banxue"
       ],
@@ -111,7 +111,7 @@
     },
     {
       "id": "evt_dongtian_leak",
-      "pool": "idle",
+      "pool": ["idle", "home"],
       "tags": [
         "banxue"
       ],
@@ -150,7 +150,7 @@
     },
     {
       "id": "evt_canling_beg",
-      "pool": "idle",
+      "pool": ["idle", "home"],
       "tags": [
         "hualing"
       ],
@@ -266,7 +266,7 @@
     },
     {
       "id": "evt_array_eye",
-      "pool": "idle",
+      "pool": ["idle", "home"],
       "tags": [
         "hualing"
       ],
@@ -604,7 +604,7 @@
     },
     {
       "id": "evt_reincarnate_tea",
-      "pool": "idle",
+      "pool": ["idle", "home"],
       "tags": [
         "tianshen"
       ],
@@ -639,7 +639,7 @@
     },
     {
       "id": "evt_ledger_name",
-      "pool": "idle",
+      "pool": ["idle", "home"],
       "tags": [
         "tianshen"
       ],

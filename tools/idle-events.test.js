@@ -38,7 +38,8 @@ assert.strictEqual(events.length, 24, '应有 24 个事件');
 assert.strictEqual(new Set(events.map((e) => e.id)).size, 24, '事件 id 唯一');
 const ALLOWED = new Set(['qi', 'stone', 'jade', 'peach', 'daoguo', 'equip']);
 events.forEach((e) => {
-  assert.strictEqual(e.pool, 'idle');
+  const pools = Array.isArray(e.pool) ? e.pool : [e.pool];
+  assert.ok(pools.includes('idle'), `${e.id} 应仍属于挂机池`);
   assert.ok(Array.isArray(e.tags) && e.tags.length > 0);
   assert.ok(e.minRealmStage >= 0 && e.minRealmStage < CFG.REALM_STAGES.length, `${e.id} minRealmStage 越界`);
   assert.ok(e.name && e.text);
@@ -66,7 +67,8 @@ function fresh(extra) {
   assert.ok(ids.length > 0);
 });
 assert.deepStrictEqual(host(IE.eligibleEvents(fresh({ realmIndex: 0 }), 'idle').map((e) => e.id).sort()), ['evt_blood_debt', 'evt_village_ash']);
-assert.strictEqual(IE.eligibleEvents(fresh({ realmIndex: 41 }), 'home').length, 0, '其他事件池为空');
+assert.ok(IE.eligibleEvents(fresh({ realmIndex: 41 }), 'home').length > 0, '洞府机缘可复用已标记的事件');
+assert.ok(IE.eligibleEvents(fresh({ realmIndex: 41 }), 'idle').length === events.length, '挂机池仍含全部 24 条');
 for (let i = 0; i < 200; i++) {
   const s = fresh({ realmIndex: 7 });
   const e = IE.drawEvent(s, 'idle', Math.random);

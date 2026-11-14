@@ -725,7 +725,12 @@
         ? window.Tower.normalize(saved.tower)
         : saved.tower && typeof saved.tower === 'object' && !Array.isArray(saved.tower)
           ? saved.tower
-          : { v: 1, best: 0, claimed: 0, date: '', fails: 0 }
+          : { v: 1, best: 0, claimed: 0, date: '', fails: 0 },
+      homeFortune: window.HomeFortune
+        ? window.HomeFortune.normalize(saved.homeFortune)
+        : saved.homeFortune && typeof saved.homeFortune === 'object' && !Array.isArray(saved.homeFortune)
+          ? saved.homeFortune
+          : { v: 1, date: '', spawned: 0, pending: null, queued: 0, recent: [], nextOnlineAt: 20 * 60 * 1000, onlineMs: 0, lastSeen: 0 }
     };
     if (Array.isArray(unlockedHeroes)) {
       merged.unlockedHeroes = unlockedHeroes;
@@ -800,6 +805,9 @@
     if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, t);
     if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
     if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
+    if (window.HomeFortune && typeof window.HomeFortune.onResume === 'function') {
+      window.HomeFortune.onResume(state, (report && report.effectiveSeconds ? report.effectiveSeconds : 0) * 1000, t);
+    }
     saveGame();
     return report;
   }
@@ -813,6 +821,7 @@
         if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, Date.now());
         if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
         if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
+        if (window.HomeFortune && typeof window.HomeFortune.ensure === 'function') window.HomeFortune.ensure(state, Date.now());
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
@@ -839,6 +848,9 @@
       if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, now);
       if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
       if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
+      if (window.HomeFortune && typeof window.HomeFortune.onResume === 'function') {
+        window.HomeFortune.onResume(state, (offlineReport && offlineReport.effectiveSeconds ? offlineReport.effectiveSeconds : 0) * 1000, now);
+      }
       return { isNew: false, offlineReport };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
@@ -975,6 +987,11 @@
     if (state.tower && typeof state.tower === 'object') {
       const copied = JSON.parse(JSON.stringify(state.tower));
       fresh.tower = window.Tower ? window.Tower.normalize(copied) : copied;
+    }
+    // 洞府机缘：轮回保留当日次数与待处理事件（不能靠轮回刷新次数）
+    if (state.homeFortune && typeof state.homeFortune === 'object') {
+      const copied = JSON.parse(JSON.stringify(state.homeFortune));
+      fresh.homeFortune = window.HomeFortune ? window.HomeFortune.normalize(copied) : copied;
     }
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);

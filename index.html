@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=107" />
+  <link rel="stylesheet" href="css/style.css?v=108" />
 </head>
 
 <body>
@@ -304,7 +304,7 @@
 
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
-        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=1"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button></div></div>
+        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=1"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-home-fortune" class="home-fortune-marker" type="button" hidden aria-label="洞府机缘"><span class="home-fortune-glow" aria-hidden="true"></span><span id="home-fortune-label">机缘</span></button></div></div>
       </section>
 
       <!-- 页签3：轮回转世 -->
@@ -695,6 +695,19 @@
     </div>
   </div>
 
+  <div id="home-fortune-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog idle-event-dialog home-fortune-dialog" role="dialog" aria-modal="true" aria-labelledby="home-fortune-title">
+      <div class="idle-event-kicker">洞府机缘</div>
+      <h2 id="home-fortune-title" class="modal-title">洞府机缘</h2>
+      <p id="home-fortune-text" class="idle-event-text"></p>
+      <div id="home-fortune-options" class="idle-event-options"></div>
+      <div id="home-fortune-result" class="idle-event-result" hidden></div>
+      <div class="modal-actions">
+        <button id="btn-close-home-fortune" data-modal-close class="btn" type="button">暂且记下</button>
+      </div>
+    </div>
+  </div>
+
   <div id="idle-event-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog idle-event-dialog" role="dialog" aria-modal="true" aria-labelledby="idle-event-title">
       <div class="idle-event-kicker">机缘</div>
@@ -811,7 +824,7 @@
   <script src="js/beasts.js?v=1"></script>
   <script src="js/ui-text.js?v=3"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=46"></script>
+  <script src="js/state.js?v=47"></script>
   <script src="js/titles.js?v=23"></script>
   <script src="js/grow.js?v=1"></script>
   <script src="js/battle.js?v=40"></script>
@@ -824,9 +837,10 @@
   <script src="js/story.js?v=1"></script>
   <script src="js/newbie.js?v=7"></script>
   <script src="js/game.js?v=55"></script>
-  <script src="js/events-data.js?v=3"></script>
-  <script src="js/idle-events.js?v=3"></script>
+  <script src="js/events-data.js?v=4"></script>
+  <script src="js/idle-events.js?v=4"></script>
   <script src="js/daily.js?v=1"></script>
+  <script src="js/home-fortune.js?v=1"></script>
   <script src="js/codex-data.js?v=3"></script>
   <script src="js/codex.js?v=2"></script>
   <script src="js/hero-lines-data.js?v=2"></script>

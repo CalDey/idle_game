@@ -118,10 +118,17 @@
     return out;
   }
 
+  function eventPools(e) {
+    const p = e && e.pool;
+    if (Array.isArray(p)) return p.filter((x) => typeof x === 'string' && x);
+    if (typeof p === 'string' && p) return [p];
+    return [RULES.POOL_IDLE];
+  }
+
   function eligibleEvents(s, pool) {
-    const p = pool || RULES.POOL_IDLE;
+    const want = pool || RULES.POOL_IDLE;
     const realm = Number(s.realmIndex) || 0;
-    return allEvents().filter((e) => (e.pool || RULES.POOL_IDLE) === p && realm >= (Number(e.minRealmStage) || 0));
+    return allEvents().filter((e) => eventPools(e).includes(want) && realm >= (Number(e.minRealmStage) || 0));
   }
 
   function drawEvent(s, pool, rng) {
@@ -264,6 +271,7 @@
     RULES,
     RES_NAMES,
     allEvents,
+    eventPools,
     findEvent,
     tierOf,
     tierRefs,
