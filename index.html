@@ -363,7 +363,7 @@
         </div>
         <div id="cultivation-log" class="log-box"></div>
         <div class="modal-actions">
-          <button id="btn-close-log" class="btn" type="button">关闭</button>
+          <button id="btn-close-log" data-modal-close class="btn" type="button">关闭</button>
         </div>
       </div>
     </div>
@@ -377,7 +377,7 @@
         </div>
         <div id="role-list" class="role-grid"></div>
         <div class="modal-actions">
-          <button id="btn-close-role" class="btn" type="button">关闭</button>
+          <button id="btn-close-role" data-modal-close class="btn" type="button">关闭</button>
         </div>
       </div>
     </div>
@@ -397,7 +397,7 @@
         <div id="squad-hero-list" class="squad-hero-grid" aria-label="已解锁角色列表"></div>
         <div id="squad-skill-detail" class="squad-skill-detail" aria-live="polite" hidden></div>
         <div class="modal-actions squad-modal-actions">
-          <button id="btn-squad-cancel" class="btn" type="button">取消</button>
+          <button id="btn-squad-cancel" data-modal-close class="btn" type="button">取消</button>
           <button id="btn-squad-save" class="btn btn-primary" type="button">保存 (6/6)</button>
         </div>
       </div>
@@ -407,7 +407,7 @@
       <div class="modal-dialog mijing-dialog" role="dialog" aria-modal="true" aria-labelledby="mijing-modal-title">
         <div class="card-header squad-modal-header">
           <span id="mijing-modal-title" class="card-title"><img class="gi" src="assets/icons/ui_bagua@64.webp?v=18" alt="" aria-hidden="true">秘境劫运</span>
-          <button id="btn-mijing-close" class="home-modal-close" type="button" aria-label="关闭">✕</button>
+          <button id="btn-mijing-close" data-modal-close class="home-modal-close" type="button" aria-label="关闭">✕</button>
         </div>
         <div id="mijing-modal-body" class="mijing-modal-body"></div>
         <div id="mijing-modal-actions" class="modal-actions mijing-modal-actions"></div>
@@ -474,7 +474,7 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button id="btn-close-settings" class="btn" type="button">关闭</button>
+          <button id="btn-close-settings" data-modal-close class="btn" type="button">关闭</button>
         </div>
       </div>
     </div>
@@ -573,7 +573,7 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button id="btn-close-offline" class="btn btn-primary">收入囊中</button>
+        <button id="btn-close-offline" data-modal-close class="btn btn-primary">收入囊中</button>
       </div>
     </div>
   </div>
@@ -584,7 +584,7 @@
       <h2 id="confirm-title" class="modal-title">道心确认</h2>
       <div id="confirm-message" class="modal-body"></div>
       <div class="modal-actions">
-        <button id="btn-confirm-no" class="btn">暂且作罢</button>
+        <button id="btn-confirm-no" data-modal-close class="btn">暂且作罢</button>
         <button id="btn-confirm-yes" class="btn btn-danger">道心已决</button>
       </div>
     </div>
@@ -610,7 +610,7 @@
       <h2 id="item-modal-title" class="modal-title">装备</h2>
       <div id="item-modal-body" class="modal-body"></div>
       <div class="modal-actions">
-        <button id="btn-close-item" class="btn" type="button">关闭</button>
+        <button id="btn-close-item" data-modal-close class="btn" type="button">关闭</button>
       </div>
     </div>
   </div>
@@ -623,7 +623,7 @@
       <div id="title-summary" class="title-summary">已收集 0</div>
       <div id="title-list" class="title-list"></div>
       <div class="modal-actions">
-        <button id="btn-close-titles" class="btn" type="button">关闭</button>
+        <button id="btn-close-titles" data-modal-close class="btn" type="button">关闭</button>
       </div>
     </div>
   </div>
@@ -632,7 +632,7 @@
     <div class="modal-dialog codex-dialog" role="dialog" aria-modal="true" aria-labelledby="codex-modal-title">
       <div class="card-header codex-header">
         <span id="codex-modal-title" class="card-title">图鉴</span>
-        <button id="btn-close-codex" class="home-modal-close" type="button" aria-label="关闭">✕</button>
+        <button id="btn-close-codex" data-modal-close class="home-modal-close" type="button" aria-label="关闭">✕</button>
       </div>
       <div id="codex-tabs" class="codex-tabs" role="tablist" aria-label="图鉴分类"></div>
       <div id="codex-list" class="codex-list"></div>
@@ -658,7 +658,7 @@
       <div id="idle-event-options" class="idle-event-options"></div>
       <div id="idle-event-result" class="idle-event-result" hidden></div>
       <div class="modal-actions">
-        <button id="btn-close-idle-event" class="btn" type="button">暂且记下</button>
+        <button id="btn-close-idle-event" data-modal-close class="btn" type="button">暂且记下</button>
       </div>
     </div>
   </div>
@@ -696,7 +696,7 @@
     <div class="modal-dialog home-upgrade-dialog" role="dialog" aria-modal="true" aria-labelledby="home-upgrade-modal-title">
       <div class="card-header home-upgrade-header">
         <span id="home-upgrade-modal-title" class="card-title"><img class="gi" src="assets/icons/df_dongtian_fudi@64.webp?v=18" alt="" aria-hidden="true">洞府升级</span>
-        <button id="btn-close-home-upgrade" class="home-modal-close" type="button" aria-label="关闭">✕</button>
+        <button id="btn-close-home-upgrade" data-modal-close class="home-modal-close" type="button" aria-label="关闭">✕</button>
       </div>
       <div class="home-modal-tabs" role="tablist" aria-label="升级分类">
         <button id="home-tab-btn-dongfu" class="home-modal-tab is-active" type="button" role="tab" aria-selected="true" data-home-tab="dongfu">

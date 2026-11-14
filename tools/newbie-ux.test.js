@@ -468,5 +468,94 @@ function breakAt(GS, roll) {
   assert.ok(/\.stage-action-row \.stage-btn-main \{[^}]*height: 46px[^}]*font-size: 18px/.test(css), '挑战按钮放大为主按钮');
 }
 
+// ---------- P3-7 所有弹窗 Esc / 点遮罩关闭（含 QA B1：修仙日志、设置、更换角色） ----------
+{
+  const { NB } = loadRuntime(memoryStorage());
+  function fakeEl(id, opts) {
+    const cls = new Set((opts && opts.cls) || []);
+    const attrs = Object.assign({}, (opts && opts.attrs) || {});
+    const el = {
+      id,
+      children: [],
+      clicks: 0,
+      disabled: false,
+      classList: {
+        contains: (c) => cls.has(c),
+        add: (c) => cls.add(c),
+        remove: (c) => cls.delete(c)
+      },
+      hasAttribute: (k) => Object.prototype.hasOwnProperty.call(attrs, k),
+      setAttribute: (k, v) => { attrs[k] = String(v); },
+      getAttribute: (k) => attrs[k],
+      querySelector: (sel) => (sel === '[data-modal-close]' ? el.children.find((c) => c.hasAttribute('data-modal-close')) || null : null),
+      click() { el.clicks += 1; if (opts && opts.onClick) opts.onClick(); }
+    };
+    return el;
+  }
+  function modal(id, withClose, ariaHidden) {
+    const m = fakeEl(id, { cls: ['modal-backdrop'], attrs: ariaHidden ? { 'aria-hidden': 'true' } : {} });
+    if (withClose) {
+      const btn = fakeEl(`${id}-close`, { attrs: { 'data-modal-close': '' }, onClick: () => m.classList.remove('active') });
+      m.children.push(btn);
+      m.btn = btn;
+    }
+    return m;
+  }
+  const settings = modal('settings-modal', true);
+  const confirm = modal('confirm-modal', true);
+  const compare = modal('compare-modal', false, true);
+  const all = [settings, confirm, compare];
+  const doc = { querySelectorAll: () => all.filter((m) => m.classList.contains('active') && m.classList.contains('modal-backdrop')) };
+  const esc = () => {
+    const ev = { key: 'Escape', defaultPrevented: false, preventDefault() { ev.defaultPrevented = true; } };
+    return { ev, closed: NB.handleEscKey(ev, doc) };
+  };
+  assert.strictEqual(esc().closed, false, '无弹窗时 Esc 不处理');
+  settings.classList.add('active');
+  confirm.classList.add('active');
+  let r = esc();
+  assert.strictEqual(r.closed, true);
+  assert.strictEqual(r.ev.defaultPrevented, true);
+  assert.strictEqual(confirm.btn.clicks, 1, '只关最上层，并走它自己的关闭按钮');
+  assert.strictEqual(settings.classList.contains('active'), true, '下层弹窗保持打开');
+  r = esc();
+  assert.strictEqual(settings.btn.clicks, 1);
+  assert.strictEqual(settings.classList.contains('active'), false);
+  // 已被其他模块处理（defaultPrevented）的 Esc 不重复关闭
+  settings.classList.add('active');
+  assert.strictEqual(NB.handleEscKey({ key: 'Escape', defaultPrevented: true }, doc), false);
+  assert.strictEqual(NB.handleEscKey({ key: 'Enter', defaultPrevented: false }, doc), false);
+  assert.strictEqual(settings.classList.contains('active'), true);
+  // 没有关闭按钮的弹窗：直接移除 active，并恢复 aria-hidden
+  compare.classList.add('active');
+  compare.setAttribute('aria-hidden', 'false');
+  esc();
+  assert.strictEqual(compare.classList.contains('active'), false);
+  assert.strictEqual(compare.getAttribute('aria-hidden'), 'true');
+  // 点遮罩：只有点在遮罩本身才关闭，点对话框内部不关
+  assert.strictEqual(NB.handleBackdropClick({ target: settings.btn }), false);
+  assert.strictEqual(NB.handleBackdropClick({ target: settings }), true);
+  assert.strictEqual(settings.classList.contains('active'), false);
+  assert.strictEqual(NB.handleBackdropClick({ target: settings }), false, '已关闭的遮罩不处理');
+
+  // index.html：每个弹窗都有关闭按钮标记（装备对比弹窗除外：关掉后用「处理掉落」重开）
+  const html = text('index.html');
+  const modalIds = [...html.matchAll(/<div id="([^"]+)" class="modal-backdrop/g)].map((m) => m[1]);
+  assert.ok(modalIds.length >= 15, `弹窗数 ${modalIds.length}`);
+  modalIds.forEach((id, i) => {
+    const start = html.indexOf(`<div id="${id}" class="modal-backdrop`);
+    const end = i + 1 < modalIds.length ? html.indexOf(`<div id="${modalIds[i + 1]}" class="modal-backdrop`) : html.length;
+    const chunk = html.slice(start, end);
+    if (id === 'compare-modal') return;
+    assert.ok(/data-modal-close/.test(chunk), `${id} 缺少 data-modal-close`);
+  });
+  ['btn-close-log', 'btn-close-settings', 'btn-close-role'].forEach((id) => {
+    assert.ok(html.includes(`<button id="${id}" data-modal-close `), `QA B1：${id}`);
+  });
+  const nb = text('js/newbie.js');
+  assert.ok(nb.includes("document.addEventListener('keydown', (e) => handleEscKey(e, document), true)"), 'Esc 在捕获阶段统一处理');
+  assert.ok(nb.includes("document.addEventListener('click', handleBackdropClick)"));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');

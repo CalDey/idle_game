@@ -469,7 +469,8 @@
       });
     }
 
-    document.addEventListener('keydown', (e) => handleEscKey(e, document));
+    // 捕获阶段：先于各模块自己的 Esc 处理，只关最上层一个弹窗（关闭走该弹窗自己的关闭按钮逻辑）
+    document.addEventListener('keydown', (e) => handleEscKey(e, document), true);
     document.addEventListener('click', handleBackdropClick);
     window.addEventListener('resize', () => {
       const s = S();
