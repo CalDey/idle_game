@@ -248,6 +248,21 @@
   const strengthCache = new Map();
   const STRENGTH_CACHE_MAX = 64;
 
+  function statSig(state) {
+    const Btl = battle();
+    if (!Btl || typeof Btl.playerStats !== 'function') return `cp:${fullSquadCp(state)}`;
+    try {
+      const p = Btl.playerStats(state);
+      const n = (v) => {
+        const x = Number(v);
+        return Number.isFinite(x) ? x : 0;
+      };
+      return `cp:${n(p && p.cp)},atk:${n(p && p.atk)},hp:${n(p && p.hp)},def:${n(p && p.def)},spd:${n(p && p.spd)},crit:${n(p && p.crit)}`;
+    } catch (err) {
+      return `cp:${fullSquadCp(state)}`;
+    }
+  }
+
   function strengthSig(state, ref) {
     const Btl = battle();
     if (Btl && typeof Btl.ensureFormation === 'function') {
@@ -262,15 +277,19 @@
       return `${id}:${f.c},${f.r}`;
     }).join('|');
     const bm = bondMods(state);
-    return `${ref}#${Array.isArray(squad) ? squad.join(',') : ''}#${formStr}#${fullSquadCp(state)}#${bm ? JSON.stringify(bm) : ''}`;
+    return `${ref}#${Array.isArray(squad) ? squad.join(',') : ''}#${formStr}#${statSig(state)}#${bm ? JSON.stringify(bm) : ''}`;
   }
 
-  // 二分查找当前队伍对标准波胜率约 50% 的敌方战力（确定性种子，刷新不变）
-  function measureStrength(state, ref) {
-    const B = battle();
-    if (!B || !B.canStartBattle(state).ok) return 0;
-    const key = strengthSig(state, ref);
-    if (strengthCache.has(key)) return strengthCache.get(key);
+  function putStrength(key, measured) {
+    if (strengthCache.size >= STRENGTH_CACHE_MAX && !strengthCache.has(key)) {
+      const first = strengthCache.keys().next().value;
+      strengthCache.delete(first);
+    }
+    strengthCache.set(key, measured);
+    return measured;
+  }
+
+  function runMeasureSync(state, ref, B) {
     const mc = mijingCfg();
     const guess = fullSquadCp(state) || refCp(ref);
     let lo = Math.log(guess * 0.3);
@@ -288,13 +307,106 @@
       if (rate(Math.exp(mid)) >= 0.5) lo = mid;
       else hi = mid;
     }
-    const measured = Math.exp((lo + hi) / 2);
-    if (strengthCache.size >= STRENGTH_CACHE_MAX) {
-      const first = strengthCache.keys().next().value;
-      strengthCache.delete(first);
+    return Math.exp((lo + hi) / 2);
+  }
+
+  // 二分查找当前队伍对标准波胜率约 50% 的敌方战力（确定性种子，刷新不变）
+  function measureStrength(state, ref) {
+    const B = battle();
+    if (!B || !B.canStartBattle(state).ok) return 0;
+    const key = strengthSig(state, ref);
+    if (strengthCache.has(key)) return strengthCache.get(key);
+    return putStrength(key, runMeasureSync(state, ref, B));
+  }
+
+  function scheduleIdle(fn) {
+    if (typeof requestIdleCallback === 'function') {
+      return requestIdleCallback(() => fn(), { timeout: 48 });
     }
-    strengthCache.set(key, measured);
-    return measured;
+    return setTimeout(fn, 0);
+  }
+
+  let warmupToken = 0;
+  let warmupKey = '';
+
+  // 分片预热同一套测力（与 measureStrength 同一种子与二分），避免首次开启卡住主线程。
+  function warmupStrength(state, ref, done) {
+    const B = battle();
+    const finish = (value) => {
+      if (typeof done === 'function') done(value);
+    };
+    if (!B || !B.canStartBattle(state).ok) {
+      finish(0);
+      return false;
+    }
+    const key = strengthSig(state, ref);
+    if (strengthCache.has(key)) {
+      finish(strengthCache.get(key));
+      return false;
+    }
+    if (warmupKey === key) return true;
+    const token = (warmupToken += 1);
+    warmupKey = key;
+    const mc = mijingCfg();
+    const guess = fullSquadCp(state) || refCp(ref);
+    let lo = Math.log(guess * 0.3);
+    let hi = Math.log(guess * 3);
+    const probeMods = bondMods(state);
+    let iter = 0;
+    let i = 0;
+    let w = 0;
+    let mid = (lo + hi) / 2;
+    const BATCH = 3;
+    const step = () => {
+      if (token !== warmupToken) return;
+      if (strengthCache.has(key)) {
+        if (warmupKey === key) warmupKey = '';
+        finish(strengthCache.get(key));
+        return;
+      }
+      try {
+        if (strengthSig(state, ref) !== key) {
+          if (warmupKey === key) warmupKey = '';
+          finish(null);
+          return;
+        }
+      } catch (err) {
+        if (warmupKey === key) warmupKey = '';
+        finish(null);
+        return;
+      }
+      const cp = Math.exp(mid);
+      const end = Math.min(mc.PROBE_SIMS, i + BATCH);
+      for (; i < end; i++) {
+        if (B.createSession(state, probeEnemy(ref, cp), 0x51ed27 + i * 7919, probeMods).runToEnd(true).win) w += 1;
+      }
+      if (i < mc.PROBE_SIMS) {
+        scheduleIdle(step);
+        return;
+      }
+      if (w / mc.PROBE_SIMS >= 0.5) lo = mid;
+      else hi = mid;
+      iter += 1;
+      if (iter < mc.PROBE_ITERS) {
+        mid = (lo + hi) / 2;
+        i = 0;
+        w = 0;
+        scheduleIdle(step);
+        return;
+      }
+      const measured = Math.exp((lo + hi) / 2);
+      putStrength(key, measured);
+      if (warmupKey === key) warmupKey = '';
+      finish(measured);
+    };
+    scheduleIdle(step);
+    return true;
+  }
+
+  function clearStrengthCache() {
+    strengthCache.clear();
+    warmupToken += 1;
+    warmupKey = '';
   }
 
   function computeAnchor(state, ref) {
@@ -308,7 +420,8 @@
     if (!B || typeof B.playerStats !== 'function') return 0;
     try {
       const p = B.playerStats(state);
-      return (p && (p.baseCp || p.cp)) || 0;
+      // 用加成后的 p.cp（非 baseCp），培元/图鉴等乘区变化会改锚点并让测力缓存失效
+      return (p && p.cp) || 0;
     } catch (err) {
       return 0;
     }
@@ -596,6 +709,8 @@
     stageBaseCp,
     anchorCp,
     measureStrength,
+    warmupStrength,
+    clearStrengthCache,
     computeAnchor,
     waveEnemy,
     waveSeed,

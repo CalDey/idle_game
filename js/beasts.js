@@ -17,7 +17,7 @@
       tagName: '幽冥',
       unlockStage: 30,
       unlockText: '通关第 30 关（击败黑风寨主）',
-      blurb: '九尾在雾里比身子先到。它不认主，只认谁身上有它闻得惯的冥气。',
+      blurb: '九尾比身子先到。它不认主，只认你身上那股阴气。',
       perk: { key: 'ultLifesteal', perLv: 0.01, label: '幽冥角色绝技吸血' }
     },
     {
@@ -27,7 +27,7 @@
       tagName: '冰霜',
       unlockStage: 90,
       unlockText: '通关第 90 关（击败青冥蛟后）',
-      blurb: '青冥山的老守山兽，鳞上结霜。它跟着你走，像是在替山送客。',
+      blurb: '青冥岭上的老守山兽，鳞结着霜。它随你走，岭上便少一季霜。',
       perk: { key: 'freezeChance', perLv: 0.005, label: '冰霜角色普攻冰封几率' }
     },
     {
@@ -37,7 +37,7 @@
       tagName: '烈焰',
       unlockStage: 150,
       unlockText: '通关第 150 关（击败赤炎魔君）',
-      blurb: '从荒原祭火里飞出来的金乌，羽尖还在落火星。它不肯回去当香火。',
+      blurb: '祭火里逃出的金乌，羽尖仍在落星。它不肯回去当香火。',
       perk: { key: 'atkSplash', perLv: 0.01, label: '烈焰角色普攻溅射' }
     }
   ];

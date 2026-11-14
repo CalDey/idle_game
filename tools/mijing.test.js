@@ -24,7 +24,7 @@ function memoryStorage(initial) {
 
 function runtime(opts) {
   const o = opts || {};
-  const sandbox = { window: {}, console, localStorage: o.storage || memoryStorage() };
+  const sandbox = { window: {}, console, localStorage: o.storage || memoryStorage(), setTimeout, clearTimeout };
   sandbox.globalThis = sandbox.window;
   vm.runInNewContext(text('js/config.js'), sandbox);
   vm.runInNewContext(text('js/equip.js'), sandbox);
@@ -66,10 +66,20 @@ function simState(win, realmIndex, qIndex) {
 }
 
 let passed = 0;
+const pending = [];
 function check(name, fn) {
-  fn();
-  passed += 1;
-  console.log(`ok - ${name}`);
+  const ret = fn();
+  if (ret && typeof ret.then === 'function') {
+    pending.push(
+      ret.then(() => {
+        passed += 1;
+        console.log(`ok - ${name}`);
+      })
+    );
+  } else {
+    passed += 1;
+    console.log(`ok - ${name}`);
+  }
 }
 
 // 1. 无劫运（mods 缺省）时与上线前 battle.js 完全一致
@@ -543,6 +553,7 @@ check('测力常数在 config，同签名缓存避免重复模拟', () => {
   assert.ok(!/const PROBE_SIMS/.test(text('js/mijing.js')), 'PROBE_* 不应再写死在 mijing.js');
   assert.ok(text('js/mijing.js').includes('ANCHOR_FLOOR_MULT'));
   assert.ok(text('js/mijing.js').includes('strengthCache'));
+  assert.ok(text('js/stage-ui.js').includes('Codex.renderBadge'), '战斗结算后立刻刷新图鉴红点');
 
   const st = simState(W, 8, 1);
   st.stage = st.stage || {};
@@ -564,10 +575,72 @@ check('测力常数在 config，同签名缓存避免重复模拟', () => {
     assert.ok(sessions > 0, '换队后应重新测力');
     assert.ok(c > 0);
     assert.notStrictEqual(c, a);
+
+    const src = text('js/mijing.js');
+    assert.ok(/cp:.*atk:.*hp:.*def:.*spd:.*crit:/.test(src), '测力签名含加成后战力与攻击/生命/防御/速度/暴击');
+    assert.ok(!/p\.baseCp \|\| p\.cp/.test(src), '满编战力与签名不用加成前 baseCp');
+    const origPS = B.playerStats.bind(B);
+    sessions = 0;
+    B.playerStats = function (state) {
+      const p = origPS(state);
+      return Object.assign({}, p, { atk: p.atk * 1.1, cp: p.cp, baseCp: p.baseCp });
+    };
+    try {
+      const d = M.measureStrength(st, 20);
+      assert.ok(sessions > 0, '同战力但属性构成不同应重新测力');
+      assert.ok(d > 0);
+    } finally {
+      B.playerStats = origPS;
+    }
+    sessions = 0;
+    B.playerStats = function (state) {
+      const p = origPS(state);
+      return Object.assign({}, p, { cp: (p.cp || 0) * 1.05, baseCp: p.baseCp });
+    };
+    try {
+      const e = M.measureStrength(st, 20);
+      assert.ok(sessions > 0, '加成后 p.cp 变化即使 baseCp 不变也应重新测力');
+      assert.ok(e > 0);
+    } finally {
+      B.playerStats = origPS;
+    }
   } finally {
     B.createSession = orig;
   }
 });
 
-console.log(`mijing.test.js ok: ${passed} checks`);
+check('测力可分片预热，结果与同步测力一致', async () => {
+  const st = simState(W, 8, 1);
+  st.stage = st.stage || {};
+  st.stage.best = 20;
+  M.clearStrengthCache();
+  const syncVal = M.measureStrength(st, 20);
+  assert.ok(syncVal > 0);
+  M.clearStrengthCache();
+  const warmVal = await new Promise((resolve) => {
+    M.warmupStrength(st, 20, resolve);
+  });
+  assert.strictEqual(warmVal, syncVal, '分片预热与同步测力应得到同一结果');
+  let sessions = 0;
+  const orig = B.createSession.bind(B);
+  B.createSession = function () {
+    sessions += 1;
+    return orig.apply(this, arguments);
+  };
+  try {
+    assert.strictEqual(M.measureStrength(st, 20), syncVal);
+    assert.strictEqual(sessions, 0, '预热写入同一缓存');
+  } finally {
+    B.createSession = orig;
+  }
+});
+
+Promise.all(pending)
+  .then(() => {
+    console.log(`mijing.test.js ok: ${passed} checks`);
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 

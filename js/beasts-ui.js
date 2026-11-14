@@ -212,11 +212,11 @@
         true
       );
     }
+    // 读档补发旧档已达解锁关的灵兽；进行中的首通由 stage-ui 在 Boss 结算时再调 sync
     sync(false);
-    setInterval(() => sync(false), 3000);
   }
 
-  window.BeastsUI = { chipHtml, open, close, renderCompanion, renderModal };
+  window.BeastsUI = { chipHtml, open, close, renderCompanion, renderModal, sync };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

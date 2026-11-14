@@ -232,11 +232,19 @@
     }
   };
 
+  function resumeCtx(c) {
+    if (!c || typeof c.resume !== 'function') return;
+    try {
+      const p = c.resume();
+      if (p && typeof p.catch === 'function') p.catch(function () {});
+    } catch (err) {}
+  }
+
   function play(name) {
     if (!prefs.sfx || !SFX[name]) return false;
     const c = ensureCtx();
     if (!c) return false;
-    if (c.state === 'suspended' && typeof c.resume === 'function') c.resume();
+    if (c.state === 'suspended') resumeCtx(c);
     try {
       SFX[name](c.currentTime + 0.01);
     } catch (err) {
@@ -301,7 +309,7 @@
     if (!prefs.music) return false;
     const c = ensureCtx();
     if (!c) return false;
-    if (c.state === 'suspended' && typeof c.resume === 'function') c.resume();
+    if (c.state === 'suspended') resumeCtx(c);
     startDrone();
     musicBus.gain.cancelScheduledValues(c.currentTime);
     musicBus.gain.setValueAtTime(musicBus.gain.value, c.currentTime);
@@ -347,8 +355,8 @@
     if (!ctx) return;
     if (document.hidden) {
       if (typeof ctx.suspend === 'function') ctx.suspend();
-    } else if ((prefs.music || prefs.sfx) && typeof ctx.resume === 'function') {
-      ctx.resume();
+    } else if (prefs.music || prefs.sfx) {
+      resumeCtx(ctx);
     }
   }
 

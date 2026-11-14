@@ -49,6 +49,9 @@ check('三只灵兽：id / 名称 / 标签与仙缘对应，解锁关卡递增�
     if (i > 0) assert.ok(b.unlockStage > BS.BEASTS[i - 1].unlockStage);
   });
   assert.strictEqual(BS.MAX_LV, 10);
+  assert.strictEqual(BS.BY_ID.xuanhu.blurb, '九尾比身子先到。它不认主，只认你身上那股阴气。');
+  assert.strictEqual(BS.BY_ID.shoushanlin.blurb, '青冥岭上的老守山兽，鳞结着霜。它随你走，岭上便少一季霜。');
+  assert.strictEqual(BS.BY_ID.jinwu.blurb, '祭火里逃出的金乌，羽尖仍在落星。它不肯回去当香火。');
 });
 
 check('美术：全身 webp 带透明通道，头像 webp 存在；体积受控', () => {
@@ -201,6 +204,9 @@ check('页面接线：脚本顺序、弹窗、设置入口、闯关仙缘行头�
   const ui = text('js/beasts-ui.js');
   assert.ok(ui.includes("btn.addEventListener('pointerdown', (e) => e.stopPropagation())"), '点灵兽不触发打坐');
   assert.ok(!/getImageData/.test(ui + text('js/beasts.js')));
+  assert.ok(!/setInterval\s*\(\s*\(\s*\)\s*=>\s*sync\(false\)\s*,\s*3000\s*\)/.test(ui), '不再 3 秒轮询解锁');
+  assert.ok(ui.includes('sync(false)'), '初始化仍同步一次，兼容旧档补发');
+  assert.ok(/BeastsUI\.sync/.test(stage), 'Boss 首通结算直接同步灵兽结缘');
 });
 
 console.log(`beast.test.js ok: ${passed} checks`);

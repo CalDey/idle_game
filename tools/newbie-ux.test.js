@@ -842,6 +842,7 @@ function breakAt(GS, roll) {
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('window.Story.beforeBattle(st.cur, () => startBattle(manual))'));
   assert.ok(ui.includes('window.Story.afterBossWin(stageNum, resumeAuto)'));
+  assert.ok(!/if \(storyShown\) log\(`图鉴已收录/.test(ui), '剧情已含「图鉴已收录」时不再往战报重复写');
   assert.ok(/!towerBattle && !inMijing\(\) && window\.Story/.test(ui), '秘境/镇妖塔不播剧情');
   const html = text('index.html');
   assert.ok(html.includes('id="story-modal"') && html.includes('id="btn-story-skip" class="btn story-skip" type="button" data-modal-close'), '可跳过（含 Esc / 遮罩）');
@@ -898,6 +899,7 @@ function breakAt(GS, roll) {
   // 不含音频文件；来源许可写入仓库；接线
   const audioSrc = text('js/audio.js');
   assert.ok(!/\.(mp3|ogg|wav|m4a)\b/i.test(audioSrc), '纯合成，无外部音频');
+  assert.ok(audioSrc.includes('resumeCtx') && audioSrc.includes('p.catch'), 'AudioContext.resume 的 Promise 带 catch');
   const lic = text('docs/AUDIO_SOURCES.md');
   assert.ok(lic.includes('Web Audio') && lic.includes('CC0') && lic.includes('默认关闭'));
   const html = text('index.html');

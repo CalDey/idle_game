@@ -1354,6 +1354,10 @@
     }
   }
 
+  function refreshCodexBadge() {
+    if (window.Codex && typeof window.Codex.renderBadge === 'function') window.Codex.renderBadge();
+  }
+
   function finishBattle() {
     clearAllTimers();
     hideUltOverlay();
@@ -1380,12 +1384,14 @@
 
     if (battleMode === 'tower') {
       finishTowerFloor(sim, enemy);
+      refreshCodexBadge();
       return;
     }
 
     if (battleMode === 'mijing') {
       battleMode = 'stage';
       finishMijingWave(sim, enemy);
+      refreshCodexBadge();
       return;
     }
 
@@ -1439,16 +1445,19 @@
       if (window.Titles) window.Titles.sync(s);
       if (window.TitlesUI) window.TitlesUI.flushToasts();
       if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(s, 'stage_clear', 1, Date.now());
+      if (firstClear && enemy.isBoss && window.BeastsUI && typeof window.BeastsUI.sync === 'function') {
+        window.BeastsUI.sync(false);
+      }
       onChange();
       render();
 
-      // 首通 Boss：遗言 → 战后剧情 → 「图鉴已收录」，看完再继续自动推关
+      // 首通 Boss：遗言 → 战后剧情 → 「图鉴已收录」（剧情内已有，不再往战报重复写一行），看完再继续自动推关
       const resumeAuto = () => {
         if (stageNum < 300) scheduleAutoNextIfAllowed();
       };
       const storyShown = Boolean(firstClear && enemy.isBoss && window.Story && window.Story.afterBossWin(stageNum, resumeAuto));
-      if (storyShown) log(`图鉴已收录【${enemy.name}】`, 'gold');
-      else resumeAuto();
+      if (!storyShown) resumeAuto();
+      refreshCodexBadge();
     } else {
       st.fails = (st.fails || 0) + 1;
       st.losses = (st.losses || 0) + 1;
@@ -1469,6 +1478,7 @@
       if (window.TitlesUI) window.TitlesUI.flushToasts();
       onChange();
       render();
+      refreshCodexBadge();
     }
   }
 
@@ -2813,6 +2823,15 @@
     actionsEl.innerHTML = actions;
   }
 
+  function warmMijingProbe() {
+    const M = MJ();
+    const s = window.GameState && window.GameState.state;
+    if (!M || !s || typeof M.warmupStrength !== 'function' || typeof M.isUnlocked !== 'function') return;
+    if (!M.isUnlocked(s)) return;
+    const ref = Math.max(1, Math.min(300, (s.stage && s.stage.best) || 0));
+    M.warmupStrength(s, ref);
+  }
+
   function openMijingModal(mode) {
     const modal = $('mijing-modal');
     if (!modal || !MJ()) return false;
@@ -2827,6 +2846,7 @@
     if (!mijingModalOpen) return false;
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
+    if (mode === 'intro') warmMijingProbe();
     return true;
   }
 

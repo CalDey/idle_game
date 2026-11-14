@@ -268,6 +268,8 @@ assert.ok(shanzei && shanzei.name === '山贼喽啰');
   const css = text('css/style.css');
   assert.ok(/<script src="js\/codex\.js\?v=\d+"><\/script>/.test(index));
   assert.ok(index.includes('id="badge-codex"'));
+  assert.ok(text('js/stage-ui.js').includes('Codex.renderBadge'), 'finishBattle 结束时立刻刷新红点');
+  assert.ok(/setInterval\([\s\S]{0,40}renderBadge/.test(text('js/codex.js')), '5 秒轮询作为兜底保留');
   assert.ok(/codex-boss-thumb[\s\S]{0,180}max-width:\s*100%/.test(css), '缩略图应限制 max-width，避免大图撑破弹窗');
   assert.ok(/codex-boss-thumb[\s\S]{0,120}width:\s*44px/.test(css));
   assert.ok(/codex-boss-thumb[\s\S]{0,160}height:\s*58px/.test(css));
