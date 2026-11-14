@@ -919,10 +919,6 @@
     if (state.beasts && typeof state.beasts === 'object') {
       fresh.beasts = JSON.parse(JSON.stringify(state.beasts));
     }
-    // 图鉴：保留历史最高境界，转世后已解锁条目不重新上锁
-    if (state.codex && typeof state.codex === 'object') {
-      fresh.codex = JSON.parse(JSON.stringify(state.codex));
-    }
     fresh.flags = { ...(state.flags || {}) };
     fresh.login = { ...(state.login || {}) };
     fresh.dayTaps = { ...(state.dayTaps || {}) };
