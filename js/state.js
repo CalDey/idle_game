@@ -875,6 +875,10 @@
     if (state.mijing && typeof state.mijing === 'object') {
       fresh.mijing = JSON.parse(JSON.stringify(state.mijing));
     }
+    // 仙姬派遣：轮回不清空进行中的派遣与当日悬赏（避免轮回刷新悬赏榜；灵石奖励领取时按当时产出封顶）
+    if (state.dispatch && typeof state.dispatch === 'object') {
+      fresh.dispatch = JSON.parse(JSON.stringify(state.dispatch));
+    }
     fresh.flags = { ...(state.flags || {}) };
     fresh.login = { ...(state.login || {}) };
     fresh.dayTaps = { ...(state.dayTaps || {}) };

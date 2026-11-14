@@ -6019,3 +6019,286 @@ button.mijing-bless-card:active {
   line-height: 1.45;
   color: #f5c76a;
 }
+
+/* === 仙姬派遣 === */
+.home-dispatch-btn {
+  position: absolute;
+  top: 52px;
+  right: 10px;
+  z-index: 5;
+  min-height: 34px;
+  height: 34px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid var(--border-gold);
+  background: linear-gradient(180deg, rgba(58, 52, 84, 0.94) 0%, rgba(28, 24, 48, 0.96) 100%);
+  color: var(--accent-gold-bright);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.home-dispatch-btn[hidden] {
+  display: none;
+}
+
+.home-dispatch-btn.has-ready {
+  border-color: rgba(184, 230, 206, 0.8);
+  color: #f3fff8;
+  box-shadow: 0 0 10px rgba(125, 222, 192, 0.45);
+}
+
+.home-dispatch-btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.dispatch-dialog {
+  max-width: 366px;
+  max-height: calc(100dvh - 24px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.dispatch-dialog .card-title .gi {
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  vertical-align: -3px;
+}
+
+.dispatch-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.dispatch-modal-body::-webkit-scrollbar {
+  display: none;
+}
+
+.dispatch-modal-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.dispatch-modal-actions .btn {
+  flex: 1 1 0;
+}
+
+.dispatch-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+  margin-top: 2px;
+}
+
+.dispatch-section-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.dispatch-mission {
+  background: rgba(8, 6, 20, 0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dispatch-mission.is-done {
+  border-color: rgba(184, 230, 206, 0.7);
+  box-shadow: 0 0 8px rgba(125, 222, 192, 0.2);
+}
+
+.dispatch-mission.is-taken {
+  opacity: 0.55;
+}
+
+.dispatch-mission-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dispatch-mission-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.dispatch-mission-req,
+.dispatch-mission-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dispatch-mission.is-done .dispatch-mission-time {
+  color: var(--accent-jade);
+}
+
+.dispatch-mission-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.dispatch-mission-heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dispatch-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.dispatch-hero-chip img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-subtle);
+}
+
+.dispatch-mission-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn.btn-sm {
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+.dispatch-taken {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.dispatch-bonus {
+  color: var(--accent-jade);
+  font-size: 11px;
+}
+
+.dispatch-bonus-hint {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.dispatch-flash {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--accent-gold-bright);
+  background: rgba(230, 201, 138, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.dispatch-flash.is-warn {
+  color: #f0a07a;
+}
+
+.dispatch-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.dispatch-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.dispatch-hero {
+  font-family: inherit;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  row-gap: 2px;
+  align-items: center;
+  text-align: left;
+  padding: 6px;
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(15, 13, 30, 0.72);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.dispatch-hero.is-selected {
+  border-color: rgba(184, 230, 206, 0.8);
+  background: rgba(36, 56, 47, 0.75);
+  box-shadow: inset 0 0 8px rgba(125, 222, 192, 0.2);
+}
+
+.dispatch-hero.is-lowq {
+  opacity: 0.75;
+}
+
+.dispatch-hero-avatar {
+  grid-row: 1 / span 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.dispatch-hero-name {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dispatch-hero .bond-tags {
+  display: inline-flex;
+  gap: 3px;
+  min-width: 0;
+}
+
+.evt-option-line .bond-tag {
+  margin-left: 2px;
+}
+
+.bond-tag.is-match {
+  outline: 1px solid var(--accent-jade);
+}
+
+.squad-hero-card.is-dispatched {
+  border-color: rgba(230, 201, 138, 0.18);
+  background: rgba(15, 13, 30, 0.72);
+  opacity: 0.6;
+}

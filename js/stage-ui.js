@@ -86,6 +86,14 @@
     return Bd ? Bd.modsForState(state) : null;
   }
 
+  // 仙姬派遣：派遣中的仙姬不能编入出战队伍（召回后可上阵）
+  function dispatchBusy(heroId) {
+    const D = window.Dispatch;
+    const s = window.GameState && window.GameState.state;
+    if (!D || !s || typeof D.busyMission !== 'function') return null;
+    return D.busyMission(s, heroId);
+  }
+
   function bondTagsHtml(heroId) {
     const Bd = BD();
     if (!Bd) return '';
@@ -1956,7 +1964,8 @@
             </button>
           `;
         } else {
-          const stateCls = isSelected ? 'is-selected' : isFull ? 'is-full-disabled' : 'is-available';
+          const busy = !isSelected ? dispatchBusy(h.id) : null;
+          const stateCls = isSelected ? 'is-selected' : busy ? 'is-dispatched' : isFull ? 'is-full-disabled' : 'is-available';
           const qInfo = resolveQualityInfo(h.quality || 'xian');
           const qCls = qInfo.id === 'xian' ? 'q-xian' : `q-${qInfo.id}`;
           const qStyle = qInfo.id === 'xian' ? '' : ` style="border-color:${qInfo.color}"`;
@@ -1965,7 +1974,9 @@
             : '';
           const statusText = isSelected
             ? '✓ 已上阵 · 点击移出'
-            : isFull
+            : busy
+              ? '派遣中 · 召回后可上阵'
+              : isFull
               ? '待命 · 已满 6/6'
               : '+ 待命 · 点击上阵';
           listHtml += `
@@ -2123,6 +2134,17 @@
       };
     }
 
+    if (dispatchBusy(heroId)) {
+      setSquadFeedback(`【${heroName}】正在派遣中，可在洞府「仙姬派遣」召回后上阵`, 'warn');
+      return {
+        ok: false,
+        action: 'rejected',
+        reason: 'DISPATCHED',
+        count: draftSquad.length,
+        squad: [...draftSquad]
+      };
+    }
+
     if (draftSquad.length >= maxSquad) {
       setSquadFeedback(`队伍已满（${maxSquad}/${maxSquad}），请先移出 1 名成员再更换`, 'warn');
       return {
@@ -2150,6 +2172,13 @@
     const s = window.GameState.state;
     const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
     const targetIds = Array.isArray(customIds) ? customIds : draftSquad;
+    const current = window.Battle.getSquadIds(s);
+    const busyNew = targetIds.find((id) => !current.includes(id) && dispatchBusy(id));
+    if (busyNew) {
+      const res = { ok: false, reason: 'DISPATCHED', message: '派遣中的仙姬不能上阵，请先召回', squad: current };
+      setSquadFeedback(res.message, 'error');
+      return res;
+    }
     const res = window.Battle.setSquad(s, targetIds);
     if (!res.ok) {
       setSquadFeedback(res.message || '请至少选择 1 名角色上阵', 'error');
