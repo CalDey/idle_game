@@ -300,6 +300,36 @@ events.forEach((e) => {
   for (let i = 0; i < 5; i++) assert.strictEqual(rt4.IE.maybeSpawn(rt4.GS.state, { rng: fixedRng(0) }), null);
 }
 
+// ---------- 轮回保留挂机机缘进度（冷却、待处理、最近记录、当日道果上限、次数） ----------
+{
+  const storage = memoryStorage();
+  const rt = loadRuntime(storage);
+  const s = rt.GS.state;
+  const evId = events[0].id;
+  const evRecent = events[1].id;
+  s.realmIndex = rt.CFG.REINCARNATION_MIN_STAGE || 27;
+  s.daoGuo = 10;
+  s.totalDaoGuo = 10;
+  s.playTimeMs = 12 * 60 * 1000;
+  s.idleEvents = {
+    v: 1,
+    pending: { id: evId, pool: 'idle', at: 123 },
+    nextAt: s.playTimeMs + 8 * 60 * 1000,
+    recent: [evRecent, evId],
+    dgDay: { date: '2026-11-15', n: 2 },
+    count: 7
+  };
+  const before = host(s.idleEvents);
+  const rec = rt.GS.performReincarnation();
+  assert.ok(rec && rec.ok, '应能轮回以验证挂机机缘保留');
+  const after = host(rt.IE.ensureState(rt.GS.state));
+  assert.strictEqual(after.pending && after.pending.id, before.pending.id, '轮回应保留待处理机缘');
+  assert.strictEqual(after.nextAt, before.nextAt, '轮回应保留冷却');
+  assert.deepStrictEqual(after.recent, before.recent, '轮回应保留最近记录');
+  assert.deepStrictEqual(after.dgDay, before.dgDay, '轮回应保留当日道果上限计数');
+  assert.strictEqual(after.count, before.count, '轮回应保留累计次数');
+}
+
 // ---------- 页面接线 ----------
 const index = text('index.html');
 assert.ok(/<script src="js\/events-data\.js\?v=\d+"><\/script>/.test(index));

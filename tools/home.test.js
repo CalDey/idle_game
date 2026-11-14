@@ -252,6 +252,35 @@ function claimPending(s, now) {
   assert.ok(!Daily.TASKS.some((t) => /home_fortune|洞府机缘/.test(t.id + t.name)), '未单独增加洞府机缘功课');
 }
 
+// ---------- 坏档回退与全新存档一样会初始化洞府机缘 ----------
+{
+  const SAVE = 'xiuxian_idle_save_v1';
+  const CORRUPT = 'xiuxian_idle_save_v1_corrupt';
+  const badRaw = '{not-json';
+  const storageBad = memoryStorage({ [SAVE]: badRaw });
+  const rtBad = loadRuntime(storageBad);
+  const rBad = rtBad.GS.loadGame();
+  assert.strictEqual(rBad.isNew, true);
+  assert.strictEqual(storageBad.getItem(CORRUPT), badRaw);
+  const hfBad = rtBad.GS.state.homeFortune;
+  assert.ok(hfBad && typeof hfBad === 'object' && !Array.isArray(hfBad), 'catch 回退后应已有 homeFortune');
+  assert.strictEqual(hfBad.spawned, 0);
+  assert.strictEqual(hfBad.pending, null);
+  assert.strictEqual(hfBad.queued, 0);
+  assert.ok(typeof hfBad.date === 'string' && hfBad.date.length > 0, 'ensure 应写入当日日期');
+
+  const storageNew = memoryStorage();
+  const rtNew = loadRuntime(storageNew);
+  const rNew = rtNew.GS.loadGame();
+  assert.strictEqual(rNew.isNew, true);
+  const hfNew = rtNew.GS.state.homeFortune;
+  assert.ok(hfNew && typeof hfNew === 'object');
+  assert.strictEqual(hfNew.spawned, hfBad.spawned);
+  assert.strictEqual(hfNew.pending, hfBad.pending);
+  assert.strictEqual(hfNew.queued, hfBad.queued);
+  assert.strictEqual(hfNew.date, hfBad.date);
+}
+
 // ---------- 轮回保留当日次数与待处理机缘 ----------
 {
   const storage = memoryStorage();

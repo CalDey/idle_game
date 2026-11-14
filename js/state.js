@@ -899,6 +899,7 @@
       if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, Date.now());
       if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
       if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
+      if (window.HomeFortune && typeof window.HomeFortune.ensure === 'function') window.HomeFortune.ensure(state, Date.now());
       if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
       return { isNew: true, offlineReport: null };
     }
@@ -1030,6 +1031,13 @@
     if (state.homeFortune && typeof state.homeFortune === 'object') {
       const copied = JSON.parse(JSON.stringify(state.homeFortune));
       fresh.homeFortune = window.HomeFortune ? window.HomeFortune.normalize(copied) : copied;
+    }
+    // 挂机机缘：含待处理事件、冷却、最近记录与当日道果上限，属跨世进度（不能靠轮回刷新次数）
+    if (state.idleEvents && typeof state.idleEvents === 'object' && !Array.isArray(state.idleEvents)) {
+      fresh.idleEvents = JSON.parse(JSON.stringify(state.idleEvents));
+      if (window.IdleEvents && typeof window.IdleEvents.ensureState === 'function') {
+        window.IdleEvents.ensureState(fresh);
+      }
     }
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);
