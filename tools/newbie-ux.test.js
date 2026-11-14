@@ -840,5 +840,62 @@ function breakAt(GS, roll) {
   assert.ok(html.indexOf('js/story-data.js') < html.indexOf('js/story.js'));
 }
 
+// ---------- batch3 P2-7：音乐/音效，默认关，手势后才建 AudioContext，Web Audio 合成 ----------
+{
+  function fakeNode() {
+    const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {} });
+    return { connect() {}, start() {}, stop() {}, gain: param(), frequency: param(), Q: param(), type: '', buffer: null };
+  }
+  function makeAudio(stored) {
+    let created = 0;
+    const listeners = {};
+    class FakeCtx {
+      constructor() { created += 1; this.currentTime = 0; this.sampleRate = 8000; this.state = 'running'; this.destination = {}; }
+      createGain() { return fakeNode(); }
+      createOscillator() { return fakeNode(); }
+      createBiquadFilter() { return fakeNode(); }
+      createBufferSource() { return fakeNode(); }
+      createBuffer(c, len) { const d = new Float32Array(len); return { getChannelData: () => d }; }
+      resume() {}
+      suspend() {}
+    }
+    const storage = memoryStorage(stored || {});
+    const document = { readyState: 'complete', hidden: false, getElementById: () => null, addEventListener: (t, fn) => { listeners[t] = fn; } };
+    const sandbox = { console, Date, Math, JSON, setInterval: () => 1, clearInterval() {}, setTimeout, localStorage: storage, document, Float32Array };
+    sandbox.window = sandbox;
+    sandbox.AudioContext = FakeCtx;
+    vm.runInNewContext(text('js/audio.js'), sandbox, { filename: 'js/audio.js' });
+    return { A: sandbox.GameAudio, created: () => created, listeners, storage };
+  }
+  const a = makeAudio();
+  assert.deepStrictEqual(plain(a.A.prefs()), { music: false, sfx: false }, '默认全关');
+  assert.strictEqual(a.A.play('tuna'), false);
+  a.A.setSfx(true);
+  assert.strictEqual(a.A.play('tuna'), false, '无手势不出声');
+  assert.strictEqual(a.created(), 0, '手势前不创建 AudioContext');
+  a.listeners.pointerdown();
+  ['tuna', 'breakthrough', 'boss'].forEach((k) => assert.strictEqual(a.A.play(k), true, k));
+  assert.strictEqual(a.created(), 1);
+  assert.strictEqual(a.A.startMusic(), false, '音乐开关关着');
+  a.A.setMusic(true);
+  assert.strictEqual(a.A.startMusic(), true);
+  // 偏好持久化 + 坏数据兜底
+  const b = makeAudio({ xiuxian_audio: a.storage.getItem('xiuxian_audio') });
+  assert.deepStrictEqual(plain(b.A.prefs()), { music: true, sfx: true });
+  assert.strictEqual(b.created(), 0, '已开启也要等手势');
+  b.listeners.keydown();
+  assert.strictEqual(b.created(), 1, '手势后自动起 BGM');
+  const c = makeAudio({ xiuxian_audio: '{bad' });
+  assert.deepStrictEqual(plain(c.A.prefs()), { music: false, sfx: false });
+  // 不含音频文件；来源许可写入仓库；接线
+  const audioSrc = text('js/audio.js');
+  assert.ok(!/\.(mp3|ogg|wav|m4a)\b/i.test(audioSrc), '纯合成，无外部音频');
+  const lic = text('docs/AUDIO_SOURCES.md');
+  assert.ok(lic.includes('Web Audio') && lic.includes('CC0') && lic.includes('默认关闭'));
+  const html = text('index.html');
+  assert.ok(html.includes('id="chk-music"') && html.includes('id="chk-sfx"'));
+  assert.ok(text('js/stage-ui.js').includes("window.GameAudio.play('boss')"));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');

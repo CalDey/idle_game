@@ -1611,6 +1611,9 @@
     finishBattle();
   }
 
+  let lastBossSfxKey = '';
+  let lastBossSfxAt = 0;
+
   function startBattle(manual) {
     if (!unlocked()) return false;
     if (isPlaying) {
@@ -1698,6 +1701,16 @@
 
     mountUnitsToBoard(session.units);
     syncAllSessionUnits();
+    // 音效（batch3 P2-7）：Boss 现身；同一关 20 秒内只响一次，避免自动重打时反复敲锣
+    if (enemy && enemy.isBoss && window.GameAudio && !(typeof document !== 'undefined' && document.hidden)) {
+      const bossKey = battleMode + ':' + (twFloor || stageNum);
+      const nowMs = Date.now();
+      if (bossKey !== lastBossSfxKey || nowMs - lastBossSfxAt > 20000) {
+        lastBossSfxKey = bossKey;
+        lastBossSfxAt = nowMs;
+        window.GameAudio.play('boss');
+      }
+    }
 
     const logLine = $('battle-log-line');
     if (logLine) {
