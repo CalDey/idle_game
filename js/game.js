@@ -1181,6 +1181,7 @@
     els.offlineCapNote.style.display = report.capped ? 'block' : 'none';
     applyOfflineFlavor(report);
     els.offlineModal.classList.add('active');
+    setTimeout(updateOfflineChallenge, 0);
     const offlineVars = {
       duration: formatDuration(report.effectiveSeconds),
       qi: formatNumber(report.qiGain),
@@ -1193,6 +1194,23 @@
         : `闭关归来（离线 ${offlineVars.duration}），共获 ${offlineVars.qi} 灵气、${offlineVars.stone} 灵石。`,
       'gold'
     );
+  }
+
+  // 离线结算弹窗：战力已达当前关推荐战力时给出「可挑战」按钮（batch2 P1-2）
+  function updateOfflineChallenge() {
+    const btn = document.getElementById('btn-offline-challenge');
+    if (!btn) return;
+    let info = null;
+    try {
+      info = window.StageUI && StageUI.challengeReadiness ? StageUI.challengeReadiness() : null;
+    } catch (err) {
+      info = null;
+    }
+    btn.hidden = !(info && info.ready);
+    if (info && info.ready) {
+      btn.textContent = info.isBoss ? `可挑战 Boss【${info.name}】` : `可挑战 第${info.stageNum}关`;
+      btn.title = `战力 ${formatNumber(info.cp)} ≥ 推荐 ${formatNumber(info.rec)}`;
+    }
   }
 
   function openConfirmModal(title, message, onConfirm) {
@@ -1789,6 +1807,14 @@
           updateHeaderAndMeditationUI();
           if (window.GearUI) GearUI.render();
         }
+      });
+    }
+
+    const btnOfflineChallenge = document.getElementById('btn-offline-challenge');
+    if (btnOfflineChallenge) {
+      btnOfflineChallenge.addEventListener('click', () => {
+        els.offlineModal.classList.remove('active');
+        if (window.StageUI && StageUI.challengeNow) StageUI.challengeNow();
       });
     }
 

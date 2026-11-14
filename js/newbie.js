@@ -207,6 +207,120 @@
     };
   }
 
+  // ---------- 闯关失败后的提升途径（batch2 P1-3） ----------
+  // 估算「去摘桃 / 去参悟功法 / 去突破」各能带来多少战力：临时改动存档、用现有 Battle.playerStats 计算后立即还原。
+  function seededRandom(seed) {
+    let x = (seed >>> 0) || 1;
+    return function () {
+      x ^= x << 13; x >>>= 0;
+      x ^= x >>> 17;
+      x ^= x << 5; x >>>= 0;
+      return (x >>> 0) / 4294967296;
+    };
+  }
+
+  function cpOf(s) {
+    const B = window.Battle;
+    return B ? Math.round(Number(B.playerStats(s).cp) || 0) : 0;
+  }
+
+  function estimateBreakGain(s) {
+    const GS = window.GameState;
+    const stage = GS.getCurrentStage();
+    if (!stage || stage.isMaxStage || (s.qi || 0) < stage.reqQi) return null;
+    if (window.Equip && window.Equip.tribulationLock && window.Equip.tribulationLock(s)) return null;
+    const base = cpOf(s);
+    const prev = s.realmIndex;
+    let after = base;
+    try {
+      s.realmIndex = prev + 1;
+      after = cpOf(s);
+    } finally {
+      s.realmIndex = prev;
+    }
+    return Math.max(0, after - base);
+  }
+
+  // 用现有灵石从最便宜的功法开始买，最多 60 级
+  function estimateGongfaGain(s) {
+    const CFG = window.GameConfig;
+    const GS = window.GameState;
+    const list = (CFG && CFG.GONGFA_LIST) || [];
+    const open = list.filter((g) => (s.realmIndex || 0) >= (g.unlockRealmIndex || 0));
+    if (!open.some((g) => (s.stones || 0) >= GS.getGongfaCost(g))) return null;
+    const base = cpOf(s);
+    const prevLv = Object.assign({}, s.gongfa || {});
+    const prevStones = s.stones;
+    let after = base;
+    try {
+      if (!s.gongfa) s.gongfa = {};
+      for (let i = 0; i < 60; i += 1) {
+        let pick = null;
+        let pickCost = Infinity;
+        open.forEach((g) => {
+          const c = GS.getGongfaCost(g);
+          if (c <= s.stones && c < pickCost) { pick = g; pickCost = c; }
+        });
+        if (!pick) break;
+        s.stones -= pickCost;
+        s.gongfa[pick.id] = (s.gongfa[pick.id] || 0) + 1;
+      }
+      after = cpOf(s);
+    } finally {
+      s.gongfa = prevLv;
+      s.stones = prevStones;
+    }
+    return Math.max(0, after - base);
+  }
+
+  // 摘现有仙桃（最多 12 枚）按固定种子掷出法宝，比当前好就换上
+  function estimatePeachGain(s) {
+    const CFG = window.GameConfig;
+    const E = window.Equip;
+    const unlockRealm = (CFG && CFG.PEACH && CFG.PEACH.UNLOCK_REALM) || 1;
+    const peaches = Math.floor((s.tree && s.tree.peaches) || 0);
+    if (!E || !E.rollItem || (s.realmIndex || 0) < unlockRealm || peaches <= 0) return null;
+    const base = cpOf(s);
+    const prevEquip = Object.assign({}, s.equip || {});
+    const realRandom = Math.random;
+    let after = base;
+    try {
+      Math.random = seededRandom(0x5eed + peaches * 31 + (s.realmIndex || 0));
+      const fake = { tree: { lv: (s.tree && s.tree.lv) || 1 }, pity: Object.assign({ di: 0, tian: 0 }, s.pity || {}), realmIndex: s.realmIndex || 0, seq: 0 };
+      if (!s.equip) s.equip = {};
+      let cur = base;
+      for (let i = 0; i < Math.min(12, peaches); i += 1) {
+        const item = E.rollItem(fake);
+        const prev = s.equip[item.s];
+        s.equip[item.s] = item;
+        const cp = cpOf(s);
+        if (cp > cur) cur = cp;
+        else s.equip[item.s] = prev;
+      }
+      after = cur;
+    } finally {
+      Math.random = realRandom;
+      s.equip = prevEquip;
+    }
+    return Math.max(0, after - base);
+  }
+
+  // 返回可用的提升途径（不可用的不返回），按战力增益从高到低，best 标记最多的一项
+  function cpGainOptions(s) {
+    const out = [];
+    const add = (key, label, tab, fn) => {
+      let gain = null;
+      try { gain = fn(s); } catch (err) { gain = null; }
+      if (gain != null) out.push({ key, label, tab, gain });
+    };
+    add('peach', '去摘桃', 'tab-gear', estimatePeachGain);
+    add('gongfa', '去参悟功法', 'tab-upgrades', estimateGongfaGain);
+    add('break', '去突破', 'tab-cultivate', estimateBreakGain);
+    out.sort((a, b) => b.gain - a.gain);
+    if (out.length && out[0].gain > 0) out[0].best = true;
+    return out;
+  }
+
   // ---------- 弹窗关闭 ----------
   function topActiveModal(doc) {
     const d = doc || (typeof document !== 'undefined' ? document : null);
@@ -499,6 +613,7 @@
     stageDot,
     upgradeDot,
     compareDiff,
+    cpGainOptions,
     topActiveModal,
     closeModal,
     handleEscKey,

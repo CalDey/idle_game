@@ -557,5 +557,66 @@ function breakAt(GS, roll) {
   assert.ok(nb.includes("document.addEventListener('click', handleBackdropClick)"));
 }
 
+// ---------- batch2 P1-2 卡 Boss 自动再战一次 / 离线「可挑战」 ----------
+{
+  const { sandbox } = loadRuntime(memoryStorage());
+  vm.runInNewContext(text('js/stage-ui.js'), sandbox, { filename: 'js/stage-ui.js' });
+  const decide = sandbox.window.StageUI._bossRetryDecision;
+  const b = { armed: true, stageNum: 30, recCp: 1000, notified: false };
+  const ctx = (o) => Object.assign({ isPlaying: false, mijing: false, unlocked: true, halted: true, curStage: 30, cp: 1200, onStageTab: true }, o);
+  assert.strictEqual(decide(b, ctx()), 'retry', '战力超推荐且在闯关页 → 自动再战');
+  assert.strictEqual(decide(b, ctx({ cp: 999 })), null, '未达推荐不重试');
+  assert.strictEqual(decide(b, ctx({ onStageTab: false })), 'notify', '不在闯关页先提示');
+  assert.strictEqual(decide(Object.assign({}, b, { notified: true }), ctx({ onStageTab: false })), null, '提示只一次');
+  assert.strictEqual(decide(Object.assign({}, b, { armed: false }), ctx()), null, '只自动重试一次');
+  assert.strictEqual(decide(b, ctx({ curStage: 31 })), null, '已过关不再重试');
+  assert.strictEqual(decide(b, ctx({ isPlaying: true })), null);
+  assert.strictEqual(decide(b, ctx({ mijing: true })), null);
+  assert.strictEqual(decide(b, ctx({ halted: false })), null);
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('bossRetry.armed = false;'), '触发后解除，避免循环');
+  assert.ok(/enemy && enemy\.isBoss && !enemy\.mijingWave/.test(ui), '只对闯关 Boss 生效');
+  const html = text('index.html');
+  assert.ok(html.includes('id="btn-offline-challenge"'));
+  const game = text('js/game.js');
+  assert.ok(game.includes('StageUI.challengeReadiness()') && game.includes('StageUI.challengeNow()'));
+}
+// ---------- batch2 P1-3 失败后「去摘桃/去参悟功法/去突破」与最大增益标记 ----------
+{
+  const { GS, NB } = loadRuntime(memoryStorage());
+  GS.loadGame();
+  const s = GS.state;
+  s.realmIndex = 6;
+  s.stones = 5000;
+  s.qi = 1e12;
+  s.tree.peaches = 8;
+  const snap = JSON.stringify(s);
+  const opts = NB.cpGainOptions(s);
+  assert.strictEqual(JSON.stringify(s), snap, '估算后存档完全还原');
+  assert.deepStrictEqual(plain(opts.map((o) => o.key).sort()), ['break', 'gongfa', 'peach']);
+  for (let i = 1; i < opts.length; i += 1) assert.ok(opts[i - 1].gain >= opts[i].gain, '按增益排序');
+  assert.strictEqual(opts.filter((o) => o.best).length, 1);
+  assert.strictEqual(opts[0].best, true, '标记增益最多的一项');
+  assert.deepStrictEqual(plain(NB.cpGainOptions(s)), plain(opts), '估算确定（固定种子）');
+  // 不可用的隐藏
+  s.stones = 0; s.qi = 0; s.tree.peaches = 0;
+  assert.deepStrictEqual(plain(NB.cpGainOptions(s)), []);
+  s.tree.peaches = 3;
+  assert.deepStrictEqual(plain(NB.cpGainOptions(s).map((o) => o.key)), ['peach']);
+  s.tree.peaches = 0;
+  s.qi = 1e12;
+  s.realmIndex = 8; // 渡劫门槛（需先败 Boss）
+  s.stage.best = 0;
+  assert.deepStrictEqual(plain(NB.cpGainOptions(s).map((o) => o.key)), [], '被渡劫门槛挡住时不显示去突破');
+  s.realmIndex = 0;
+  s.tree.peaches = 5;
+  assert.ok(!NB.cpGainOptions(s).some((o) => o.key === 'peach'), '法宝未开启不显示去摘桃');
+  const html = text('index.html');
+  ['btn-goto-peach', 'btn-goto-gongfa', 'btn-goto-break'].forEach((id) => assert.ok(html.includes(`id="${id}"`), id));
+  assert.ok(html.includes('去参悟功法'));
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('renderFailGainActions(actionsEl)'));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');

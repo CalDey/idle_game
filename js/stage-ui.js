@@ -37,6 +37,8 @@
   let haltedByLoss = false;
   let lossPlayerCp = 0;
   let lastAutoRetryAt = 0;
+  // 卡 Boss 挂机：战力超过推荐战力时自动再战一次（batch2 P1-2）
+  let bossRetry = { armed: false, stageNum: 0, recCp: 0, name: '', notified: false };
 
   // 胜率预估缓存
   let cachedWinRateKey = '';
@@ -984,6 +986,30 @@
     }
   }
 
+  // 失败后「去摘桃 / 去参悟功法 / 去突破」：只显示当前可用的，标出战力增益最多的一项（Newbie.cpGainOptions 估算）
+  function renderFailGainActions(actionsEl) {
+    const opts = window.Newbie && window.Newbie.cpGainOptions ? window.Newbie.cpGainOptions(window.GameState.state) : [];
+    const byKey = {};
+    opts.forEach((o) => { byKey[o.key] = o; });
+    let shown = 0;
+    actionsEl.querySelectorAll('[data-gain-key]').forEach((btn) => {
+      const o = byKey[btn.getAttribute('data-gain-key')];
+      btn.hidden = !o;
+      btn.classList.toggle('is-best', Boolean(o && o.best));
+      btn.classList.toggle('btn-primary', Boolean(o && o.best));
+      const em = btn.querySelector('.fail-gain');
+      if (em) em.textContent = o ? `${o.best ? '★ ' : ''}战力+${fmt(o.gain)}` : '';
+      if (o) shown += 1;
+    });
+    // 按增益排序显示
+    opts.forEach((o) => {
+      const btn = actionsEl.querySelector(`[data-gain-key="${o.key}"]`);
+      if (btn) actionsEl.appendChild(btn);
+    });
+    actionsEl.hidden = shown === 0;
+    return shown;
+  }
+
   function showFailOverlay(enemy, player, timeout, fails) {
     const overlay = $('battle-result-overlay');
     const titleEl = $('battle-result-title');
@@ -993,6 +1019,9 @@
 
     const recCp = getRecommendedCp(window.GameState.state, enemy, Math.round(player.cp));
     const gapCp = window.Battle.failPowerGap(player.cp, recCp);
+    if (enemy && enemy.isBoss && !enemy.mijingWave) {
+      bossRetry = { armed: gapCp > 0, stageNum: enemy.n, recCp, name: enemy.name || '', notified: false };
+    }
     const prefix = timeout ? '久战不下' : '败';
 
     if (gapCp > 0) {
@@ -1002,12 +1031,15 @@
       titleEl.textContent = `${prefix} · 此战惜败，可再战或调整布阵`;
     }
 
+    const shown = renderFailGainActions(actionsEl);
     if (fails >= 2) {
-      subEl.textContent = `本关已连败 ${fails} 次，建议先提升装备或参悟功法`;
-      actionsEl.hidden = false;
+      subEl.textContent = shown
+        ? `本关已连败 ${fails} 次，先提升战力再战（★ 为提升最多）`
+        : `本关已连败 ${fails} 次，可调整布阵或等待资源积累`;
     } else {
-      subEl.textContent = '失败不损分毫，可调整布阵或提升战力后再战';
-      actionsEl.hidden = true;
+      subEl.textContent = shown
+        ? '失败不损分毫，提升战力后再战（★ 为提升最多）'
+        : '失败不损分毫，可调整布阵或提升战力后再战';
     }
     clearTimeout(resultOverlayTimer);
     resultOverlayTimer = 0;
@@ -1634,9 +1666,67 @@
     render();
   }
 
+  // 纯判断：卡在 Boss、战力已超推荐、还没自动重试过 → 'retry'（在闯关页）/'notify'（在别的页）/null
+  function bossRetryDecision(b, ctx) {
+    if (!b || !b.armed || !ctx || ctx.isPlaying || ctx.mijing || !ctx.unlocked || !ctx.halted) return null;
+    if (ctx.curStage !== b.stageNum || !(b.recCp > 0) || ctx.cp < b.recCp) return null;
+    return ctx.onStageTab ? 'retry' : b.notified ? null : 'notify';
+  }
+
+  function checkBossRetry(s, st) {
+    if (!bossRetry.armed) return false;
+    const pane = $('tab-stage');
+    const decision = bossRetryDecision(bossRetry, {
+      isPlaying,
+      mijing: mijingView,
+      unlocked: unlocked(),
+      halted: haltedByLoss,
+      curStage: st.cur,
+      cp: Math.round(window.Battle.playerStats(s).cp),
+      onStageTab: Boolean(pane && pane.classList.contains('active'))
+    });
+    if (decision === 'notify') {
+      bossRetry.notified = true;
+      log(`战力已超过推荐战力，回到闯关页将自动再战 Boss【${bossRetry.name}】。`, 'gold');
+      return false;
+    }
+    if (decision !== 'retry') return false;
+    bossRetry.armed = false;
+    haltedByLoss = false;
+    lastAutoRetryAt = Date.now();
+    log(`战力已超过推荐战力，自动再战 Boss【${bossRetry.name}】！`, 'gold');
+    startBattle(false);
+    return true;
+  }
+
+  // 离线结算弹窗用：当前关是否已达推荐战力（未解锁/秘境中/已通关到顶返回 null）
+  function challengeReadiness() {
+    const s = window.GameState.state;
+    if (!s || !unlocked() || isPlaying || mijingView) return null;
+    const st = ensureStageState();
+    const stageNum = st.cur || 1;
+    if (stageNum <= (st.best || 0) || (st.best || 0) >= 300) return null;
+    if (!window.Battle.canStartBattle(s).ok) return null;
+    const enemy = window.Battle.enemyFor(stageNum);
+    const cp = Math.round(window.Battle.playerStats(s).cp);
+    const rec = getRecommendedCp(s, stageNum, cp);
+    return { ready: cp >= rec, stageNum, isBoss: Boolean(enemy && enemy.isBoss), name: (enemy && enemy.name) || '', cp, rec };
+  }
+
+  function challengeNow() {
+    switchTab('tab-stage');
+    setTimeout(() => {
+      if (!isPlaying && unlocked()) {
+        haltedByLoss = false;
+        startBattle(false);
+      }
+    }, 350);
+  }
+
   function checkAutoRetryOnPowerUp(now) {
     const s = window.GameState.state;
     const st = ensureStageState();
+    if (checkBossRetry(s, st)) return;
     if (!unlocked() || !st.auto || isPlaying || !haltedByLoss || mijingView) return;
     if (now - lastAutoRetryAt < 30000) return;
     const curCp = Math.round(window.Battle.playerStats(s).cp);
@@ -2803,6 +2893,14 @@
         switchTab('tab-gear');
       });
     }
+    const btnGotoBreak = $('btn-goto-break');
+    if (btnGotoBreak) {
+      btnGotoBreak.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
+        switchTab('tab-cultivate');
+      });
+    }
     if (btnGotoGongfa) {
       btnGotoGongfa.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2834,6 +2932,9 @@
 
   window.StageUI = {
     _formation: { computeDisplayCells, lungeVector },
+    _bossRetryDecision: bossRetryDecision,
+    challengeReadiness,
+    challengeNow,
     init,
     tick,
     render,

@@ -250,10 +250,11 @@
                 <div id="battle-result-title" class="battle-result-title">败 · 还差约 8% 战力</div>
                 <div id="battle-result-sub" class="battle-result-sub">提升装备或功法后可再来挑战</div>
                 <div id="battle-fail-actions" class="battle-fail-actions" hidden>
-                  <button id="btn-goto-peach" class="btn btn-primary" type="button"><img class="gi gi-16"
-                      src="assets/icons/res_peach@64.webp?v=18" alt="" aria-hidden="true">去摘桃</button>
-                  <button id="btn-goto-gongfa" class="btn" type="button"><img class="gi gi-16"
-                      src="assets/icons/nav_upgrades@64.webp?v=18" alt="" aria-hidden="true">去功法</button>
+                  <button id="btn-goto-peach" class="btn" type="button" data-gain-key="peach" hidden><img class="gi gi-16"
+                      src="assets/icons/res_peach@64.webp?v=18" alt="" aria-hidden="true">去摘桃<em class="fail-gain"></em></button>
+                  <button id="btn-goto-gongfa" class="btn" type="button" data-gain-key="gongfa" hidden><img class="gi gi-16"
+                      src="assets/icons/nav_upgrades@64.webp?v=18" alt="" aria-hidden="true">去参悟功法<em class="fail-gain"></em></button>
+                  <button id="btn-goto-break" class="btn" type="button" data-gain-key="break" hidden>去突破<em class="fail-gain"></em></button>
                 </div>
               </div>
             </div>
@@ -573,6 +574,7 @@
         </div>
       </div>
       <div class="modal-actions">
+        <button id="btn-offline-challenge" class="btn btn-challenge-ready" type="button" hidden>可挑战</button>
         <button id="btn-close-offline" data-modal-close class="btn btn-primary">收入囊中</button>
       </div>
     </div>

@@ -6302,3 +6302,45 @@ button.mijing-bless-card:active {
   background: rgba(15, 13, 30, 0.72);
   opacity: 0.6;
 }
+
+/* === 新手体验 batch2 P1-2/P1-3：失败后的提升途径、离线「可挑战」 === */
+.battle-fail-actions .btn[hidden],
+#btn-offline-challenge[hidden] {
+  display: none !important;
+}
+
+.battle-fail-actions {
+  gap: 6px;
+}
+
+.battle-fail-actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 6px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.battle-fail-actions .fail-gain {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--accent-jade);
+  font-variant-numeric: tabular-nums;
+}
+
+.battle-fail-actions .btn.is-best .fail-gain {
+  color: var(--accent-gold-bright);
+  font-weight: 700;
+}
+
+.battle-fail-actions .btn.is-best {
+  box-shadow: 0 0 10px rgba(230, 201, 138, 0.4);
+}
+
+.btn-challenge-ready {
+  border-color: var(--accent-gold-bright);
+  color: var(--accent-gold-bright);
+  box-shadow: 0 0 10px rgba(230, 201, 138, 0.3);
+}
