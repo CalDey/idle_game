@@ -136,8 +136,8 @@ const mojun = D.bossLore['赤炎魔君'].desc;
 const tiandao = D.bossLore['天道化身'].desc;
 assert.ok(!/祭司|窃|偷/.test(mojun), '赤炎魔君来历保持含糊');
 assert.ok(!/投影|收割|至高天/.test(tiandao), '天道化身来历保持含糊');
-assert.ok(mojun.includes('据着祭台称君'), '赤炎魔君取 codex.json 的说法');
-assert.ok(tiandao.includes('却还不是那个地方本身'), '天道化身取 codex.json 的说法');
+assert.ok(mojun.includes('据着荒原祭台的伪火神'), '赤炎魔君取 boss_rename_patch 的说法');
+assert.ok(tiandao.includes('不是可拜的本体'), '天道化身取 boss_rename_patch 的说法');
 assert.ok(!JSON.stringify(D.bossLore).includes('果子'), 'Boss 文案不点破「果子」');
 
 // ---------- 妖魔页列表 ----------
@@ -185,4 +185,39 @@ console.log('codex.test.js ok: 52 entries, 30/30 bosses, 18 mobs');
   require('assert').ok(src.includes('"quote": "那一剑还没收回去。我也不走。"'));
   require('assert').ok(src.includes('"quote": "长到这里，就够了。"'));
   require('assert').ok(!src.includes('破妄的人呢') && !src.includes('熟了。可以收了。'));
+}
+
+// Boss 改名同步（boss_rename_patch.json）：config 名称/图片 id、图鉴文案与全仓库旧名
+{
+  const fs = require('fs');
+  const path = require('path');
+  const ROOT = path.join(__dirname, '..');
+  const RENAMED = {
+    shanxiao: ['山魈', '山魈娘娘'], langwang: ['赤眼狼王', '赤瞳狼后'], shikui: ['尸傀道人', '尸傀道姑'],
+    xuefu: ['血蝠老祖', '血蝠夫人'], qinglin: ['青鳞蟒', '青鳞蛇姬'], kumu: ['枯木妖婆', '枯木树娘'],
+    leiying: ['雷翼鹰王', '雷翼鹰后'], qingming: ['青冥蛟王', '青冥蛟后'], huoya: ['火鸦王', '火鸦女王'],
+    fengu: ['焚骨老魔', '焚骨魔女'], yanmojiang: ['炎魔将', '炎魔女将'], shihun: ['噬魂魔将', '噬魂女将'],
+    jianmo: ['天外剑魔', '天外剑姬'], xingyun: ['星陨神将', '星陨女神将'], hundun: ['混沌魔祖', '混沌魔母']
+  };
+  const byId = {};
+  bosses.forEach((b) => { byId[b.id] = b; });
+  assert.strictEqual(Object.keys(byId).length, 30, '每个 Boss 都有唯一 id');
+  bosses.forEach((b) => assert.ok(fs.existsSync(path.join(ROOT, `assets/enemies/boss_${b.id}.webp`)), `boss_${b.id}.webp 存在`));
+  // 图片保持原样：只有黑风寨主/赤炎魔君/九幽鬼母接入新立绘，其余仍为占位
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(bosses.filter((b) => b.img !== 'placeholder').map((b) => b.id))), ['heifeng', 'chiyan', 'jiuyou']);
+  Object.keys(RENAMED).forEach((id) => {
+    const [oldName, newName] = RENAMED[id];
+    assert.strictEqual(byId[id].name, newName, `${id} 应改名为 ${newName}`);
+    assert.ok(D.bossLore[newName], `${newName} 图鉴文案`);
+  });
+  assert.strictEqual(CFG.TRIBULATION_GATES[17].boss, '青冥蛟后');
+  assert.strictEqual(D.bossLore['天外剑姬'].quote, '那一剑还没收回去。我也不走。');
+  // 全部 js 不再出现旧名（「山魈」只允许作为「山魈娘娘」的前缀出现）
+  const jsDir = path.join(ROOT, 'js');
+  const all = fs.readdirSync(jsDir).filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(path.join(jsDir, f), 'utf8')).join('\n');
+  Object.keys(RENAMED).forEach((id) => {
+    const [oldName, newName] = RENAMED[id];
+    const stripped = all.split(newName).join('');
+    assert.ok(!stripped.includes(oldName), `js 中仍有旧名：${oldName}`);
+  });
 }

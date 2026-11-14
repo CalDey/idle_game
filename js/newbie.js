@@ -115,7 +115,7 @@
     { id: 'stage1', tab: 'tab-stage', text: () => '通关1-1', done: (s) => bestStage(s) >= 1 },
     { id: 'gongfa', tab: 'tab-upgrades', text: () => '去洞府参悟一层功法', done: (s) => sumLv(s.gongfa) >= 2 },
     realmGoal('realm3', 3),
-    { id: 'stage10', tab: 'tab-stage', text: () => '通关1-10（首领山魈）', done: (s) => bestStage(s) >= 10 }
+    { id: 'stage10', tab: 'tab-stage', text: () => '通关1-10（首领山魈娘娘）', done: (s) => bestStage(s) >= 10 }
   ];
 
   function currentGoal(s) {

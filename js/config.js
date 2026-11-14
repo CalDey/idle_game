@@ -278,7 +278,7 @@
   // 大境界渡劫门槛。P2 打开 ENABLE_STAGE_GATES 后才会拦住突破。
   const TRIBULATION_GATES = {
     8: { chapter: 3, stage: 30, boss: '黑风寨主' }, // 化灵后
-    17: { chapter: 9, stage: 90, boss: '青冥蛟王' }, // 尊者后
+    17: { chapter: 9, stage: 90, boss: '青冥蛟后' }, // 尊者后
     26: { chapter: 15, stage: 150, boss: '赤炎魔君' }, // 圣祭后
     35: { chapter: 21, stage: 210, boss: '九幽鬼母' } // 斩我后
   };
@@ -364,36 +364,36 @@
       }
     ],
     BOSSES: [
-      { name: '山魈', img: 'placeholder' },
-      { name: '赤眼狼王', img: 'placeholder' },
+      { id: 'shanxiao', name: '山魈娘娘', img: 'placeholder' },
+      { id: 'langwang', name: '赤瞳狼后', img: 'placeholder' },
       { id: 'heifeng', name: '黑风寨主', img: 'assets/enemies/boss_heifeng.webp?v=19' },
-      { name: '尸傀道人', img: 'placeholder' },
-      { name: '血蝠老祖', img: 'placeholder' },
-      { name: '青鳞蟒', img: 'placeholder' },
-      { name: '枯木妖婆', img: 'placeholder' },
-      { name: '雷翼鹰王', img: 'placeholder' },
-      { name: '青冥蛟王', img: 'placeholder' },
-      { name: '白额山君', img: 'placeholder' },
-      { name: '火鸦王', img: 'placeholder' },
-      { name: '熔岩巨傀', img: 'placeholder' },
-      { name: '焚骨老魔', img: 'placeholder' },
-      { name: '炎魔将', img: 'placeholder' },
+      { id: 'shikui', name: '尸傀道姑', img: 'placeholder' },
+      { id: 'xuefu', name: '血蝠夫人', img: 'placeholder' },
+      { id: 'qinglin', name: '青鳞蛇姬', img: 'placeholder' },
+      { id: 'kumu', name: '枯木树娘', img: 'placeholder' },
+      { id: 'leiying', name: '雷翼鹰后', img: 'placeholder' },
+      { id: 'qingming', name: '青冥蛟后', img: 'placeholder' },
+      { id: 'baie', name: '白额山君', img: 'placeholder' },
+      { id: 'huoya', name: '火鸦女王', img: 'placeholder' },
+      { id: 'rongyan', name: '熔岩巨傀', img: 'placeholder' },
+      { id: 'fengu', name: '焚骨魔女', img: 'placeholder' },
+      { id: 'yanmojiang', name: '炎魔女将', img: 'placeholder' },
       { id: 'chiyan', name: '赤炎魔君', img: 'assets/enemies/boss_chiyan.webp?v=19' },
-      { name: '冰魄蛛后', img: 'placeholder' },
-      { name: '寒潮巨鲸', img: 'placeholder' },
-      { name: '雪发剑尸', img: 'placeholder' },
-      { name: '玄冰龙女', img: 'placeholder' },
-      { name: '北溟鲲影', img: 'placeholder' },
+      { id: 'zhuhou', name: '冰魄蛛后', img: 'placeholder' },
+      { id: 'hanchao', name: '寒潮巨鲸', img: 'placeholder' },
+      { id: 'xuefa', name: '雪发剑尸', img: 'placeholder' },
+      { id: 'longnv', name: '玄冰龙女', img: 'placeholder' },
+      { id: 'beiming', name: '北溟鲲影', img: 'placeholder' },
       { id: 'jiuyou', name: '九幽鬼母', img: 'assets/enemies/boss_jiuyou.webp?v=19' },
-      { name: '噬魂魔将', img: 'placeholder' },
-      { name: '血海修罗', img: 'placeholder' },
-      { name: '白骨魔尊', img: 'placeholder' },
-      { name: '幽冥判官', img: 'placeholder' },
-      { name: '天外剑魔', img: 'placeholder' },
-      { name: '星陨神将', img: 'placeholder' },
-      { name: '太虚古神', img: 'placeholder' },
-      { name: '混沌魔祖', img: 'placeholder' },
-      { name: '天道化身', img: 'placeholder' }
+      { id: 'shihun', name: '噬魂女将', img: 'placeholder' },
+      { id: 'xiuluo', name: '血海修罗', img: 'placeholder' },
+      { id: 'baigu', name: '白骨魔尊', img: 'placeholder' },
+      { id: 'panguan', name: '幽冥判官', img: 'placeholder' },
+      { id: 'jianmo', name: '天外剑姬', img: 'placeholder' },
+      { id: 'xingyun', name: '星陨女神将', img: 'placeholder' },
+      { id: 'taixu', name: '太虚古神', img: 'placeholder' },
+      { id: 'hundun', name: '混沌魔母', img: 'placeholder' },
+      { id: 'tiandao', name: '天道化身', img: 'placeholder' }
     ]
   };
 
