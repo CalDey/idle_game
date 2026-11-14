@@ -309,8 +309,14 @@
     }
     const gate = window.Equip && Equip.tribulationLock(GameState.state);
     if (gate) {
-      addLog(gateText(gate.boss, 'lockLog', `大境界渡劫前需先击败【${gate.boss}】（第 ${gate.chapter} 章）。`), 'warn');
+      const block = window.Newbie && typeof window.Newbie.focusBlockingBoss === 'function'
+        ? window.Newbie.focusBlockingBoss(GameState.state)
+        : null;
+      const bossName = (block && block.name) || gate.boss;
+      const chapter = (block && block.chapter) || gate.chapter;
+      addLog(gateText(bossName, 'lockLog', `大境界渡劫前需先击败【${bossName}】（第 ${chapter} 章）。`), 'warn');
       switchToTab('tab-stage');
+      if (window.StageUI && typeof window.StageUI.render === 'function') window.StageUI.render();
       return;
     }
     if (s.qi < stage.reqQi) {
@@ -1121,6 +1127,10 @@
       : `失败损耗 ${lossPct}% 所需灵气`;
 
     const gate = window.Equip && window.Equip.tribulationLock(s);
+    const block = gate && window.Newbie && typeof window.Newbie.blockingBoss === 'function'
+      ? window.Newbie.blockingBoss(s)
+      : null;
+    const gateBoss = (block && block.name) || (gate && gate.boss);
     const hasQi = !stage.isMaxStage && s.qi >= stage.reqQi;
     const gateLocked = Boolean(gate && hasQi);
     const canBreak = hasQi && !gate;
@@ -1129,7 +1139,7 @@
     els.btnBreakthrough.textContent = stage.isMaxStage
       ? '境界圆满'
       : gateLocked
-      ? gateText(gate.boss, 'button', `先败 ${gate.boss}`)
+      ? gateText(gateBoss, 'button', `先败${gateBoss}`)
       : stage.isMajorTribulation
       ? '渡劫晋升'
       : '突破境界';
@@ -1574,6 +1584,7 @@
       GameState.state.lifetimeQi = (GameState.state.lifetimeQi || 0) + qiGain;
       GameState.state.playTimeMs = (GameState.state.playTimeMs || 0) + dt * 1000;
       GameState.state.stones += GameState.getStonePerSec() * dt;
+      if (GameState.markTick) GameState.markTick(Date.now());
       if (window.GearUI) GearUI.tick();
       if (window.StageUI) StageUI.tick();
       if (window.Titles && Math.floor(GameState.state.playTimeMs / 5000) !== Math.floor((GameState.state.playTimeMs - dt * 1000) / 5000)) {

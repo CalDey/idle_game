@@ -127,6 +127,8 @@
       });
       const next = b.tiers[tierIdx + 1] || null;
       const maxNeed = b.tiers[b.tiers.length - 1].need;
+      const maxed = !next;
+      const countLabel = maxed ? `${maxNeed}/${maxNeed}（满）` : `${members.length}/${next.need}`;
       return {
         id: b.id,
         name: b.name,
@@ -138,8 +140,9 @@
         level: tierIdx + 1,
         active: Boolean(tier),
         nextNeed: next ? next.need : maxNeed,
-        maxed: !next,
-        progressText: `${b.name} ${members.length}/${next ? next.need : maxNeed}`
+        maxed,
+        countLabel,
+        progressText: `${b.name} ${countLabel}`
       };
     });
   }

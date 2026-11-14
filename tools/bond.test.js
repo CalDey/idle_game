@@ -114,7 +114,7 @@ check('阈值与进度：1/2 未激活，2 人一档，3 人二档（满级）�
   e = jian(['ziling', 'qinglan']);
   assert.ok(e.active); assert.strictEqual(e.level, 1); assert.strictEqual(e.progressText, '剑修 2/3'); assert.ok(!e.maxed);
   e = jian(['ziling', 'qinglan', 'lanyi']);
-  assert.strictEqual(e.level, 2); assert.ok(e.maxed); assert.strictEqual(e.progressText, '剑修 3/3');
+  assert.strictEqual(e.level, 2); assert.ok(e.maxed); assert.strictEqual(e.progressText, '剑修 3/3（满）');
   e = jian(['ziling', 'ziling', 'qinglan']);
   assert.strictEqual(e.count, 2, '重复 id 去重');
   const ming = Bd.evaluate(['cloak', 'ziling', 'honglian', 'molan', 'youming']).find((x) => x.id === 'ming');
@@ -340,7 +340,7 @@ check('UI 冒烟：闯关页羁绊条、队伍弹窗羁绊面板与角色卡标�
 
   const row = els['stage-bond-row'].innerHTML;
   assert.ok(row.includes('仙缘'));
-  assert.ok(/bond-chip bond-ming is-active lv-2[^]*幽冥[^]*4\/3/.test(row), '幽冥 4 人满级');
+  assert.ok(/bond-chip bond-ming is-active lv-2[^]*幽冥[^]*3\/3（满）/.test(row), '幽冥满阶显示 3/3（满），不显示 4/3');
   assert.ok(/bond-chip bond-jian is-active lv-1[^]*剑修[^]*2\/3/.test(row), '剑修 2/3');
   assert.ok(/bond-chip bond-bing"[^]*冰霜[^]*1\/2/.test(row), '冰霜 1/2 未激活');
   assert.ok(!row.includes('灵愈'), '0 人的羁绊不显示');

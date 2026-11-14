@@ -370,13 +370,20 @@
     const peaches = Math.floor((1 + Math.floor(best / 50)) * hours);
     const lingyu = Math.floor((6 + 0.4 * best) * hours);
     if (!state.tree) state.tree = {};
-    const cap = window.GameConfig.peachCap(state.tree.lv || 1);
-    const current = state.tree.peaches || 0;
-    // 挂机桃只补到上限；已因赠桃/闯关等溢出的存量不裁掉。
-    const granted = current >= cap ? 0 : Math.min(peaches, cap - current);
-    state.tree.peaches = current + granted;
+    const granted = addPeaches(peaches);
     state.lingyu = (state.lingyu || 0) + lingyu;
     return { peaches: granted, lingyu };
+  }
+
+  // 仙桃只补到上限；已因赠桃/闯关等溢出的存量不裁掉，只是不再增长。返回实际入账数量。
+  function addPeaches(amount) {
+    if (!state.tree) state.tree = {};
+    const want = Math.max(0, Math.floor(Number(amount) || 0));
+    const cap = window.GameConfig.peachCap(state.tree.lv || 1);
+    const current = state.tree.peaches || 0;
+    const granted = current >= cap ? 0 : Math.min(want, cap - current);
+    state.tree.peaches = current + granted;
+    return granted;
   }
 
   function toFiniteNumber(value, fallback) {
@@ -804,11 +811,27 @@
     };
   }
 
-  // 页面从后台切回：按切走时刻（≈切走时存档的 lastSaveTime）结算一次，结算后立即存档，重复调用不会重复发放。
+  // 前台 tick 的墙上时钟，用来计算后台补算时「还没被 tick 覆盖」的缺口。
+  let lastTickAt = 0;
+
+  function markTick(now) {
+    lastTickAt = Number(now) || Date.now();
+    return lastTickAt;
+  }
+
+  function getLastTickAt() {
+    return lastTickAt;
+  }
+
+  // 页面从后台切回：只补「上次 tick 之后」的缺口。
+  // rAF 在后台暂停时，缺口≈隐藏时长；后台仍在跑 tick 时，缺口接近 0，避免再按挂钟发一遍。
   function resumeFromBackground(hiddenAt, now) {
     const t = now || Date.now();
-    const from = Number(hiddenAt) || Number(state.lastSaveTime) || t;
+    const hideAt = Number(hiddenAt) || Number(state.lastSaveTime) || t;
+    const tickAt = Number(lastTickAt) || 0;
+    const from = tickAt > 0 ? tickAt : hideAt;
     const report = settleOffline(from, t, { idleStage: false });
+    lastTickAt = t;
     grantPeachGift();
     if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, t);
     if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
@@ -1134,6 +1157,9 @@
     tickTimers,
     grantPeachGift,
     applyIdleStageRewards,
+    addPeaches,
+    markTick,
+    getLastTickAt,
     defaultGuide,
     normalizeGuide,
     isProgressedSave,

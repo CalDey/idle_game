@@ -125,7 +125,7 @@
           }</span>`
           : '';
         const tip = def.loreName ? ` title="${def.loreName}${def.flavor ? `：${def.flavor}` : ''}"` : '';
-        return `<span class="bond-chip bond-${b.id}${lvCls}"${tip}><span class="bond-chip-name">${b.name}</span><span class="bond-chip-count">${b.count}/${b.nextNeed}</span>${desc}</span>`;
+        return `<span class="bond-chip bond-${b.id}${lvCls}"${tip}><span class="bond-chip-name">${b.name}</span><span class="bond-chip-count">${b.countLabel}</span>${desc}</span>`;
       })
       .join('');
   }
@@ -148,6 +148,7 @@
         level: b.level,
         count: b.count,
         need: b.active ? b.nextNeed : first.need,
+        countLabel: b.countLabel,
         lack,
         status: b.active ? (b.maxed ? '已满阶' : '已激活') : `差 ${lack} 人`,
         desc: b.active ? (b.maxed ? b.tier.desc : `${b.tier.desc}（${b.nextNeed} 人：${def.tiers[b.level].desc}）`) : first.desc
@@ -163,7 +164,7 @@
         (r) => `<li class="bond-row bond-${r.id}${r.active ? ` is-active lv-${r.level}` : ' is-inactive'}">` +
           `<img class="gi bond-row-icon" src="assets/icons/${r.icon}@64.webp?v=18" alt="" aria-hidden="true">` +
           `<span class="bond-row-name">${r.name}</span>` +
-          `<span class="bond-row-count">${r.count}/${r.need}</span>` +
+          `<span class="bond-row-count">${r.countLabel}</span>` +
           `<span class="bond-row-desc">${r.desc}</span>` +
           `<span class="bond-row-status">${r.status}</span>` +
           (r.loreName || r.flavor
@@ -1406,13 +1407,13 @@
         s.lifeBestStage = Math.max(s.lifeBestStage || 0, stageNum);
 
         const rw = window.Battle.firstClearReward(s, stageNum);
-        s.tree.peaches = (s.tree.peaches || 0) + rw.peaches;
+        const peaches = window.GameState.addPeaches(rw.peaches);
         s.lingyu = (s.lingyu || 0) + rw.lingyu;
         s.stones = (s.stones || 0) + rw.stones;
         s.qi = (s.qi || 0) + rw.qi;
         s.lifetimeQi = (s.lifetimeQi || 0) + rw.qi;
 
-        const rewardText = `仙桃+${rw.peaches} · 灵玉+${rw.lingyu} · 灵石+${fmt(rw.stones)} · 灵气+${fmt(rw.qi)}`;
+        const rewardText = `仙桃+${peaches} · 灵玉+${rw.lingyu} · 灵石+${fmt(rw.stones)} · 灵气+${fmt(rw.qi)}`;
         if (logLine) {
           logLine.textContent = `首通第 ${stageNum} 关！获 ${rewardText}`;
         }

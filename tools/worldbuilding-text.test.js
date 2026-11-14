@@ -114,7 +114,7 @@ const U = load(['js/ui-text.js']).window.UIText;
   // 各锚点已接入（旧文案只作为回退保留）
   const game = text('js/game.js');
   ['successMinor', 'successTribulation', 'failure', 'successMax'].forEach((k) => assert.ok(game.includes(`'${k}'`)));
-  assert.ok(game.includes("gateText(gate.boss, 'lockLog'") && game.includes("gateText(gate.boss, 'button'"));
+  assert.ok(game.includes('gateText(') && game.includes("'lockLog'") && game.includes("'button'"));
   ['ready', 'locked', 'confirm', 'success'].forEach((k) => assert.ok(game.includes(`'reincarnation'`) && game.includes(`'${k}')`)));
   assert.ok(game.includes("'tierup')") && game.includes('dongfuBuildText(') && game.includes('applyOfflineFlavor(report)'));
   const gear = text('js/gear.js');

@@ -160,7 +160,15 @@ function oldSave(fields) {
   s.stage.best = 10;
   assert.strictEqual(goal().text, '突破至洞天中');
   s.realmIndex = 8;
+  s.stage.best = 5;
+  assert.strictEqual(goal().text, '击败第1章首领【山魈娘娘】');
+  assert.strictEqual(NB.blockingBoss(s).cur, 6, '未到第 10 关时跳到 best+1');
+  s.stage.best = 9;
+  assert.strictEqual(goal().text, '击败第1章首领【山魈娘娘】');
+  assert.strictEqual(NB.blockingBoss(s).cur, 10, '已到关口则可跳到挡路 Boss');
   s.stage.best = 12;
+  assert.strictEqual(goal().text, '击败第2章首领【赤瞳狼后】');
+  s.stage.best = 29;
   assert.strictEqual(goal().text, '击败第3章首领【黑风寨主】');
   s.stage.best = 30;
   assert.strictEqual(goal().text, '突破至铭纹初');

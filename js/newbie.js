@@ -118,8 +118,57 @@
     { id: 'stage10', tab: 'tab-stage', text: () => '通关1-10（首领山魈娘娘）', done: (s) => bestStage(s) >= 10 }
   ];
 
+  function bossNameForStage(stageNum) {
+    const bosses = (cfg().BATTLE && cfg().BATTLE.BOSSES) || [];
+    const chapter = Math.max(1, Math.ceil((Number(stageNum) || 1) / 10));
+    const entry = bosses[chapter - 1];
+    return (entry && entry.name) || '';
+  }
+
+  // 渡劫真正挡路的下一只 Boss（可能是通往关卡门槛的中间首领，而不一定是门槛本人）。
+  function blockingBoss(s) {
+    const st = s || {};
+    if (!cfg().ENABLE_STAGE_GATES) return null;
+    const realm = st.realmIndex || 0;
+    const gate = (cfg().TRIBULATION_GATES || {})[realm];
+    if (!gate) return null;
+    const best = bestStage(st);
+    if (best >= gate.stage) return null;
+    const nextBoss = Math.min(gate.stage, Math.ceil((best + 1) / 10) * 10);
+    const chapter = Math.ceil(nextBoss / 10);
+    const name = bossNameForStage(nextBoss) || (nextBoss === gate.stage ? gate.boss : '');
+    const reachable = best + 1 >= nextBoss;
+    return {
+      stage: nextBoss,
+      chapter,
+      name,
+      gate,
+      reachable,
+      cur: reachable ? nextBoss : Math.max(1, best + 1)
+    };
+  }
+
+  function focusBlockingBoss(s) {
+    const block = blockingBoss(s);
+    if (!block || !s || !s.stage) return block;
+    s.stage.cur = block.cur;
+    return block;
+  }
+
+  function blockingGoal(block, realm) {
+    if (!block) return null;
+    return {
+      id: `gate${realm || ''}_boss${block.stage}`,
+      text: `击败第${block.chapter}章首领【${block.name}】`,
+      tab: 'tab-stage',
+      bossStage: block.stage
+    };
+  }
+
   function currentGoal(s) {
     const st = s || {};
+    const block = blockingBoss(st);
+    if (block) return blockingGoal(block, st.realmIndex || 0);
     for (let i = 0; i < STATIC_GOALS.length; i++) {
       const g = STATIC_GOALS[i];
       if (!g.done(st)) {
@@ -130,7 +179,7 @@
     const gates = cfg().TRIBULATION_GATES || {};
     const gate = cfg().ENABLE_STAGE_GATES ? gates[realm] : null;
     if (gate && bestStage(st) < gate.stage) {
-      return { id: `gate${realm}`, text: `击败第${gate.chapter}章首领【${gate.boss}】`, tab: 'tab-stage' };
+      return blockingGoal({ stage: gate.stage, chapter: gate.chapter, name: gate.boss }, realm);
     }
     const total = (cfg().REALM_STAGES || []).length || TOTAL_REALMS;
     if (realm < total - 1) {
@@ -772,6 +821,9 @@
     advanceGuide,
     guideTarget,
     currentGoal,
+    blockingBoss,
+    focusBlockingBoss,
+    bossNameForStage,
     isGoalDone,
     goalProgress,
     gearDot,

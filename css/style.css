@@ -3675,6 +3675,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   position: absolute;
   inset: 0;
   z-index: 2;
+  pointer-events: none;
 }
 
 .home-patch {
@@ -3761,6 +3762,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   margin: 0;
   border-radius: 14px;
   cursor: pointer;
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.12s ease;
 }
@@ -5815,9 +5817,14 @@ button.mijing-bless-card:active {
   box-shadow: 0 0 10px rgba(245, 199, 106, 0.45);
 }
 
+#daily-modal.modal-backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 .daily-dialog {
   width: min(420px, calc(100vw - 24px));
-  max-height: min(88vh, 720px);
+  max-height: min(88dvh, calc(100dvh - 40px), 720px);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -5825,13 +5832,16 @@ button.mijing-bless-card:active {
 }
 
 .daily-header {
+  flex: none;
   padding: 12px 14px 8px;
 }
 
 .daily-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0 14px 14px;
   overflow: auto;
-  min-height: 0;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -6033,7 +6043,8 @@ button.mijing-bless-card:active {
   position: absolute;
   top: 52px;
   right: 10px;
-  z-index: 5;
+  z-index: 8;
+  pointer-events: auto;
   min-height: 34px;
   height: 34px;
   padding: 0 12px;
