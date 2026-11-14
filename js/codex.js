@@ -293,8 +293,22 @@
     if (rw.stone) s.stones = (Number(s.stones) || 0) + rw.stone;
     if (rw.jade) s.lingyu = (Number(s.lingyu) || 0) + rw.jade;
     if (rw.peach) {
-      if (!s.tree || typeof s.tree !== 'object') s.tree = {};
-      s.tree.peaches = (Number(s.tree.peaches) || 0) + rw.peach;
+      const GS = window.GameState;
+      if (GS && typeof GS.addPeachesTo === 'function') {
+        GS.addPeachesTo(s, rw.peach);
+      } else if (GS && typeof GS.addPeaches === 'function' && GS.state === s) {
+        GS.addPeaches(rw.peach);
+      } else {
+        if (!s.tree || typeof s.tree !== 'object') s.tree = {};
+        const want = Math.max(0, Math.floor(Number(rw.peach) || 0));
+        const capFn = window.GameConfig && typeof window.GameConfig.peachCap === 'function'
+          ? window.GameConfig.peachCap
+          : null;
+        const cap = capFn ? capFn(s.tree.lv || 1) : Infinity;
+        const current = Number(s.tree.peaches) || 0;
+        const granted = current >= cap ? 0 : Math.min(want, cap - current);
+        s.tree.peaches = current + granted;
+      }
     }
     return rw;
   }
@@ -539,6 +553,16 @@
     if (btn) btn.classList.toggle('has-claim', on);
   }
 
+  function syncTabsFade() {
+    const bar = els && els.tabs;
+    const wrap = els && els.tabsWrap;
+    if (!bar || !wrap) return;
+    const sl = bar.scrollLeft;
+    const max = Math.max(0, bar.scrollWidth - bar.clientWidth);
+    wrap.classList.toggle('is-fade-left', sl > 2);
+    wrap.classList.toggle('is-fade-right', max - sl > 2);
+  }
+
   function render() {
     if (!els) return;
     const s = window.GameState.state;
@@ -548,6 +572,7 @@
     const tab = tabs.find((t) => t.id === activeTab);
     els.list.innerHTML = !tab ? '' : tab.kind === 'bestiary' ? renderBestiary(s) : (typeof tab.render === 'function' ? tab.render(s) : renderEntries(s, tab.id, prog));
     renderBadge();
+    syncTabsFade();
   }
 
   function open() {
@@ -596,6 +621,7 @@
     els = {
       btn: document.getElementById('btn-open-codex'),
       modal: document.getElementById('codex-modal'),
+      tabsWrap: document.getElementById('codex-tabs-wrap'),
       tabs: document.getElementById('codex-tabs'),
       list: document.getElementById('codex-list'),
       close: document.getElementById('btn-close-codex')
@@ -623,6 +649,8 @@
       render();
       els.list.scrollTop = 0;
     });
+    els.tabs.addEventListener('scroll', syncTabsFade, { passive: true });
+    if (typeof window !== 'undefined') window.addEventListener('resize', syncTabsFade);
     els.list.addEventListener('click', (e) => {
       const all = e.target.closest('[data-codex-claim-all]');
       const one = e.target.closest('[data-codex-claim]');

@@ -376,14 +376,19 @@
   }
 
   // 仙桃只补到上限；已因赠桃/闯关等溢出的存量不裁掉，只是不再增长。返回实际入账数量。
-  function addPeaches(amount) {
-    if (!state.tree) state.tree = {};
+  function addPeachesTo(s, amount) {
+    if (!s) return 0;
+    if (!s.tree || typeof s.tree !== 'object') s.tree = {};
     const want = Math.max(0, Math.floor(Number(amount) || 0));
-    const cap = window.GameConfig.peachCap(state.tree.lv || 1);
-    const current = state.tree.peaches || 0;
+    const cap = window.GameConfig.peachCap(s.tree.lv || 1);
+    const current = s.tree.peaches || 0;
     const granted = current >= cap ? 0 : Math.min(want, cap - current);
-    state.tree.peaches = current + granted;
+    s.tree.peaches = current + granted;
     return granted;
+  }
+
+  function addPeaches(amount) {
+    return addPeachesTo(state, amount);
   }
 
   function toFiniteNumber(value, fallback) {
@@ -1166,6 +1171,7 @@
     grantPeachGift,
     applyIdleStageRewards,
     addPeaches,
+    addPeachesTo,
     markTick,
     getLastTickAt,
     defaultGuide,

@@ -1836,6 +1836,7 @@
           renderReincarnationUI();
           updateHeaderAndMeditationUI();
           if (window.GearUI) GearUI.render();
+          if (window.Newbie && typeof window.Newbie.tick === 'function') window.Newbie.tick();
         }
       });
     }

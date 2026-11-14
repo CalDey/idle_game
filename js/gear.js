@@ -273,7 +273,7 @@
       better: delta > 0,
       sign: delta > 0 ? 'up' : delta < 0 ? 'down' : 'same',
       color: delta >= 0 ? '#7ddea0' : '#f07167',
-      text: `战力 ${delta >= 0 ? '+' : ''}${fmt(delta)}`
+      text: delta === 0 ? '无差异' : `战力 ${delta >= 0 ? '+' : ''}${fmt(delta)}`
     };
   }
 

@@ -57,7 +57,7 @@
 
 9. **没有存档导入/导出（Base64 备份码）**，清缓存即丢档。时钟回拨保护不完整（派遣已做回拨重计时，离线结算尚未钳制未来时间戳）。
 10. **`state.stage.sweep` 仍只是预留字段**，没有扫荡玩法。
-11. **轮回未显式保留 `state.idleEvents`**，转世后挂机机缘冷却/待处理事件会回到模块默认值。若设计上要「机缘也不可靠轮回刷新」，应像 `mijing` / `daily` 一样深拷。
+11. **d620701 已修：轮回深拷 idleEvents 并 ensureState；loadGame catch 补了 HomeFortune.ensure**
 12. 存档仍明文、多标签互踩，见 [state-and-save.md 第 6 节](./state-and-save.md)。
 
 ---

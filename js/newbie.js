@@ -252,7 +252,7 @@
       arrow,
       better: delta > 0,
       color: sign === 'up' ? '#7ddea0' : sign === 'down' ? '#f07167' : '#e7e2d6',
-      text: `战力 ${arrow} ${num}`
+      text: delta === 0 ? '无差异' : `战力 ${arrow} ${num}`
     };
   }
 

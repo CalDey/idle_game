@@ -205,7 +205,7 @@ flowchart TD
 | 永久保留 | `codex`（深拷）、`mijing`、`dispatch`、`beasts`、`daily`、`grow`、`tower`、`homeFortune` | 深拷或经对应 `normalize`；避免靠轮回刷新每日次数 |
 | 永久保留 | `guide`、`breakAttempts`、`unlockSeen`、`storySeen` | 规范化后带入新世 |
 
-注意：`performReincarnation` **没有显式拷贝 `state.idleEvents`**。转世后挂机机缘冷却与待处理事件会回到模块 `ensure` 的默认值（是否有意设计，实现上就是不保留）。
+注意：d620701 已修：轮回深拷 idleEvents 并 ensureState；loadGame catch 补了 HomeFortune.ensure
 
 ---
 

@@ -268,6 +268,7 @@ function oldSave(fields) {
   const same = NB.compareDiff(500.2, 499.9);
   assert.strictEqual(same.sign, 'same');
   assert.strictEqual(same.better, false);
+  assert.strictEqual(same.text, '无差异');
   const big = NB.compareDiff(10000, 35000);
   assert.strictEqual(big.text, '战力 ↑ +2.5万');
   const gear = text('js/gear.js');
