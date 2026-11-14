@@ -5341,6 +5341,7 @@ button.mijing-bless-card:active {
   flex: 0 0 44px;
   width: 44px;
   height: 58px;
+  max-width: 100%;
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid rgba(212, 175, 95, 0.35);
@@ -7052,6 +7053,8 @@ button.mijing-bless-card:active {
   padding: 4px 8px;
   font-size: 11px;
   min-height: 0;
+}
+
 /* === 新手体验 batch3 P1-1：主线剧情对话（主角立绘 + Boss 剪影，可跳过） === */
 .story-modal {
   z-index: 120;
