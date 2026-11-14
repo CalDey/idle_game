@@ -48,6 +48,36 @@ const RESTORED_PORTRAITS = {
     posterSha256: 'f4ba6aba72ec17205073bec6dfd4e108037e2bb980a0c3c021e2cde78652b8af'
   }
 };
+// 2026-11-15 HD 立绘升级到 1080×1920（DawnBubbles Lanczos 放大）。lanyi / youming 因动态立绘图层按 1008×1792 像素对齐，暂不升级。
+const HD1080 = {
+  'assets/hero_fenxiao_hd.jpg': { v: '2', sha256: 'c9b01f80998c5121991d37294f65896e391df34bfa1b07e64269939b6fa87094' },
+  'assets/hero_honglian_hd.jpg': { v: '2', sha256: '22e73f00c3a5aab1afc8a1c5f2ffee781ac388971d6055eb69e9f893b185edfe' },
+  'assets/hero_jianghua_hd.jpg': { v: '3', sha256: 'ec7d0424ad0207333ee49c2927329615e37d30deb47f918bdf6e15360b734488' },
+  'assets/hero_miko_dawn_hd.jpg': { v: '5', sha256: '3701090b282553d8736a83b92997fd9e02cc9bc07f23975728624aeaa4774341' },
+  'assets/hero_mlg_dawn_hd.jpg': { v: '5', sha256: '28f152795f65e0740bd10e1993c43056ebdd6cd788c598803c10b9c011e9f7b8' },
+  'assets/hero_qingkui_hd.jpg': { v: '3', sha256: '1d5d3fd6a06484e891187569187adf4601a2e60a746755f34ea303ff3a5ef879' },
+  'assets/hero_saintess_v4b_hd.jpg': { v: '5', sha256: 'd0d3a38a5c4b380f8e918e328c9b3c17028459eab6569b541ee7a74e87002ba9' },
+  'assets/hero_shuangchen_hd.jpg': { v: '2', sha256: '94c797f004fc9f36f9538c26d9663b11783a2ffce3122ee1e4343b2049af2840' },
+  'assets/hero_shuanghua_hd.jpg': { v: '5', sha256: 'd884afabd482fcdcfdcd848d3ece72fd3195edc520e92c7399e62dba45de0a29' },
+  'assets/hero_sweetmaid_hd.jpg': { v: '5', sha256: '539fb885e480aeeeff729135ff8e8b90ef54315d268b8261b4489b305614a739' },
+  'assets/hero_yueshi_hd.jpg': { v: '3', sha256: 'c24983059d5c9060efbd343e9bfb89100e73c0c6a2abd2f1cfe7e792e9024af7' }
+};
+const HD_SIZE_OLD = { width: 1008, height: 1792 };
+const HD_SIZE_1080 = { width: 1080, height: 1920 };
+function hdUp(imgPath) {
+  return HD1080[String(imgPath || '').split('?')[0]] || null;
+}
+function expectedImg(imgPath) {
+  const up = hdUp(imgPath);
+  return up ? `${String(imgPath).split('?')[0]}?v=${up.v}` : imgPath;
+}
+function expectedHdSha(imgPath, oldSha) {
+  const up = hdUp(imgPath);
+  return up ? up.sha256 : oldSha;
+}
+function expectedHdSize(imgPath, oldSize) {
+  return hdUp(imgPath) ? HD_SIZE_1080 : (oldSize || HD_SIZE_OLD);
+}
 const YUESHI_HD_SHA256 = 'b6f93fb86082210f3cec22cb5d01b1cdcfe49d6b064886132e9a580ac4637d16';
 const YUESHI_POSTER_SHA256 = '2a48c81b71ff91632dab463fffdf56cf10fe527fd28e07789a6b51fa8216fb4d';
 const YUESHI_AVATAR_SHA256 = '49eded27444a0883294daf0d725d05eb511c8442cdfd8cbfd7368fafd01cf7a6';
@@ -333,12 +363,16 @@ ASSET_UNCHANGED_IDS.forEach((id) => {
   const prev = mainById[id];
   const u = UNIFIED_AVATARS[id];
   assert.deepStrictEqual(withoutAssets(now), withoutAssets(prev), `${id} 除头像外配置被改动`);
-  assert.strictEqual(now.img, prev.img);
+  assert.strictEqual(now.img, expectedImg(prev.img));
   assert.strictEqual(now.poster, prev.poster);
   assert.strictEqual(now.avatar, u.avatar);
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[id], mainConfig.HERO_SKILLS[id], `${id} 技能被改动`);
   ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(prev[key]);
+    if (key === 'img' && hdUp(rel)) {
+      assert.strictEqual(sha256(read(rel)), hdUp(rel).sha256, `HD1080 立绘不匹配：${rel}`);
+      return;
+    }
     const baseBlob = git(['rev-parse', `${MAIN}:${rel}`]).trim();
     const workBlob = git(['hash-object', '--', rel]).trim();
     assert.strictEqual(workBlob, baseBlob, `无关角色立绘资源被改动：${rel}`);
@@ -378,18 +412,22 @@ PREVIOUS_IDS.forEach((id) => {
   assert.deepStrictEqual(imageSize(avatarRel), { width: 512, height: 512 });
   if (Object.prototype.hasOwnProperty.call(RESTORED_PORTRAITS, id)) {
     const exp = RESTORED_PORTRAITS[id];
-    assert.strictEqual(now.img, exp.img);
+    assert.strictEqual(now.img, expectedImg(exp.img));
     assert.strictEqual(now.poster, exp.poster);
-    assert.strictEqual(sha256(read(stripQuery(now.img))), exp.hdSha256);
+    assert.strictEqual(sha256(read(stripQuery(now.img))), expectedHdSha(exp.img, exp.hdSha256));
     assert.strictEqual(sha256(read(stripQuery(now.poster))), exp.posterSha256);
-    assert.deepStrictEqual(imageSize(stripQuery(now.img)), { width: 1008, height: 1792 });
+    assert.deepStrictEqual(imageSize(stripQuery(now.img)), expectedHdSize(exp.img));
     assert.deepStrictEqual(imageSize(stripQuery(now.poster)), { width: 1008, height: 1792 });
     return;
   }
-  assert.strictEqual(now.img, prev.img);
+  assert.strictEqual(now.img, expectedImg(prev.img));
   assert.strictEqual(now.poster, prev.poster);
   ['img', 'poster'].forEach((key) => {
     const rel = stripQuery(prev[key]);
+    if (key === 'img' && hdUp(rel)) {
+      assert.strictEqual(sha256(read(rel)), hdUp(rel).sha256, `HD1080 立绘不匹配：${rel}`);
+      return;
+    }
     const baseBlob = git(['rev-parse', `${BASE}:${rel}`]).trim();
     const workBlob = git(['hash-object', '--', rel]).trim();
     assert.strictEqual(workBlob, baseBlob, `原英雄立绘资源被改动：${rel}`);
@@ -407,12 +445,12 @@ assert.strictEqual(yueshi.skill.kind, 'damage_heal_allies');
 assert.strictEqual(yueshi.skill.healAllyMaxHpRatio, 0.08);
 assert.strictEqual(yueshi.skill.mainMult, 1.2);
 assert.strictEqual(yueshi.skill.splashMult, 0);
-assert.strictEqual(yueshi.img, 'assets/hero_yueshi_hd.jpg?v=2');
+assert.strictEqual(yueshi.img, expectedImg('assets/hero_yueshi_hd.jpg?v=2'));
 assert.strictEqual(yueshi.poster, 'assets/hero_yueshi_poster.jpg?v=2');
 assert.strictEqual(yueshi.avatar, 'assets/battle/avatars/yueshi.webp?v=8');
 assert.strictEqual(yueshi.avatarPos, '50% 22%');
 assert.strictEqual(yueshi.avatarScale, 2.6);
-assert.strictEqual(read(stripQuery(yueshi.img)).length, 524264);
+assert.strictEqual(read(stripQuery(yueshi.img)).length, 402852);
 assert.ok(!Object.prototype.hasOwnProperty.call(yueshi.skill, 'shield'));
 assert.ok(EXISTING_SKILL_KINDS.has(yueshi.skill.kind));
 assert.deepStrictEqual(currentConfig.HERO_SKILLS.yueshi, yueshi.skill);
@@ -440,6 +478,7 @@ unifyBaseConfig.HEROES.forEach((prev) => {
   const oldHero = Object.assign({}, prev);
   delete kept.avatar;
   delete oldHero.avatar;
+  if (hdUp(prev.img)) oldHero.img = expectedImg(prev.img);
   if (PORTRAIT_REPLACED_IDS.includes(prev.id)) {
     delete kept.img;
     delete kept.poster;
@@ -454,6 +493,12 @@ unifyBaseConfig.HEROES.forEach((prev) => {
     const rel = stripQuery(now[key]);
     if (PORTRAIT_REPLACED_IDS.includes(prev.id)) {
       assert.ok(fs.existsSync(path.join(root, rel)), `${prev.id}.${key} 缺失`);
+      return;
+    }
+    if (key === 'img' && hdUp(rel)) {
+      assert.strictEqual(now.img, expectedImg(prev.img));
+      assert.strictEqual(sha256(read(rel)), hdUp(rel).sha256, `${prev.id}.img HD1080 不匹配`);
+      hdPosterChecks += 1;
       return;
     }
     assert.strictEqual(
@@ -559,10 +604,10 @@ assert.deepStrictEqual(baseQualities, {
   assert.ok(fs.existsSync(path.join(root, rel)), rel);
   assert.ok(text('js/config.js').includes(path.basename(rel)), `部署引用缺失 ${rel}`);
 });
-assert.strictEqual(sha256(read(stripQuery(yueshi.img))), YUESHI_HD_SHA256);
+assert.strictEqual(sha256(read(stripQuery(yueshi.img))), expectedHdSha(yueshi.img, YUESHI_HD_SHA256));
 assert.strictEqual(sha256(read(stripQuery(yueshi.poster))), YUESHI_POSTER_SHA256);
 assert.strictEqual(sha256(read(stripQuery(yueshi.avatar))), YUESHI_AVATAR_SHA256);
-assert.deepStrictEqual(imageSize(stripQuery(yueshi.img)), { width: 1008, height: 1792 });
+assert.deepStrictEqual(imageSize(stripQuery(yueshi.img)), expectedHdSize(yueshi.img));
 assert.deepStrictEqual(imageSize(stripQuery(yueshi.poster)), { width: 1008, height: 1792 });
 assert.deepStrictEqual(imageSize(stripQuery(yueshi.avatar)), { width: 512, height: 512 });
 assert.ok(read(stripQuery(yueshi.img)).length > 100000);
@@ -588,10 +633,10 @@ Object.keys(NEW_FOUR_HEROES).forEach((hid) => {
     assert.ok(fs.existsSync(path.join(root, rel)), rel);
     assert.ok(text('js/config.js').includes(path.basename(rel)), `部署引用缺失 ${rel}`);
   });
-  assert.strictEqual(sha256(read(stripQuery(hero.img))), exp.hdSha256);
+  assert.strictEqual(sha256(read(stripQuery(hero.img))), expectedHdSha(hero.img, exp.hdSha256));
   assert.strictEqual(sha256(read(stripQuery(hero.poster))), exp.posterSha256);
   assert.strictEqual(sha256(read(stripQuery(hero.avatar))), exp.avatarSha256);
-  assert.deepStrictEqual(imageSize(stripQuery(hero.img)), exp.size);
+  assert.deepStrictEqual(imageSize(stripQuery(hero.img)), expectedHdSize(hero.img, exp.size));
   assert.deepStrictEqual(imageSize(stripQuery(hero.poster)), exp.size);
   assert.deepStrictEqual(imageSize(stripQuery(hero.avatar)), { width: 512, height: 512 });
   assert.notStrictEqual(sha256(read(stripQuery(hero.poster))), exp.hdSha256);
@@ -663,13 +708,13 @@ Object.keys(XIAN_PAIR).forEach((hid) => {
   if (exp.healSelfOfMainDmg) assert.strictEqual(hero.skill.healSelfOfMainDmg, exp.healSelfOfMainDmg);
   assert.ok(EXISTING_SKILL_KINDS.has(hero.skill.kind));
   assert.deepStrictEqual(currentConfig.HERO_SKILLS[hid], hero.skill);
-  assert.strictEqual(hero.img, exp.img);
+  assert.strictEqual(hero.img, expectedImg(exp.img));
   assert.strictEqual(hero.poster, exp.poster);
   assert.strictEqual(hero.avatar, exp.avatar);
-  assert.strictEqual(sha256(read(stripQuery(hero.img))), exp.hdSha256);
+  assert.strictEqual(sha256(read(stripQuery(hero.img))), expectedHdSha(exp.img, exp.hdSha256));
   assert.strictEqual(sha256(read(stripQuery(hero.poster))), exp.posterSha256);
   assert.strictEqual(sha256(read(stripQuery(hero.avatar))), exp.avatarSha256);
-  assert.deepStrictEqual(imageSize(stripQuery(hero.img)), { width: 1008, height: 1792 });
+  assert.deepStrictEqual(imageSize(stripQuery(hero.img)), expectedHdSize(exp.img));
   assert.deepStrictEqual(imageSize(stripQuery(hero.poster)), { width: 1008, height: 1792 });
   assert.deepStrictEqual(imageSize(stripQuery(hero.avatar)), { width: 512, height: 512 });
   assert.ok(read(stripQuery(hero.poster)).length < read(stripQuery(hero.img)).length);
@@ -1012,7 +1057,7 @@ assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[
 
 const index = text('index.html');
 assert.ok(index.includes('css/style.css?v=84'));
-assert.ok(index.includes('js/config.js?v=74'));
+assert.ok(index.includes('js/config.js?v=75'));
 assert.ok(index.includes('js/state.js?v=32'));
 assert.ok(index.includes('js/battle.js?v=35'));
 assert.ok(index.includes('js/game.js?v=45'));

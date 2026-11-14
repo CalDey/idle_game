@@ -946,7 +946,7 @@
         avatar: 'assets/battle/avatars/cloak.webp?v=5',
         avatarPos: '55% 15%',
         avatarScale: 2.6,
-        img: 'assets/hero_mlg_dawn_hd.jpg?v=4',
+        img: 'assets/hero_mlg_dawn_hd.jpg?v=5',
         poster: 'assets/hero_mlg_dawn_poster.jpg?v=4',
         skill: {
           id: 'youming_shiguang',
@@ -968,7 +968,7 @@
         avatar: 'assets/battle/avatars/saintess.webp?v=4',
         avatarPos: '48% 12%',
         avatarScale: 2.6,
-        img: 'assets/hero_saintess_v4b_hd.jpg?v=4',
+        img: 'assets/hero_saintess_v4b_hd.jpg?v=5',
         poster: 'assets/hero_saintess_v4b_poster.jpg?v=4',
         skill: {
           id: 'shengcai_guangyi',
@@ -990,7 +990,7 @@
         avatar: 'assets/battle/avatars/miko.webp?v=6',
         avatarPos: '57% 14%',
         avatarScale: 2.6,
-        img: 'assets/hero_miko_dawn_hd.jpg?v=4',
+        img: 'assets/hero_miko_dawn_hd.jpg?v=5',
         poster: 'assets/hero_miko_dawn_poster.jpg?v=4',
         skill: {
           id: 'yinghuo_zhuci',
@@ -1012,7 +1012,7 @@
         avatar: 'assets/battle/avatars/shuanghua.webp?v=4',
         avatarPos: '52% 17%',
         avatarScale: 2.6,
-        img: 'assets/hero_shuanghua_hd.jpg?v=4',
+        img: 'assets/hero_shuanghua_hd.jpg?v=5',
         poster: 'assets/hero_shuanghua_poster.jpg?v=4',
         skill: {
           id: 'shuanghua_ningpo',
@@ -1034,7 +1034,7 @@
         avatar: 'assets/battle/avatars/sweetmaid.webp?v=4',
         avatarPos: '64% 19%',
         avatarScale: 2.6,
-        img: 'assets/hero_sweetmaid_hd.jpg?v=4',
+        img: 'assets/hero_sweetmaid_hd.jpg?v=5',
         poster: 'assets/hero_sweetmaid_poster.jpg?v=4',
         skill: {
           id: 'tianxin_jiahu',
@@ -1056,7 +1056,7 @@
         avatar: 'assets/battle/avatars/jianghua.webp?v=3',
         avatarPos: '50% 18%',
         avatarScale: 2.6,
-        img: 'assets/hero_jianghua_hd.jpg?v=2',
+        img: 'assets/hero_jianghua_hd.jpg?v=3',
         poster: 'assets/hero_jianghua_poster.jpg?v=2',
         skill: {
           id: 'hongxiu_chanxin',
@@ -1079,7 +1079,7 @@
         avatar: 'assets/battle/avatars/qingkui.webp?v=5',
         avatarPos: '58% 13%',
         avatarScale: 2.6,
-        img: 'assets/hero_qingkui_hd.jpg?v=2',
+        img: 'assets/hero_qingkui_hd.jpg?v=3',
         poster: 'assets/hero_qingkui_poster.jpg?v=2',
         skill: {
           id: 'huaying_huichun',
@@ -1102,7 +1102,7 @@
         avatar: 'assets/battle/avatars/yueshi.webp?v=8',
         avatarPos: '50% 22%',
         avatarScale: 2.6,
-        img: 'assets/hero_yueshi_hd.jpg?v=2',
+        img: 'assets/hero_yueshi_hd.jpg?v=3',
         poster: 'assets/hero_yueshi_poster.jpg?v=2',
         skill: {
           id: 'yueshi_lingyou',
@@ -1148,7 +1148,7 @@
         avatar: 'assets/battle/avatars/honglian.webp?v=2',
         avatarPos: '44% 10%',
         avatarScale: 2.6,
-        img: 'assets/hero_honglian_hd.jpg?v=1',
+        img: 'assets/hero_honglian_hd.jpg?v=2',
         poster: 'assets/hero_honglian_poster.jpg?v=1',
         skill: {
           id: 'honglian_zhuoxin',
@@ -1217,7 +1217,7 @@
         avatar: 'assets/battle/avatars/fenxiao.webp?v=2',
         avatarPos: '50% 50%',
         avatarScale: 2.6,
-        img: 'assets/hero_fenxiao_hd.jpg?v=1',
+        img: 'assets/hero_fenxiao_hd.jpg?v=2',
         poster: 'assets/hero_fenxiao_poster.jpg?v=1',
         skill: {
           id: 'fenxiao_guanzhen',
@@ -1240,7 +1240,7 @@
         avatar: 'assets/battle/avatars/shuangchen.webp?v=2',
         avatarPos: '50% 50%',
         avatarScale: 2.6,
-        img: 'assets/hero_shuangchen_hd.jpg?v=1',
+        img: 'assets/hero_shuangchen_hd.jpg?v=2',
         poster: 'assets/hero_shuangchen_poster.jpg?v=1',
         skill: {
           id: 'shuangchen_yingyu',
