@@ -1493,19 +1493,6 @@
     return t ? `<span class="role-card-intro">${t}</span>` : '';
   }
 
-  // 选中角色后在立绘上冒约 2 秒台词（复用 HeroVoice 气泡与日常台词）
-  let roleLineTimer = 0;
-  function sayRoleSelectLine(heroId) {
-    const text = window.Newbie && Newbie.heroSelectLine ? Newbie.heroSelectLine(heroId) : '';
-    if (!text || !window.HeroVoice || typeof HeroVoice.showBubble !== 'function') return;
-    if (!HeroVoice.showBubble(text)) return;
-    clearTimeout(roleLineTimer);
-    roleLineTimer = setTimeout(() => {
-      const el = document.getElementById('hero-voice-bubble');
-      if (el) el.classList.remove('is-show');
-    }, 2000);
-  }
-
   function renderRoleList() {
     const box = els.roleList || document.getElementById('role-list');
     if (!box) return;
@@ -1574,7 +1561,7 @@
     if (els.roleModal) {
       els.roleModal.classList.remove('active');
     }
-    sayRoleSelectLine(hero.id);
+    if (window.Newbie && Newbie.sayHeroSelectLine) Newbie.sayHeroSelectLine(hero.id);
   }
 
   function gameLoop(now) {

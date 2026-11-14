@@ -351,7 +351,8 @@ check('UI 冒烟：闯关页羁绊条、队伍弹窗羁绊面板与角色卡标�
   const panel = els['squad-bond-panel'].innerHTML;
   assert.ok(panel.includes('幽冥角色绝技吸血 18%'));
   assert.ok(panel.includes('剑修角色绝技伤害 +15%（3 人：剑修角色绝技伤害 +30%）'));
-  assert.ok(panel.includes('差 1 人：冰霜角色普攻 8% 几率冰封目标'));
+  // 新手体验 batch3 P2-4：羁绊说明改为每标签一行的图标列表，「差 N 人」单列
+  assert.ok(/bond-row bond-bing is-inactive[^]*冰霜角色普攻 8% 几率冰封目标[^]*差 1 人/.test(panel));
   const list = els['squad-hero-list'].innerHTML;
   ALL.forEach((id) => Bd.tagsOf(id).forEach((t) => assert.ok(list.includes(`bond-tag bond-${t}`), `角色卡标签 ${id}:${t}`)));
   assert.ok(list.includes('<span class="bond-tag bond-yan">烈焰</span>'));

@@ -345,6 +345,21 @@
     return v.tap || v.deploy || v.idle || '';
   }
 
+  // 选中角色后在立绘上冒约 2 秒台词（复用 HeroVoice 气泡）
+  let roleLineTimer = 0;
+  function sayHeroSelectLine(heroId) {
+    const text = heroSelectLine(heroId);
+    const HV = typeof window !== 'undefined' && window.HeroVoice;
+    if (!text || !HV || typeof HV.showBubble !== 'function') return false;
+    if (!HV.showBubble(text)) return false;
+    clearTimeout(roleLineTimer);
+    roleLineTimer = setTimeout(() => {
+      const el = document.getElementById('hero-voice-bubble');
+      if (el) el.classList.remove('is-show');
+    }, 2000);
+    return true;
+  }
+
   // ---------- 弹窗关闭 ----------
   function topActiveModal(doc) {
     const d = doc || (typeof document !== 'undefined' ? document : null);
@@ -767,6 +782,7 @@
     heroQuality,
     heroIntro,
     heroSelectLine,
+    sayHeroSelectLine,
     UNLOCKS,
     unlockedKeys,
     ensureUnlockSeen,

@@ -720,8 +720,8 @@ function breakAt(GS, roll) {
   assert.strictEqual(NB.heroIntro('nope'), '');
   assert.strictEqual(NB.heroSelectLine('nope'), '');
   const game = text('js/game.js');
-  assert.ok(game.includes('sayRoleSelectLine(hero.id);'));
-  assert.ok(/roleLineTimer = setTimeout\([\s\S]{0,160}\}, 2000\);/.test(game), '约 2 秒');
+  assert.ok(game.includes('Newbie.sayHeroSelectLine(hero.id)'));
+  assert.ok(/roleLineTimer = setTimeout\([\s\S]{0,160}\}, 2000\);/.test(text('js/newbie.js')), '约 2 秒');
   assert.ok(game.includes('${roleCardQualityTag(hero)}') && game.includes('${roleCardIntro(hero)}'));
 }
 
@@ -738,7 +738,8 @@ function breakAt(GS, roll) {
   const yan = rows.find((r) => r.id === 'yan');
   const zuo = rows.find((r) => r.id === 'zuo');
   assert.strictEqual(jian.active, true);
-  assert.strictEqual(jian.status, '已激活 · 3 人进阶');
+  assert.strictEqual(jian.status, '已激活');
+  assert.strictEqual(jian.desc, '剑修角色绝技伤害 +15%（3 人：剑修角色绝技伤害 +30%）');
   assert.strictEqual(bing.active, true);
   assert.strictEqual(bing.status, '已满阶', '冰霜 3 人满阶');
   assert.strictEqual(yan.active, false);
@@ -748,13 +749,13 @@ function breakAt(GS, roll) {
   assert.strictEqual(zuo.lack, 2);
   rows.forEach((r) => assert.ok(r.icon && r.desc, r.id));
   GS.loadGame();
-  assert.strictEqual(GS.state.flags.bondHintShown, false, '新档默认未提示');
+  assert.strictEqual(GS.state.flags.squadTagHintShown, false, '新档默认未提示');
   const old = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 5, flags: { ling: true } }) }));
   old.GS.loadGame();
-  assert.strictEqual(old.GS.state.flags.bondHintShown, false, '旧档缺字段时安全默认');
+  assert.strictEqual(old.GS.state.flags.squadTagHintShown, false, '旧档缺字段时安全默认');
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('bondPanel.innerHTML = bondListHtml(draftSquad)'));
-  assert.ok(/if \(s\.flags\.bondHintShown\) return false;\s*s\.flags\.bondHintShown = true;/.test(ui), '只提示一次');
+  assert.ok(/if \(s\.flags\.squadTagHintShown\) return false;\s*s\.flags\.squadTagHintShown = true;/.test(ui), '只提示一次');
   assert.ok(/function onShow\(\) \{[\s\S]{0,160}maybeShowBondHint\(\);/.test(ui), '进闯关页时检查');
   assert.ok(text('index.html').includes('id="bond-hint"'));
   assert.ok(text('index.html').includes('试试凑羁绊'));

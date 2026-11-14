@@ -146,8 +146,8 @@
         count: b.count,
         need: b.active ? b.nextNeed : first.need,
         lack,
-        status: b.active ? (b.maxed ? '已满阶' : `已激活 · ${b.nextNeed} 人进阶`) : `差 ${lack} 人`,
-        desc: b.active ? b.tier.desc : first.desc
+        status: b.active ? (b.maxed ? '已满阶' : '已激活') : `差 ${lack} 人`,
+        desc: b.active ? (b.maxed ? b.tier.desc : `${b.tier.desc}（${b.nextNeed} 人：${def.tiers[b.level].desc}）`) : first.desc
       };
     });
   }
@@ -168,15 +168,15 @@
       .join('')}</ul>`;
   }
 
-  // 第一次进闯关页提示一次「试试凑羁绊」（state.flags.bondHintShown）
+  // 第一次进闯关页提示一次「试试凑羁绊」（state.flags.squadTagHintShown）
   let bondHintTimer = 0;
   function maybeShowBondHint() {
     const s = window.GameState && window.GameState.state;
     const el = $('bond-hint');
     if (!s || !el || !unlocked() || !BD()) return false;
     if (!s.flags) s.flags = {};
-    if (s.flags.bondHintShown) return false;
-    s.flags.bondHintShown = true;
+    if (s.flags.squadTagHintShown) return false;
+    s.flags.squadTagHintShown = true;
     window.GameState.saveGame();
     el.hidden = false;
     clearTimeout(bondHintTimer);

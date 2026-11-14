@@ -198,7 +198,7 @@
       failBreakthroughs: 0,
       peachesPicked: 0,
       decomposed: 0,
-      flags: { ling: false, di: false, weapon: false, offlineCap: false, breakFailTipShown: false, bondHintShown: false },
+      flags: { ling: false, di: false, weapon: false, offlineCap: false, breakFailTipShown: false, squadTagHintShown: false },
       login: { last: '', streak: 0 },
       dayTaps: { date: '', count: 0 },
       titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
