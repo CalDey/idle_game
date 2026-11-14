@@ -104,7 +104,8 @@ check('化灵后未通关 3-10（第 30 关） 时，战败引导不出现约 T 
   assert.ok(!opts.some((o) => /约\s*\d+\s*秒后能突破/.test(o.label)), '不得出现约 T 秒后能突破');
   assert.ok(!opts.some((o) => /再修炼约/.test(o.label)));
   assert.strictEqual(opts[0].key, 'gate');
-  assert.strictEqual(opts[0].best, true);
+  assert.strictEqual(NB.recommendBest(s), null, '门槛锁定且无花销时不应推荐优先');
+  assert.ok(!opts.some((o) => o.best), '无推荐项时不得把门槛或 shown[0] 标成 ★');
 
   // 有闲置灵石时仍可提示参悟，但不得带 T
   s.stones = 1e9;

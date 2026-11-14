@@ -241,23 +241,23 @@ check('功法页有 ×10 / 最大按钮，375 宽字号至少 12px；buyGongfa �
   assert.ok(s.stones < stones0);
 });
 
-check('P2-1 节流窗口内重复调用不重跑连锁模拟', () => {
+check('P2-1 同分桶微变灵气走缓存；跨桶立刻重算（不再用时间节流）', () => {
   const W = loadRuntime();
   const { NB } = W;
   const found = findTesterSeed(W);
   const s = mkTester(W, found.seed);
   NB.resetChainCache();
-  const t0 = 1_000_000;
-  const a = NB.estimateBreakChain(s, 120, { now: t0 });
+  const a = NB.estimateBreakChain(s, 120);
   const n1 = NB.chainComputeCalls();
   s.qi += 0.3;
-  const b = NB.estimateBreakChain(s, 120, { now: t0 + 100 });
+  const b = NB.estimateBreakChain(s, 120);
   const n2 = NB.chainComputeCalls();
-  assert.strictEqual(n2, n1, `500ms 内且输入未实质变化时不得重算，实际 ${n1} -> ${n2}`);
+  assert.strictEqual(n2, n1, `同分桶微变灵气不得重算，实际 ${n1} -> ${n2}`);
   assert.deepStrictEqual(b, a);
-  const c = NB.estimateBreakChain(s, 120, { now: t0 + 200 });
+  const c = NB.estimateBreakChain(s, 120);
   assert.strictEqual(NB.chainComputeCalls(), n1);
-  assert.ok(NB.CHAIN_THROTTLE_MS >= 400 && NB.CHAIN_THROTTLE_MS <= 800);
+  assert.strictEqual(NB.CHAIN_THROTTLE_MS, undefined, '已删除时间节流常量');
+  assert.ok(NB.CHAIN_CACHE_LIMIT >= 8 && NB.CHAIN_CACHE_LIMIT <= 32);
 });
 
 check('P2-2 缓存键含装备/称号等，改装备或称号会失效重算', () => {
@@ -348,6 +348,190 @@ check('目标条与战败页推荐同一项，且同时只有一颗星', () => {
   const recKeys = rec.key === 'peach' ? ['peach', 'pending'] : [rec.key];
   assert.ok(recKeys.includes(star.key), `推荐 ${rec.key}/${rec.name}，战败 ★ 为 ${star.key}`);
   assert.ok(['突破', '修行', '法宝', '洞府', '道途'].includes(rec.name), rec.name);
+});
+
+check('P2 化灵中一次补满灵气后即使不足 500ms 也立刻重算出文案', () => {
+  const W = loadRuntime();
+  const { GS, NB, CFG } = W;
+  GS.loadGame();
+  const s = GS.state;
+  const stage = CFG.REALM_STAGES[7];
+  assert.ok(stage && stage.fullName.includes('化灵中'), stage && stage.fullName);
+  s.realmIndex = 7;
+  s.qi = 10;
+  s.stones = 0;
+  s.tree.peaches = 0;
+  s.pending = null;
+  s.breakAttempts = 0;
+  NB.resetChainCache();
+  const t0 = 3_000_000;
+  const empty = NB.estimateBreakChain(s, 120, { now: t0 });
+  assert.ok(empty && empty.breaks === 0, `灵气不足时应 breaks=0，实际 ${empty && empty.breaks}`);
+  const emptyLabel = NB.formatBreakChainLabel(s, empty);
+  assert.ok(!emptyLabel || !emptyLabel.includes('可连破至'), emptyLabel);
+  const n1 = NB.chainComputeCalls();
+  s.qi = stage.reqQi;
+  const ready = NB.estimateBreakChain(s, 120, { now: t0 + 100 });
+  const n2 = NB.chainComputeCalls();
+  assert.ok(n2 > n1, `跨桶补满灵气应立即重算，实际 ${n1} -> ${n2}`);
+  assert.ok(ready && ready.breaks >= 1, `补满后应能连破，实际 ${ready && ready.breaks} ${ready && ready.realmName}`);
+  const label = NB.formatBreakChainLabel(s, ready);
+  assert.ok(label && (label.includes('可连破') || label.includes('再成功一次')) && label.includes('战力 +'), label);
+  assert.ok(NB.canBreakNow(s));
+});
+
+check('P3-1 LRU：不同 buyFirst 互不覆盖，二次查询不重算', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  s.stones = 1e9;
+  NB.resetChainCache();
+  NB.estimateBreakChain(s, 120, { buyFirst: 'gongfa' });
+  const n1 = NB.chainComputeCalls();
+  NB.estimateBreakChain(s, 120, { buyFirst: false });
+  const n2 = NB.chainComputeCalls();
+  assert.ok(n2 > n1, '不同 buyFirst 应各自计算一次');
+  NB.estimateBreakChain(s, 120, { buyFirst: 'gongfa' });
+  NB.estimateBreakChain(s, 120, { buyFirst: false });
+  assert.strictEqual(NB.chainComputeCalls(), n2, '已缓存的 buyFirst 组合不得被互相挤掉');
+});
+
+check('P3-2 120 秒无增益且不能突破时不标推荐优先', () => {
+  const W = loadRuntime();
+  const { GS, NB } = W;
+  GS.loadGame();
+  const s = GS.state;
+  s.realmIndex = 7;
+  s.qi = 0;
+  s.stones = 0;
+  s.tree.peaches = 0;
+  s.pending = null;
+  s.breakAttempts = 99;
+  NB.resetChainCache();
+  const rec = NB.recommendBest(s);
+  assert.strictEqual(rec, null, `无事可做时 recommendBest 应为 null，实际 ${rec && rec.key}`);
+  const opts = NB.cpGainOptions(s);
+  assert.strictEqual(opts.filter((o) => o.best).length, 0, '不得把 shown[0] 标成 ★');
+  const src = text('js/newbie.js');
+  assert.ok(src.includes('els.goalRecommend.hidden = true'), '无推荐时应隐藏目标条「推荐优先」');
+});
+
+check('P3-3 模拟中新建的字段在还原时删除，state JSON 与开始一致', () => {
+  const W = loadRuntime();
+  const { GS, NB } = W;
+  GS.loadGame();
+  const s = GS.state;
+  s.realmIndex = 2;
+  s.qi = 977;
+  s.stones = 1e9;
+  delete s.gongfa;
+  assert.ok(!Object.prototype.hasOwnProperty.call(s, 'gongfa'));
+  const snap = JSON.stringify(s);
+  NB.resetChainCache();
+  NB.estimateBreakChain(s, 120, { buyFirst: 'gongfa' });
+  assert.strictEqual(JSON.stringify(s), snap, 'buyFirst 功法试算不得把原本缺失的 gongfa 留在存档上');
+  assert.ok(!Object.prototype.hasOwnProperty.call(s, 'gongfa'));
+});
+
+check('缓存键含队伍/神兽/失败加成，改 squad 立即失效', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  s.beasts = { owned: { fox: { lv: 1 } } };
+  s.pityBonus = 0;
+  NB.resetChainCache();
+  NB.estimateBreakChain(s, 120);
+  const n1 = NB.chainComputeCalls();
+  s.squad = ['lanyi'];
+  NB.estimateBreakChain(s, 120);
+  const n2 = NB.chainComputeCalls();
+  assert.ok(n2 > n1, `改 squad 应立即重算，实际 ${n1} -> ${n2}`);
+  s.pityBonus = 0.08;
+  NB.estimateBreakChain(s, 120);
+  const n3 = NB.chainComputeCalls();
+  assert.ok(n3 > n2, `改 pityBonus 应立即重算，实际 ${n2} -> ${n3}`);
+  s.beasts = { owned: { fox: { lv: 2 } } };
+  NB.estimateBreakChain(s, 120);
+  const n4 = NB.chainComputeCalls();
+  assert.ok(n4 > n3, `改 beasts 应立即重算，实际 ${n3} -> ${n4}`);
+});
+
+check('B1 引导战力与顶栏同一口径，相对实测 +75 误差不超过 10%', () => {
+  const W = loadRuntime();
+  const { GS, NB, Equip, Battle } = W;
+  const fixturePath = path.join(__dirname, '../../qa/regress8_v130/saves/v136_plus137_estimate_vs_actual.json');
+  const fix = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+  GS.loadGame();
+  const s = GS.state;
+  const tuned = fix.tuned;
+  s.realmIndex = tuned.realm;
+  s.qi = tuned.qi;
+  s.stones = tuned.stones;
+  s.tree.peaches = tuned.peaches;
+  s.equip = JSON.parse(JSON.stringify(tuned.equip));
+  s.breakAttempts = 0;
+  s.pityBonus = 0;
+  s.squad = ['lanyi'];
+  const cp0 = Math.round(Equip.combatPower(s));
+  assert.ok(Math.abs(cp0 - tuned.cp) <= 20, `顶栏战力应接近 ${tuned.cp}，实际 ${cp0}`);
+  NB.resetChainCache();
+  const snap = JSON.stringify(s);
+  const chain = NB.estimateBreakChain(s, 120);
+  assert.strictEqual(JSON.stringify(s), snap);
+  assert.ok(chain && chain.breaks === 2 && chain.realmName === '洞天中', `${chain && chain.breaks} ${chain && chain.realmName}`);
+  const est = Number(chain.gain) || 0;
+  const expected = Number(fix.actual.actualGain) || 75;
+  assert.ok(Math.abs(est - expected) / expected <= 0.10, `估算 +${est} 应在实测 +${expected} 的 ±10% 内`);
+  const battleGainScale = Math.round(Number(Battle.playerStats(s).cp) || 0);
+  assert.ok(est > 40, `不得再误用带人数缩放的 Battle.cp（单人时顶栏约 ${cp0}，Battle=${battleGainScale}）`);
+
+  const qiPer = Number(GS.getQiPerSec()) || 0;
+  s.qi = (Number(s.qi) || 0) + qiPer * 120;
+  let applied = 0;
+  while (applied < 2) {
+    const r = GS.applyBreakthroughAttempt(0);
+    assert.ok(r && r.success, `第 ${applied + 1} 次保底突破应成功，实际 ${JSON.stringify(r)}`);
+    applied += 1;
+  }
+  const cp1 = Math.round(Equip.combatPower(s));
+  const actualGain = cp1 - cp0;
+  assert.strictEqual(s.realmIndex, 4);
+  assert.ok(Math.abs(est - actualGain) / Math.max(1, actualGain) <= 0.10, `估算 +${est} 相对当场连破 +${actualGain}（${cp0}→${cp1}）应在 ±10%`);
+});
+
+check('B2 搬血后空 unlockSeen 仍先弹法宝，不把灵泉眼插到 1-10 前面', () => {
+  const W = loadRuntime();
+  const { GS, NB } = W;
+  GS.loadGame();
+  const s = GS.state;
+  s.realmIndex = 2;
+  s.stage.best = 0;
+  s.stage.cur = 1;
+  s.unlockSeen = {};
+  s.guide = Object.assign({}, s.guide, { gearPopup: true, gearVisited: false });
+  const u = NB.pendingUnlock(s);
+  assert.ok(u && u.key === 'gear', `unlockSeen={} 且 gearPopup 已记时仍应先出法宝，实际 ${u && u.key}`);
+  assert.strictEqual(s.unlockSeen.gear, undefined);
+  assert.strictEqual(NB.shouldShowGearBeforeStage(s), true);
+  const src = text('js/newbie.js');
+  assert.ok(src.includes('shouldDeferUnlock'));
+  assert.ok(src.includes("activeTab() === 'tab-stage' && bestStage(s) < 10"));
+});
+
+check('B3 缓存命中时不重建键；fullKey 变化仍立刻重算', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  NB.resetChainCache();
+  NB.estimateBreakChain(s, 120);
+  const builds = NB.chainKeyBuildCalls();
+  const n1 = NB.chainComputeCalls();
+  for (let i = 0; i < 80; i += 1) NB.estimateBreakChain(s, 120);
+  assert.strictEqual(NB.chainComputeCalls(), n1, '命中缓存不得重跑模拟');
+  assert.strictEqual(NB.chainKeyBuildCalls(), builds, '命中时不得反复拼键 / JSON.stringify');
 });
 
 console.log(`guide-chain: ${passed} checks passed`);

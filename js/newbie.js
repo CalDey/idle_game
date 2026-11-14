@@ -385,7 +385,11 @@
     };
   }
 
+  // 引导里的「战力 +X」必须与顶栏同一口径（Equip.combatPower）。
+  // Battle.playerStats(s).cp 含 squadScale = 出战人数/6，单人上阵会把真实战力差缩小约 6 倍。
   function cpOf(s) {
+    const E = window.Equip;
+    if (E && typeof E.combatPower === 'function') return Math.round(Number(E.combatPower(s)) || 0);
     const B = window.Battle;
     return B ? Math.round(Number(B.playerStats(s).cp) || 0) : 0;
   }
@@ -433,6 +437,7 @@
     for (let i = 0; i < SIM_KEYS.length; i += 1) {
       const k = SIM_KEYS[i];
       if (Object.prototype.hasOwnProperty.call(o, k)) s[k] = o[k];
+      else if (Object.prototype.hasOwnProperty.call(s, k)) delete s[k];
     }
   }
 
@@ -540,11 +545,13 @@
   }
 
   // 120 秒连锁：只改传入的活 state 上相关字段，try/finally 还原；不存档、不派事件、不刷界面。
-  // 缓存键含装备/称号/道途/道果/保底次数等会影响灵气或战力的字段。
-  // 灵气按约 0.5 秒产量分桶；稳定输入未变时 500ms 内不重算。
-  const CHAIN_THROTTLE_MS = 500;
-  let chainCache = { fullKey: '', stableKey: '', val: null, at: 0 };
+  // 缓存按 fullKey 做有上限的 LRU；灵气按约 0.5 秒产量分桶。fullKey 变了立刻重算，不再用时间节流。
+  // 键用轻量签名（不出整对象 JSON.stringify）；先做引用/分桶快检，命中时不重建键。
+  const CHAIN_CACHE_LIMIT = 16;
+  let chainCache = new Map();
   let chainComputeCount = 0;
+  let chainKeyBuildCount = 0;
+  let lastQuick = null;
 
   function qiBucket(s, GS) {
     const qi = Number(s.qi) || 0;
@@ -553,23 +560,147 @@
     return Math.floor(qi / step);
   }
 
-  function chainStableKey(s, budget, buyFirst) {
+  function mapLvSig(map) {
+    if (!map || typeof map !== 'object') return '';
+    const keys = Object.keys(map);
+    let out = '';
+    for (let i = 0; i < keys.length; i += 1) {
+      const v = map[keys[i]];
+      out += keys[i] + ':' + (v && typeof v === 'object' ? (v.lv != null ? v.lv : 1) : (v || 0)) + ',';
+    }
+    return out;
+  }
+
+  function equipSig(equip) {
+    if (!equip) return '';
+    const keys = Object.keys(equip).sort();
+    let out = '';
+    for (let i = 0; i < keys.length; i += 1) {
+      const it = equip[keys[i]];
+      out += keys[i] + ':' + (it ? `${it.q}:${it.lv}:${it.m}:${it.id || it.name || ''}` : '-') + ',';
+    }
+    return out;
+  }
+
+  function beastsSig(beasts) {
+    if (!beasts || typeof beasts !== 'object') return '';
+    const owned = beasts.owned || beasts;
+    return mapLvSig(owned);
+  }
+
+  function chainFullKey(s, budget, buyFirst, GS) {
+    chainKeyBuildCount += 1;
+    const path = s.path;
+    const titles = s.titles;
     return [
+      qiBucket(s, GS),
+      Math.floor(Number(s.stones) || 0),
       s.realmIndex || 0,
-      JSON.stringify(s.gongfa || {}),
-      JSON.stringify(s.dongfu || {}),
-      JSON.stringify(s.equip || {}),
-      JSON.stringify(s.talents || {}),
-      JSON.stringify(s.titles || {}),
-      JSON.stringify(s.path || {}),
-      s.totalDaoGuo || 0,
       s.breakAttempts || 0,
+      Number(s.pityBonus) || 0,
+      s.totalDaoGuo || 0,
       (s.stage && s.stage.best) || 0,
       (s.tree && s.tree.peaches) || 0,
-      s.pending ? JSON.stringify(s.pending) : '',
+      (s.squad || []).join(','),
+      titles ? `${titles.worn || ''}:${(titles.owned || []).join(',')}` : '',
+      path ? `${path.id || ''}:${(path.lv || []).join('')}` : '',
+      mapLvSig(s.gongfa),
+      mapLvSig(s.dongfu),
+      mapLvSig(s.talents),
+      beastsSig(s.beasts),
+      equipSig(s.equip),
+      s.pending ? `${s.pending.s}:${s.pending.q}:${s.pending.lv}:${s.pending.m}` : '',
       budget,
       String(buyFirst || '')
     ].join('|');
+  }
+
+  function titlesSig(titles) {
+    return titles ? `${titles.worn || ''}:${(titles.owned || []).join(',')}` : '';
+  }
+  function pathSig(path) {
+    return path ? `${path.id || ''}:${(path.lv || []).join('')}` : '';
+  }
+  function pendingSig(pending) {
+    return pending ? `${pending.s}:${pending.q}:${pending.lv}:${pending.m}` : '';
+  }
+
+  function quickStateSame(s, budget, GS) {
+    const q = lastQuick;
+    if (!q || q.state !== s || q.budget !== budget) return false;
+    if (q.qB !== qiBucket(s, GS)) return false;
+    if (q.stones !== Math.floor(Number(s.stones) || 0)) return false;
+    if (q.realm !== (s.realmIndex || 0)) return false;
+    if (q.breakAttempts !== (s.breakAttempts || 0)) return false;
+    if (q.pityBonus !== (Number(s.pityBonus) || 0)) return false;
+    if (q.peaches !== ((s.tree && s.tree.peaches) || 0)) return false;
+    if (q.squad !== s.squad || q.equip !== s.equip || q.gongfa !== s.gongfa || q.dongfu !== s.dongfu) return false;
+    if (q.beasts !== s.beasts || q.titles !== s.titles || q.path !== s.path || q.pending !== s.pending || q.talents !== s.talents) return false;
+    if (q.best !== ((s.stage && s.stage.best) || 0) || q.dao !== (s.totalDaoGuo || 0)) return false;
+    if (q.equipSig !== equipSig(s.equip)) return false;
+    if (q.gongfaSig !== mapLvSig(s.gongfa) || q.dongfuSig !== mapLvSig(s.dongfu)) return false;
+    if (q.talentsSig !== mapLvSig(s.talents) || q.beastsSig !== beastsSig(s.beasts)) return false;
+    if (q.titlesSig !== titlesSig(s.titles) || q.pathSig !== pathSig(s.path) || q.pendingSig !== pendingSig(s.pending)) return false;
+    if (q.squadSig !== (s.squad || []).join(',')) return false;
+    return true;
+  }
+
+  function quickSame(s, budget, buyFirst, GS) {
+    return quickStateSame(s, budget, GS) && Object.prototype.hasOwnProperty.call(lastQuick.keys, String(buyFirst || ''));
+  }
+
+  function rememberQuick(s, budget, GS, buyFirst, full) {
+    if (!quickStateSame(s, budget, GS)) {
+      lastQuick = {
+        state: s,
+        budget,
+        qB: qiBucket(s, GS),
+        stones: Math.floor(Number(s.stones) || 0),
+        realm: s.realmIndex || 0,
+        breakAttempts: s.breakAttempts || 0,
+        pityBonus: Number(s.pityBonus) || 0,
+        peaches: (s.tree && s.tree.peaches) || 0,
+        squad: s.squad,
+        equip: s.equip,
+        gongfa: s.gongfa,
+        dongfu: s.dongfu,
+        beasts: s.beasts,
+        titles: s.titles,
+        path: s.path,
+        pending: s.pending,
+        talents: s.talents,
+        best: (s.stage && s.stage.best) || 0,
+        dao: s.totalDaoGuo || 0,
+        equipSig: equipSig(s.equip),
+        gongfaSig: mapLvSig(s.gongfa),
+        dongfuSig: mapLvSig(s.dongfu),
+        talentsSig: mapLvSig(s.talents),
+        beastsSig: beastsSig(s.beasts),
+        titlesSig: titlesSig(s.titles),
+        pathSig: pathSig(s.path),
+        pendingSig: pendingSig(s.pending),
+        squadSig: (s.squad || []).join(','),
+        keys: {}
+      };
+    }
+    lastQuick.keys[String(buyFirst || '')] = full;
+  }
+
+  function cacheGet(key) {
+    if (!chainCache.has(key)) return undefined;
+    const val = chainCache.get(key);
+    chainCache.delete(key);
+    chainCache.set(key, val);
+    return val;
+  }
+
+  function cacheSet(key, val) {
+    if (chainCache.has(key)) chainCache.delete(key);
+    chainCache.set(key, val);
+    while (chainCache.size > CHAIN_CACHE_LIMIT) {
+      const oldest = chainCache.keys().next().value;
+      chainCache.delete(oldest);
+    }
   }
 
   function estimateBreakChain(s, seconds, opts) {
@@ -577,12 +708,15 @@
     if (!s || !GS) return null;
     const budget = seconds == null ? CHAIN_SECONDS : Number(seconds);
     const buyFirst = opts && opts.buyFirst ? opts.buyFirst : false;
-    const now = (opts && opts.now) || Date.now();
-    const stable = chainStableKey(s, budget, buyFirst);
-    const full = `${stable}|q${qiBucket(s, GS)}|st${Math.floor(Number(s.stones) || 0)}`;
-    if (chainCache.fullKey === full && chainCache.val) return chainCache.val;
-    if (chainCache.stableKey === stable && chainCache.val && now - chainCache.at < CHAIN_THROTTLE_MS) {
-      return chainCache.val;
+    if (quickSame(s, budget, buyFirst, GS)) {
+      const hit = cacheGet(lastQuick.keys[String(buyFirst || '')]);
+      if (hit !== undefined) return hit;
+    }
+    const full = chainFullKey(s, budget, buyFirst, GS);
+    const cached = cacheGet(full);
+    if (cached !== undefined) {
+      rememberQuick(s, budget, GS, buyFirst, full);
+      return cached;
     }
     const json = snapshotSim(s);
     let result = null;
@@ -592,16 +726,22 @@
     } finally {
       restoreSim(s, json);
     }
-    chainCache = { fullKey: full, stableKey: stable, val: result, at: now };
+    cacheSet(full, result);
+    rememberQuick(s, budget, GS, buyFirst, full);
     return result;
   }
 
   function resetChainCache() {
-    chainCache = { fullKey: '', stableKey: '', val: null, at: 0 };
+    chainCache = new Map();
+    lastQuick = null;
+    chainKeyBuildCount = 0;
   }
 
   function chainComputeCalls() {
     return chainComputeCount;
+  }
+  function chainKeyBuildCalls() {
+    return chainKeyBuildCount;
   }
 
   function chainSuccessNote(chain) {
@@ -676,20 +816,24 @@
     return null;
   }
 
+  function recActionable(ch) {
+    if (!ch) return false;
+    return (Number(ch.gain) || 0) > 0 || Boolean(ch.nextRealmName);
+  }
+
   function recommendBest(s) {
     if (!s) return null;
     let best = null;
     for (let i = 0; i < REC_ORDER.length; i += 1) {
       const key = REC_ORDER[i];
       const ch = categoryChain(s, key);
-      if (!ch) continue;
+      if (!recActionable(ch)) continue;
       const gain = Number(ch.gain) || 0;
       if (!best || gain > best.gain) {
         best = { key, name: REC_NAMES[key], gain, chain: ch, tab: key === 'break' || key === 'path' ? 'tab-cultivate' : key === 'peach' ? 'tab-gear' : 'tab-upgrades' };
       }
     }
-    if (best) return best;
-    return null;
+    return best;
   }
 
   function nextMajorName(s) {
@@ -1093,10 +1237,12 @@
       if (extra) shown = shown.slice(0, 2).concat([extra]);
     }
     shown.forEach((o) => { o.best = false; });
-    const star = shown.find((o) => o.key === recKey) || shown[0];
-    if (star) star.best = true;
-    if (rec) {
-      shown.forEach((o) => { if (o.best) o.recommend = rec.name; });
+    if (recKey) {
+      const star = shown.find((o) => o.key === recKey);
+      if (star) {
+        star.best = true;
+        star.recommend = rec.name;
+      }
     }
     return shown;
   }
@@ -1466,7 +1612,6 @@
       if (!guide.gearPopup) delete seen.gear;
       s.unlockSeen = seen;
     }
-    if (ensureGuide(s).gearPopup) s.unlockSeen.gear = true;
     return s.unlockSeen;
   }
 
@@ -1485,11 +1630,26 @@
     ensureUnlockVisited(s);
     const catalog = unlockCatalog();
     const keys = unlockedKeys(s, catalog);
+    const gear = catalog.find((u) => u.key === 'gear');
+    if (gear && !seen.gear && keys.indexOf('gear') >= 0) return gear;
     for (let i = 0; i < catalog.length; i += 1) {
       const u = catalog[i];
+      if (u.key === 'gear') continue;
       if (!seen[u.key] && keys.indexOf(u.key) >= 0) return u;
     }
     return null;
+  }
+
+  // 法宝卡未弹过时只出法宝；闯关页未通 1-10 时不弹其它机缘，以免挡住通关引导。
+  function shouldDeferUnlock(s, u) {
+    if (!u || u.key === 'gear') return false;
+    const seen = s && s.unlockSeen;
+    if (seen && !seen.gear) {
+      const gear = unlockCatalog().find((item) => item.key === 'gear');
+      if (gear && gear.test(s)) return true;
+    }
+    if (activeTab() === 'tab-stage' && bestStage(s) < 10) return true;
+    return false;
   }
 
   function unlockTabDot(s, kind) {
@@ -1609,7 +1769,7 @@
     unlockTimer = setTimeout(function tryShow() {
       const st = S();
       const u = st && pendingUnlock(st);
-      if (!u) {
+      if (!u || shouldDeferUnlock(st, u)) {
         unlockTimer = 0;
         return;
       }
@@ -1784,8 +1944,9 @@
     tribulationGate,
     tribHintText,
     CHAIN_SECONDS,
-    CHAIN_THROTTLE_MS,
+    CHAIN_CACHE_LIMIT,
     chainComputeCalls,
+    chainKeyBuildCalls,
     resetChainCache,
     recommendBest,
     onStateReload,
