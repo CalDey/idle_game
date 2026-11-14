@@ -1709,7 +1709,11 @@
       }
       renderUpgradeLists();
       updateHeaderAndMeditationUI();
+      updateSaveTimestampUI();
       if (window.GearUI) GearUI.render();
+      if (window.StageUI) StageUI.render();
+      if (window.Titles) Titles.sync(GameState.state);
+      if (window.TitlesUI) TitlesUI.flushToasts();
     });
 
     if (window.TitlesUI) TitlesUI.init();

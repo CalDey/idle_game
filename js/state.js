@@ -2,6 +2,8 @@
 (function () {
   const SAVE_KEY = 'xiuxian_idle_save_v1';
   const SAVE_BACKUP_KEY = 'xiuxian_idle_save_v1_bak';
+  const SAVE_CORRUPT_KEY = 'xiuxian_idle_save_v1_corrupt';
+  const VISIBLE_SETTLE_MIN_SECONDS = 60;
   const MAX_SQUAD_SIZE = 6;
   // 新手保底：新档前 3 次突破必定成功（数值策划 P2-5）。
   const GUARANTEED_BREAKS = 3;
@@ -313,9 +315,134 @@
     const hours = seconds / 3600;
     const peaches = Math.floor((1 + Math.floor(best / 50)) * hours);
     const lingyu = Math.floor((6 + 0.4 * best) * hours);
-    state.tree.peaches = (state.tree.peaches || 0) + peaches;
+    if (!state.tree) state.tree = {};
+    const cap = window.GameConfig.peachCap(state.tree.lv || 1);
+    const current = state.tree.peaches || 0;
+    // 挂机桃只补到上限；已因赠桃/闯关等溢出的存量不裁掉。
+    const granted = current >= cap ? 0 : Math.min(peaches, cap - current);
+    state.tree.peaches = current + granted;
     state.lingyu = (state.lingyu || 0) + lingyu;
-    return { peaches, lingyu };
+    return { peaches: granted, lingyu };
+  }
+
+  function toFiniteNumber(value, fallback) {
+    const n = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function coerceNumericMap(map, fallback) {
+    if (!map || typeof map !== 'object') return;
+    Object.keys(map).forEach((key) => {
+      map[key] = toFiniteNumber(map[key], fallback);
+    });
+  }
+
+  function coerceStateNumbers(s) {
+    if (!s || typeof s !== 'object') return s;
+    s.qi = toFiniteNumber(s.qi, 0);
+    s.stones = toFiniteNumber(s.stones, 0);
+    s.lingyu = toFiniteNumber(s.lingyu, 0);
+    s.realmIndex = toFiniteNumber(s.realmIndex, 0);
+    s.pityBonus = toFiniteNumber(s.pityBonus, 0);
+    s.reincarnationCount = toFiniteNumber(s.reincarnationCount, 0);
+    s.daoGuo = toFiniteNumber(s.daoGuo, 0);
+    s.totalDaoGuo = toFiniteNumber(s.totalDaoGuo, 0);
+    s.totalClicks = toFiniteNumber(s.totalClicks, 0);
+    s.lastSaveTime = toFiniteNumber(s.lastSaveTime, Date.now());
+    s.createdAt = toFiniteNumber(s.createdAt, s.lastSaveTime || Date.now());
+    s.playTimeMs = toFiniteNumber(s.playTimeMs, 0);
+    s.lifetimeQi = toFiniteNumber(s.lifetimeQi, 0);
+    s.failBreakthroughs = toFiniteNumber(s.failBreakthroughs, 0);
+    s.peachesPicked = toFiniteNumber(s.peachesPicked, 0);
+    s.decomposed = toFiniteNumber(s.decomposed, 0);
+    s.lifeBestStage = toFiniteNumber(s.lifeBestStage, 0);
+    s.breakAttempts = toFiniteNumber(s.breakAttempts, 0);
+    if (s.tree && typeof s.tree === 'object') {
+      s.tree.peaches = toFiniteNumber(s.tree.peaches, 0);
+      s.tree.lv = toFiniteNumber(s.tree.lv, 1);
+      s.tree.upEnd = toFiniteNumber(s.tree.upEnd, 0);
+      s.tree.regenAt = toFiniteNumber(s.tree.regenAt, s.lastSaveTime || Date.now());
+    }
+    if (s.stage && typeof s.stage === 'object') {
+      s.stage.best = toFiniteNumber(s.stage.best, 0);
+      s.stage.cur = toFiniteNumber(s.stage.cur, 1);
+      s.stage.idleAt = toFiniteNumber(s.stage.idleAt, s.lastSaveTime || Date.now());
+      s.stage.wins = toFiniteNumber(s.stage.wins, 0);
+      s.stage.fails = toFiniteNumber(s.stage.fails, 0);
+      s.stage.losses = toFiniteNumber(s.stage.losses, 0);
+      s.stage.streak = toFiniteNumber(s.stage.streak, 0);
+      s.stage.maxStreak = toFiniteNumber(s.stage.maxStreak, 0);
+      s.stage.speed = toFiniteNumber(s.stage.speed, 2);
+    }
+    if (s.mijing && typeof s.mijing === 'object') {
+      s.mijing.used = toFiniteNumber(s.mijing.used, 0);
+      s.mijing.runs = toFiniteNumber(s.mijing.runs, 0);
+      s.mijing.clears = toFiniteNumber(s.mijing.clears, 0);
+      s.mijing.bestWave = toFiniteNumber(s.mijing.bestWave, 0);
+    }
+    coerceNumericMap(s.gongfa, 0);
+    coerceNumericMap(s.dongfu, 0);
+    coerceNumericMap(s.talents, 0);
+    if (s.home && typeof s.home === 'object') {
+      s.home.bgMaxTier = toFiniteNumber(s.home.bgMaxTier, 0);
+      coerceNumericMap(s.home.maxTier, 0);
+    }
+    return s;
+  }
+
+  function applyOfflineWindow(savedTime, now) {
+    const elapsedSec = Math.floor((now - savedTime) / 1000);
+    if (elapsedSec < 3) {
+      finishTreeUpgrade(now);
+      applyPeachRegen(state.tree && state.tree.regenAt ? state.tree.regenAt : now, now);
+      grantPeachGift();
+      return null;
+    }
+    const cappedSec = Math.min(elapsedSec, getOfflineCapSeconds());
+    const qiGain = getQiPerSec() * cappedSec;
+    const stoneGain = getStonePerSec() * cappedSec;
+    state.qi = toFiniteNumber(state.qi, 0) + qiGain;
+    state.lifetimeQi = toFiniteNumber(state.lifetimeQi, 0) + qiGain;
+    state.playTimeMs = toFiniteNumber(state.playTimeMs, 0) + cappedSec * 1000;
+    if (elapsedSec > getOfflineCapSeconds()) {
+      if (!state.flags) state.flags = {};
+      state.flags.offlineCap = true;
+    }
+    state.stones = toFiniteNumber(state.stones, 0) + stoneGain;
+    const windowEnd = savedTime + cappedSec * 1000;
+    let treeDone = false;
+    if (state.tree && state.tree.upEnd && state.tree.upEnd > windowEnd) {
+      state.tree.upEnd += now - windowEnd;
+    } else {
+      treeDone = finishTreeUpgrade(windowEnd);
+    }
+    const peachGain = applyPeachRegen(savedTime, windowEnd);
+    const idle = applyIdleStageRewards(cappedSec);
+    if (state.tree) state.tree.regenAt = now;
+    if (state.stage) state.stage.idleAt = now;
+    state.lastSaveTime = now;
+    grantPeachGift();
+    return {
+      rawSeconds: elapsedSec,
+      effectiveSeconds: cappedSec,
+      capped: elapsedSec > getOfflineCapSeconds(),
+      qiGain,
+      stoneGain,
+      peachGain: peachGain + idle.peaches,
+      lingyuGain: idle.lingyu,
+      treeDone
+    };
+  }
+
+  function settleAwayProgress(now, opts) {
+    const at = toFiniteNumber(now, Date.now()) || Date.now();
+    const minSec = opts && opts.minSeconds != null ? toFiniteNumber(opts.minSeconds, VISIBLE_SETTLE_MIN_SECONDS) : VISIBLE_SETTLE_MIN_SECONDS;
+    const savedTime = toFiniteNumber(state.lastSaveTime, at) || at;
+    const elapsedSec = Math.floor((at - savedTime) / 1000);
+    if (elapsedSec < 3 || elapsedSec < minSec) return null;
+    const report = applyOfflineWindow(savedTime, at);
+    saveGame();
+    return report;
   }
 
   function getTapQiGain() {
@@ -603,13 +730,17 @@
   }
 
   function loadGame() {
+    let raw = null;
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      raw = localStorage.getItem(SAVE_KEY);
       if (!raw) {
         state = createDefaultState();
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('存档格式无效');
+      }
       if ((parsed.version || 1) < 3) {
         try {
           localStorage.setItem(SAVE_BACKUP_KEY, raw);
@@ -622,16 +753,21 @@
         parsed = migrateV2toV3(parsed);
       }
       const def = createDefaultState();
-      state = mergeSave(def, parsed);
-
+      state = coerceStateNumbers(mergeSave(def, parsed));
       const now = Date.now();
-      const savedTime = Number(parsed.lastSaveTime) || now;
+      const savedTime = toFiniteNumber(parsed.lastSaveTime, now) || now;
       const offlineReport = settleOffline(savedTime, now, { idleStage: true });
       grantPeachGift();
-
       return { isNew: false, offlineReport };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
+      if (raw) {
+        try {
+          localStorage.setItem(SAVE_CORRUPT_KEY, raw);
+        } catch (bakErr) {
+          console.warn('坏档备份失败:', bakErr);
+        }
+      }
       state = createDefaultState();
       return { isNew: true, offlineReport: null };
     }
@@ -855,12 +991,18 @@
     applyIdleStageRewards,
     defaultGuide,
     normalizeGuide,
+    isProgressedSave,
     GUARANTEED_BREAKS,
     normalizeBreakAttempts,
     isBreakGuaranteed,
     applyBreakthroughAttempt,
     settleOffline,
     resumeFromBackground,
-    isProgressedSave
+    settleAwayProgress,
+    applyOfflineWindow,
+    SAVE_KEY,
+    SAVE_BACKUP_KEY,
+    SAVE_CORRUPT_KEY,
+    VISIBLE_SETTLE_MIN_SECONDS
   };
 })();

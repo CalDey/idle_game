@@ -564,11 +564,12 @@
 
   // 中文大数格式化
   function formatNumber(num, decimals = 1) {
-    if (num === null || num === undefined || Number.isNaN(num)) return '0';
-    const abs = Math.abs(num);
+    const n = typeof num === 'number' ? num : Number(num);
+    if (!Number.isFinite(n)) return '0';
+    const abs = Math.abs(n);
     if (abs < 10000) {
-      if (abs >= 100) return String(Math.floor(abs) * Math.sign(num || 1));
-      return Number.isInteger(num) ? String(num) : num.toFixed(decimals).replace(/\.0+$/, '');
+      if (abs >= 100) return String(Math.floor(abs) * Math.sign(n || 1));
+      return Number.isInteger(n) ? String(n) : n.toFixed(decimals).replace(/\.0+$/, '');
     }
     const units = [
       { value: 1e16, symbol: '兆' },
@@ -578,12 +579,12 @@
     ];
     for (let i = 0; i < units.length; i++) {
       if (abs >= units[i].value) {
-        const scaled = num / units[i].value;
+        const scaled = n / units[i].value;
         const digits = Math.abs(scaled) >= 100 ? 0 : 1;
         return scaled.toFixed(digits).replace(/\.0$/, '') + units[i].symbol;
       }
     }
-    return Math.floor(num).toString();
+    return Math.floor(n).toString();
   }
 
   function formatDuration(seconds) {

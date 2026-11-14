@@ -40,6 +40,7 @@
   // 胜率预估缓存
   let cachedWinRateKey = '';
   let cachedWinRateVal = 0.5;
+  let cachedRecommendedCp = 0;
   let lastIdlePaint = 0;
   let lastUnlocked = null;
   let preloadedNextUrl = '';
@@ -59,6 +60,7 @@
   let mijingQuitArmed = false;
   let mijingWinRateKey = '';
   let mijingWinRateVal = 0.5;
+  let mijingRecommendedCp = 0;
 
   function $(id) {
     return document.getElementById(id);
@@ -249,15 +251,37 @@
       .join('|');
   }
 
-  function getCachedWinRate(state, stageNum, playerCp) {
+  function forecastKey(state, id, playerCp) {
     const formStr = serializeFormation(state && state.formation);
     const squadStr = window.Battle.getSquadIds(state).join(',');
-    const key = `${stageNum}:${Math.round(playerCp)}:${state && state.heroId}:${squadStr}:${formStr}`;
+    return `${id}:${Math.round(playerCp)}:${state && state.heroId}:${squadStr}:${formStr}`;
+  }
+
+  function getCachedWinRate(state, stageNum, playerCp) {
+    const key = forecastKey(state, stageNum, playerCp);
     if (key !== cachedWinRateKey) {
       cachedWinRateKey = key;
       cachedWinRateVal = window.Battle.winRate(state, stageNum, 40, bondModsFor(state));
+      cachedRecommendedCp = window.Battle.recommendedCp(state, stageNum, { mods: bondModsFor(state) });
     }
     return cachedWinRateVal;
+  }
+
+  function getRecommendedCp(state, enemyOrStage, playerCp) {
+    const isMijing = enemyOrStage && typeof enemyOrStage === 'object' && enemyOrStage.mijingWave;
+    if (isMijing) {
+      const run = mijingRun();
+      if (run) getMijingWinRate(state, run, playerCp);
+      if (mijingRecommendedCp) return mijingRecommendedCp;
+    } else {
+      const id = enemyOrStage && typeof enemyOrStage === 'object' ? enemyOrStage.n : enemyOrStage;
+      getCachedWinRate(state, id, playerCp);
+      if (cachedRecommendedCp) return cachedRecommendedCp;
+    }
+    const mods = isMijing
+      ? (MJ() && MJ().combinedMods && mijingRun() ? MJ().combinedMods(state, mijingRun().blessings) : null)
+      : bondModsFor(state);
+    return window.Battle.recommendedCp(state, enemyOrStage, { mods });
   }
 
   // 构建 6×8 棋盘网格
@@ -780,15 +804,15 @@
     const actionsEl = $('battle-fail-actions');
     if (!overlay || !titleEl || !subEl || !actionsEl) return;
 
-    const gapCp = Math.max(1, Math.round(enemy.cp - player.cp));
-    const gapPct = Math.max(1, Math.round(((enemy.cp - player.cp) / enemy.cp) * 100));
+    const recCp = getRecommendedCp(window.GameState.state, enemy, Math.round(player.cp));
+    const gapCp = window.Battle.failPowerGap(player.cp, recCp);
     const prefix = timeout ? '久战不下' : '败';
 
-    if (enemy.cp > player.cp) {
+    if (gapCp > 0) {
+      const gapPct = Math.max(1, Math.round((gapCp / recCp) * 100));
       titleEl.textContent = `${prefix} · 还差 ${fmt(gapCp)} 战力（约 ${gapPct}%）`;
     } else {
-      const steadyGap = Math.max(1, Math.round(enemy.cp * 1.05 - player.cp));
-      titleEl.textContent = `${prefix} · 还差约 ${fmt(steadyGap)} 战力稳胜`;
+      titleEl.textContent = `${prefix} · 此战惜败，可再战或调整布阵`;
     }
 
     if (fails >= 2) {
@@ -815,11 +839,11 @@
     const navBtn = $('nav-btn-stage');
     const navText = $('nav-stage-text');
     if (navBtn) {
-      navBtn.title = isUnlocked ? '闯关' : '突破至练气三层后开启闯关';
+      navBtn.title = isUnlocked ? '闯关' : '突破至搬血后开启闯关';
       navBtn.classList.toggle('is-locked', !isUnlocked);
     }
     if (navText) {
-      navText.textContent = isUnlocked ? '闯关' : '闯关·练气三';
+      navText.textContent = isUnlocked ? '闯关' : '闯关·搬血后';
     }
   }
 
@@ -976,12 +1000,15 @@
     const cpEnemyEl = $('stage-cp-enemy');
     const winrateEl = $('stage-winrate');
     if (cpPlayerEl) cpPlayerEl.textContent = fmt(Math.round(player.cp));
-    if (cpEnemyEl) cpEnemyEl.textContent = fmt(Math.round(enemy.cp));
     if (winrateEl) {
       const rate = mjRun ? getMijingWinRate(s, mjRun, player.cp) : getCachedWinRate(s, stageNum, player.cp);
       const label = window.Battle.winRateLabel(rate);
       winrateEl.textContent = label;
       winrateEl.dataset.level = rate >= 0.6 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
+    }
+    if (cpEnemyEl) {
+      const rec = getRecommendedCp(s, mjRun ? enemy : stageNum, player.cp);
+      cpEnemyEl.textContent = fmt(Math.round(rec));
     }
 
     const btnSquad = $('btn-stage-squad');
@@ -1962,6 +1989,10 @@
     if (key !== mijingWinRateKey) {
       mijingWinRateKey = key;
       mijingWinRateVal = MJ().winRate(state, run, 20);
+      const enemy = MJ().waveEnemy(run, run.wave);
+      mijingRecommendedCp = window.Battle.recommendedCp(state, enemy, {
+        mods: MJ().combinedMods ? MJ().combinedMods(state, run.blessings) : null
+      });
     }
     return mijingWinRateVal;
   }

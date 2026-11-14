@@ -1912,6 +1912,77 @@
     return '不敌';
   }
 
+  // 推荐战力：以当前队伍属性比例缩放，二分得到胜率达到目标（默认 60%，即「大概率胜」）所需的显示战力。
+  // 与 winRate / winRateLabel / 失败提示共用同一套战斗模拟，避免「推荐 600 却显示不敌」。
+  const RECOMMENDED_WIN_RATE = 0.6;
+  const RECOMMENDED_SIMS = 16;
+  const RECOMMENDED_ITERS = 8;
+
+  function scalePlayerForProbe(player, scale) {
+    const s = Number(scale);
+    const factor = Number.isFinite(s) && s > 0 ? s : 1;
+    const formation = {};
+    if (player.formation && typeof player.formation === 'object') {
+      Object.keys(player.formation).forEach((k) => {
+        const pos = player.formation[k];
+        formation[k] = pos && typeof pos === 'object' ? { c: pos.c, r: pos.r } : pos;
+      });
+    }
+    return {
+      ...player,
+      _fromPlayerStats: true,
+      atk: player.atk * factor,
+      hp: player.hp * factor,
+      def: player.def * factor,
+      cp: player.cp * factor,
+      formation,
+      equip: undefined
+    };
+  }
+
+  function recommendedCp(state, n, opts) {
+    const target = opts && opts.targetRate != null ? opts.targetRate : RECOMMENDED_WIN_RATE;
+    const runs = opts && opts.runs != null ? Math.max(4, Math.floor(opts.runs)) : RECOMMENDED_SIMS;
+    const mods = opts && opts.mods;
+    const check = canStartBattle(state);
+    const e = typeof n === 'object' && n !== null ? n : enemyFor(n);
+    const enemyCp = Math.max(1, Math.round((e && e.cp) || 0) || 1);
+    if (!check.ok) return enemyCp;
+    const p = playerStats(state);
+    const baseCp = Math.max(1, Number(p && p.cp) || 0);
+    if (!Number.isFinite(baseCp) || baseCp <= 0) return enemyCp;
+
+    const rateAtScale = (scale) => {
+      const scaled = scalePlayerForProbe(p, scale);
+      let wins = 0;
+      for (let i = 0; i < runs; i++) {
+        if (simulate(scaled, e, i + 1, mods).win) wins += 1;
+      }
+      return wins / runs;
+    };
+
+    let lo = 0.2;
+    let hi = 4;
+    if (rateAtScale(hi) < target) {
+      for (let k = 0; k < 4 && rateAtScale(hi) < target; k++) hi *= 1.6;
+    }
+    if (rateAtScale(lo) >= target) {
+      return Math.max(1, Math.round(baseCp * lo));
+    }
+    for (let i = 0; i < RECOMMENDED_ITERS; i++) {
+      const mid = (lo + hi) / 2;
+      if (rateAtScale(mid) >= target) hi = mid;
+      else lo = mid;
+    }
+    return Math.max(1, Math.round(baseCp * hi));
+  }
+
+  function failPowerGap(playerCp, recommended) {
+    const rec = Math.max(0, Math.round(Number(recommended) || 0));
+    const cur = Math.round(Number(playerCp) || 0);
+    return Math.max(0, rec - cur);
+  }
+
   function firstClearReward(state, n) {
     const stageNum = Math.max(1, Math.floor(n || 1));
     const isBoss = stageNum % 10 === 0;
@@ -1953,6 +2024,9 @@
     winRate,
     winRateLegacy,
     winRateLabel,
+    recommendedCp,
+    failPowerGap,
+    RECOMMENDED_WIN_RATE,
     firstClearReward
   };
 

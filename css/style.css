@@ -774,10 +774,16 @@ body {
 .qi-progress-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
   margin-bottom: 6px;
   letter-spacing: 0.4px;
+}
+
+@media (min-width: 768px) {
+  .qi-progress-labels {
+    font-size: 15px;
+  }
 }
 
 .progress-bar-bg {
@@ -1788,12 +1794,25 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   font-size: 17px;
   font-weight: 400;
   letter-spacing: 1px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   opacity: 0;
   pointer-events: none;
 }
 
 .title-toast.show {
   animation: titleShine 1.6s ease;
+}
+
+@media (max-width: 400px) {
+  .title-toast {
+    font-size: 15px;
+    letter-spacing: 0.4px;
+    padding: 7px 12px;
+  }
 }
 
 @keyframes titleShine {
