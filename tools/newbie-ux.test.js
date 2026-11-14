@@ -638,12 +638,15 @@ function breakAt(GS, roll) {
   s.qi = 1e12;
   s.realmIndex = 8; // 渡劫门槛（需先败 Boss）
   s.stage.best = 0;
-  assert.deepStrictEqual(plain(NB.cpGainOptions(s).map((o) => o.key)), [], '被渡劫门槛挡住时不显示去突破');
+  const locked = NB.cpGainOptions(s);
+  assert.deepStrictEqual(plain(locked.map((o) => o.key)), ['gate'], '被渡劫门槛挡住时改为先通关，不显示去突破');
+  assert.ok(locked[0].label.includes('先通关') && locked[0].label.includes('才能突破'));
+  assert.ok(!locked.some((o) => o.key === 'break' || o.key === 'wait'));
   s.realmIndex = 0;
   s.tree.peaches = 5;
   assert.ok(!NB.cpGainOptions(s).some((o) => o.key === 'peach'), '法宝未开启不显示去摘桃');
   const html = text('index.html');
-  ['btn-goto-peach', 'btn-goto-gongfa', 'btn-goto-break', 'btn-goto-pending', 'btn-goto-wait'].forEach((id) => assert.ok(html.includes(`id="${id}"`), id));
+  ['btn-goto-peach', 'btn-goto-gongfa', 'btn-goto-break', 'btn-goto-pending', 'btn-goto-wait', 'btn-goto-gate'].forEach((id) => assert.ok(html.includes(`id="${id}"`), id));
   assert.ok(html.includes('去参悟功法'));
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('renderFailGainActions(actionsEl)'));

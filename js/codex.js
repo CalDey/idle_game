@@ -616,7 +616,16 @@
     clearTimeout(quoteTimer);
     quoteTimer = setTimeout(() => el.classList.remove('is-show'), 2800);
   }
+  function hideBossQuote() {
+    clearTimeout(quoteTimer);
+    quoteTimer = 0;
+    const el = document.getElementById('boss-quote-banner');
+    if (!el) return;
+    el.classList.remove('is-show');
+    el.innerHTML = '';
+  }
   core.showBossQuote = showBossQuote;
+  core.hideBossQuote = hideBossQuote;
   core.open = open;
   core.close = close;
 

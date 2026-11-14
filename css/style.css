@@ -3721,7 +3721,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=129") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=130") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3729,11 +3729,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=129");
+  background-image: url("../assets/home/scene_xuan.webp?v=130");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=129");
+  background-image: url("../assets/home/scene_xian.webp?v=130");
 }
 
 .home-stage {
@@ -4848,7 +4848,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   background: linear-gradient(180deg, rgba(64, 52, 104, 0.95), rgba(28, 22, 52, 0.95));
   color: var(--accent-gold-bright);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 16px;
   letter-spacing: 1px;
@@ -7961,6 +7961,25 @@ button.mijing-bless-card:active {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 必须写在全局 .path-entry nowrap 之后，否则 ≤400px 仍会被省略成「本命道…」 */
+@media (max-width: 400px) {
+  .path-entry {
+    max-width: none;
+    font-size: 12px;
+    padding: 3px 5px;
+    white-space: normal;
+    overflow: visible;
+    line-height: 1.2;
+    height: auto;
+  }
+  .path-entry #path-entry-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+}
+
 
 .path-entry[hidden] {
   display: none;

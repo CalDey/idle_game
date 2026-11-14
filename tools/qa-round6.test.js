@@ -219,9 +219,11 @@ check('P3 资源栏与战斗信息最小字号为 12px', () => {
 });
 
 check('跟进：≤400px 时 path-entry 为 12px 且长文案不省略、可换行', () => {
-  const m = css.match(/@media \(max-width: 400px\) \{([\s\S]*?)\n\}\n/);
-  assert.ok(m, '应有 400px 媒体查询');
-  const block = m[1];
+  const mediaMatches = [...css.matchAll(/@media \(max-width: 400px\) \{([\s\S]*?)\n\}\n/g)];
+  const wrapMedia = mediaMatches.filter((m) => m[1].includes('.path-entry') && /white-space:\s*normal/.test(m[1]));
+  assert.ok(wrapMedia.length, '应有 400px path-entry 换行规则');
+  const last = wrapMedia[wrapMedia.length - 1];
+  const block = last[1];
   const path = block.match(/\.path-entry \{([\s\S]*?)\n  \}/);
   assert.ok(path, '400px 内应有 .path-entry');
   const body = path[1];
@@ -232,6 +234,9 @@ check('跟进：≤400px 时 path-entry 为 12px 且长文案不省略、可换�
   assert.ok(textRule, '窄屏应覆盖标题文字省略');
   assert.ok(/white-space:\s*normal/.test(textRule[1]));
   assert.ok(/text-overflow:\s*unset/.test(textRule[1]));
+  const g = css.match(/\n\.path-entry #path-entry-text \{\n(?:  [^\n]+\n)*  white-space: nowrap;\n\}/);
+  assert.ok(g, '应有全局 nowrap 规则');
+  assert.ok(last.index > css.lastIndexOf(g[0]), '窄屏换行必须写在全局 nowrap 之后');
 });
 
 check('跟进：秘境结算底部渐隐放宽到 ≤430px', () => {

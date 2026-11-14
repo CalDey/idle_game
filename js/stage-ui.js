@@ -1280,6 +1280,11 @@
     const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
 
     const inTower = battleMode === 'tower' || Boolean(enemy && enemy.towerFloor);
+    // 离开 Boss 关或切到新关时立刻关掉台词条并取消计时，避免首通后自动进下一关还挂着上一句。
+    const keepQuote = !mjRun && !inTower && enemy && enemy.isBoss;
+    if (!keepQuote && window.Codex && typeof window.Codex.hideBossQuote === 'function') {
+      window.Codex.hideBossQuote();
+    }
     if (mjRun) {
       renderMijingBar(mjRun);
     } else if (inTower) {
@@ -1785,6 +1790,9 @@
         : mjRun
           ? `秘境第 ${mjRun.wave} 波 · 迎战【${enemy.name}】`
           : `第 1 回合 · 迎战【${enemy.name}】`;
+    }
+    if (window.Codex && typeof window.Codex.hideBossQuote === 'function') {
+      window.Codex.hideBossQuote();
     }
     if (!mjRun && enemy.isBoss && window.Codex && typeof window.Codex.showBossQuote === 'function') {
       window.Codex.showBossQuote(enemy);
@@ -3441,6 +3449,18 @@
       btnGotoWait.addEventListener('click', (e) => {
         e.stopPropagation();
         hideResultOverlay();
+      });
+    }
+    const btnGotoGate = $('btn-goto-gate');
+    if (btnGotoGate) {
+      btnGotoGate.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
+        switchTab('tab-stage');
+        if (window.Newbie && typeof window.Newbie.focusBlockingBoss === 'function') {
+          window.Newbie.focusBlockingBoss(window.GameState && window.GameState.state);
+        }
+        if (typeof render === 'function') render();
       });
     }
 

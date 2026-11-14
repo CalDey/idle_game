@@ -258,7 +258,10 @@
       const pct = Math.min(100, Math.floor(((s.qi || 0) / Math.max(1, stage.reqQi)) * 100));
       qiText = `灵气 ${pct}%`;
     }
-    const hint = goal && goal.buildingHint ? goal.buildingHint : '';
+    const stageHint = (goal && goal.realm !== undefined && (s.realmIndex || 0) >= 3 && (s.stage && (s.stage.best || 0) < 10))
+      ? '通关1-10（首领山魈娘娘）'
+      : '';
+    const hint = [stageHint, goal && goal.buildingHint].filter(Boolean).join(' · ');
     if (qiText && hint) return `${qiText} · ${hint}`;
     return qiText || hint || '';
   }
@@ -392,17 +395,10 @@
     return Math.max(0, after - base);
   }
 
-  function withState(s, fn) {
-    const GS = window.GameState;
-    if (!GS) return fn();
-    const held = GS.state;
-    try {
-      if (s && s !== held) GS.state = s;
-      return fn();
-    } finally {
-      if (s && s !== held) GS.state = held;
-    }
-  }
+  // 预估会原地改 s.gongfa / s.dongfu / s.stones，算完必须还原。
+  // GameState.state 只有 getter、没有 setter，不能整对象替换；调用方必须传入当前
+  // 正在使用的那份 state（与 GameState.state 同一引用），getQiPerSec / getGongfaCost
+  // / tribulationLock 才能读到模拟结果。
 
   function canAffordUpgrade(s) {
     const GS = window.GameState;
@@ -472,9 +468,16 @@
     return detail.immediate;
   }
 
+  function tribulationGate(s) {
+    const E = window.Equip;
+    if (!E || typeof E.tribulationLock !== 'function') return null;
+    return E.tribulationLock(s) || null;
+  }
+
   function estimateSpendDetail(s) {
     const GS = window.GameState;
     if (!s || !GS || !canAffordUpgrade(s)) return null;
+    const locked = !!tribulationGate(s);
     const stage = typeof GS.getCurrentStage === 'function' ? GS.getCurrentStage() : null;
     const prevGongfa = Object.assign({}, s.gongfa || {});
     const prevDongfu = Object.assign({}, s.dongfu || {});
@@ -485,28 +488,29 @@
     let immediate = 0;
     let qiPerSecAfter = 0;
     try {
-      withState(s, () => {
-        simulateSpendStones(s);
-        immediate = Math.max(0, cpOf(s) - base);
-        qiPerSecAfter = (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
-      });
+      simulateSpendStones(s);
+      immediate = Math.max(0, cpOf(s) - base);
+      qiPerSecAfter = (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
     } finally {
       s.gongfa = prevGongfa;
       s.dongfu = prevDongfu;
       s.stones = prevStones;
     }
     let eta = null;
-    if (need > 0 && qiPerSecAfter > 0) {
-      eta = Math.max(0, Math.ceil((need - qi0) / qiPerSecAfter));
-    } else if (need > 0 && qi0 >= need) {
-      eta = 0;
+    if (!locked) {
+      if (need > 0 && qiPerSecAfter > 0) {
+        eta = Math.max(0, Math.ceil((need - qi0) / qiPerSecAfter));
+      } else if (need > 0 && qi0 >= need) {
+        eta = 0;
+      }
     }
     return {
       immediate,
-      breakGain: realmCpGain(s),
+      breakGain: locked ? 0 : realmCpGain(s),
       eta,
       qiPerSecAfter,
-      stones: prevStones
+      stones: prevStones,
+      locked
     };
   }
 
@@ -552,11 +556,12 @@
   }
 
   function estimateWaitEta(s) {
+    if (tribulationGate(s)) return null;
     const GS = window.GameState;
     if (!s || !GS || typeof GS.getCurrentStage !== 'function') return null;
     const stage = GS.getCurrentStage();
     if (!stage || stage.isMaxStage || (s.qi || 0) >= stage.reqQi) return null;
-    const per = withState(s, () => (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0);
+    const per = (typeof GS.getQiPerSec === 'function' ? Number(GS.getQiPerSec()) : 0) || 0;
     if (per <= 0) return null;
     const eta = Math.ceil((stage.reqQi - (s.qi || 0)) / per);
     return eta > 0 && eta <= 120 ? eta : null;
@@ -576,13 +581,24 @@
         action: 'openCompare'
       });
     }
+    const gate = tribulationGate(s);
     const breakGain = estimateBreakGain(s);
-    if (breakGain != null) {
+    if (breakGain != null && !gate) {
       out.push({
         key: 'break',
         label: `可以突破了 · 战力 +${fmt(breakGain)}`,
         tab: 'tab-cultivate',
         gain: breakGain,
+        priority: 2
+      });
+    }
+    if (gate) {
+      out.push({
+        key: 'gate',
+        label: `先通关${stageLabel(gate.stage)}才能突破`,
+        tab: 'tab-stage',
+        focus: 'blockingBoss',
+        gain: 0,
         priority: 2
       });
     }
@@ -730,6 +746,12 @@
   }
 
   function anyModalOpen() {
+    // 渡劫动画根节点 #tribulation-cinematic 不是 .modal-backdrop，
+    // 播放 / 跳过 / 减弱动态全程 isPlaying 且带 is-on，直到 hideRoot 才关掉。
+    const T = window.Tribulation;
+    if (T && typeof T.isPlaying === 'function' && T.isPlaying()) return true;
+    const cine = document.getElementById('tribulation-cinematic');
+    if (cine && cine.classList && cine.classList.contains('is-on')) return true;
     return Boolean(topActiveModal(document));
   }
 
@@ -1249,8 +1271,11 @@
     unlockItemUnvisited,
     canAffordUpgrade,
     estimateSpendDetail,
+    estimateWaitEta,
+    tribulationGate,
     compareDiff,
     cpGainOptions,
+    anyModalOpen,
     heroQuality,
     heroIntro,
     heroSelectLine,

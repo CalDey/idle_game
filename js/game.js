@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=129',
-    'assets/home/scene_xuan.webp?v=129',
-    'assets/home/scene_xian.webp?v=129'
+    'assets/home/scene_base.webp?v=130',
+    'assets/home/scene_xuan.webp?v=130',
+    'assets/home/scene_xian.webp?v=130'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -69,6 +69,7 @@
     els.breakthroughPenalty = document.getElementById('breakthrough-penalty');
     els.breakthroughTribHint = document.getElementById('breakthrough-trib-hint');
     els.btnBreakthrough = document.getElementById('btn-breakthrough');
+    els.btnBreakthroughText = document.getElementById('btn-breakthrough-text');
 
     els.logBox = document.getElementById('cultivation-log');
     els.logModal = document.getElementById('log-modal');
@@ -1244,13 +1245,17 @@
     const canBreak = hasQi && !gate;
     els.btnBreakthrough.disabled = !hasQi;
     els.btnBreakthrough.classList.toggle('ready-pulse', canBreak);
-    els.btnBreakthrough.textContent = stage.isMaxStage
+    const breakText = stage.isMaxStage
       ? '境界圆满'
       : gateLocked
       ? gateText(gateBoss, 'button', `先败${gateBoss}`)
       : stage.isMajorTribulation
       ? '渡劫晋升'
       : '突破境界';
+    const breakLabel = els.btnBreakthroughText || (els.btnBreakthrough && els.btnBreakthrough.querySelector('#btn-breakthrough-text'));
+    if (breakLabel) {
+      if (breakLabel.textContent !== breakText) breakLabel.textContent = breakText;
+    }
     if (els.breakthroughTribHint) {
       const showTribHint = window.GameConfig && typeof window.GameConfig.shouldShowTribHint === 'function'
         ? window.GameConfig.shouldShowTribHint(stage)
