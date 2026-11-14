@@ -4870,3 +4870,115 @@ button.mijing-bless-card:active {
   color: var(--text-dim);
   white-space: nowrap;
 }
+
+/* === 挂机随机事件（机缘）=== */
+.idle-event-btn[hidden] {
+  display: none;
+}
+
+.idle-event-btn.has-event {
+  border-color: var(--accent-gold-bright);
+  box-shadow: 0 0 10px rgba(245, 199, 106, 0.55);
+  animation: idleEventGlow 2.4s ease-in-out infinite;
+}
+
+@keyframes idleEventGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(245, 199, 106, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(245, 199, 106, 0.8);
+  }
+}
+
+.idle-event-dialog {
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+}
+
+.idle-event-kicker {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  letter-spacing: 4px;
+  margin-bottom: 2px;
+}
+
+.idle-event-text,
+.evt-result-text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-main);
+  margin: 0 0 12px;
+}
+
+.idle-event-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.idle-event-options[hidden],
+.idle-event-result[hidden] {
+  display: none;
+}
+
+.btn.evt-option {
+  white-space: normal;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.evt-option-label {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.evt-option-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.evt-res {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.evt-reward {
+  color: var(--accent-jade);
+}
+
+.evt-cost {
+  color: #f0a07a;
+}
+
+.evt-lack {
+  color: #f07167;
+}
+
+.evt-note {
+  color: var(--accent-gold);
+}
+
+.idle-event-result {
+  background: rgba(8, 6, 20, 0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

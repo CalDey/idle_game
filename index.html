@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=86" />
+  <link rel="stylesheet" href="css/style.css?v=87" />
 </head>
 
 <body>
@@ -27,6 +27,9 @@
         </div>
         <div class="header-actions">
           <div id="header-realm-pill" class="realm-pill"><span id="header-realm-text" class="realm-pill-text">搬血初</span></div>
+          <button id="btn-idle-event" class="icon-btn idle-event-btn" type="button" aria-label="机缘事件" hidden><img class="gi"
+              src="assets/icons/ui_bagua@64.webp?v=18" alt="" aria-hidden="true"><span class="icon-btn-badge visible"
+              aria-hidden="true"></span></button>
           <button id="btn-open-log" class="icon-btn" type="button" aria-label="修仙日志"><img class="gi"
               src="assets/icons/ui_log@64.webp?v=18" alt="" aria-hidden="true"><span id="badge-log"
               class="icon-btn-badge" aria-hidden="true"></span></button>
@@ -567,6 +570,19 @@
     </div>
   </div>
 
+  <div id="idle-event-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog idle-event-dialog" role="dialog" aria-modal="true" aria-labelledby="idle-event-title">
+      <div class="idle-event-kicker">机缘</div>
+      <h2 id="idle-event-title" class="modal-title">机缘</h2>
+      <p id="idle-event-text" class="idle-event-text"></p>
+      <div id="idle-event-options" class="idle-event-options"></div>
+      <div id="idle-event-result" class="idle-event-result" hidden></div>
+      <div class="modal-actions">
+        <button id="btn-close-idle-event" class="btn" type="button">稍后再说</button>
+      </div>
+    </div>
+  </div>
+
   <div id="home-upgrade-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog home-upgrade-dialog" role="dialog" aria-modal="true" aria-labelledby="home-upgrade-modal-title">
       <div class="card-header home-upgrade-header">
@@ -602,9 +618,11 @@
   <script src="js/titles.js?v=23"></script>
   <script src="js/battle.js?v=36"></script>
   <script src="js/mijing.js?v=1"></script>
-  <script src="js/gear.js?v=30"></script>
+  <script src="js/gear.js?v=31"></script>
   <script src="js/stage-ui.js?v=50"></script>
   <script src="js/game.js?v=46"></script>
+  <script src="js/events-data.js?v=1"></script>
+  <script src="js/idle-events.js?v=1"></script>
 </body>
 
 </html>

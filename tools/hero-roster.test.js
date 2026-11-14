@@ -1033,10 +1033,20 @@ assert.ok(css.includes('object-position: center top'));
 assert.match(css, /\.ult-hero-media\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.match(css, /\.role-card-img\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.ok(css.includes('MaShanZheng-Role.woff2?v=13'));
-['js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
-  // 秘境劫运（PRE_MIJING 之后）有意改动 stage-ui.js，此处只守护那之前的历史区间
+['js/stage-ui.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
+  // gear.js 另见下方 GearUI.grant 守护。秘境劫运（PRE_MIJING 之后）有意改动 stage-ui.js，此处只守护那之前的历史区间
   assert.strictEqual(git(['diff', '--stat', BASE, PRE_MIJING, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
+// gear.js 只允许追加 GearUI.grant（机缘事件发放装备），其余不动。
+{
+  const gearBody = git(['diff', '-U0', BASE, '--', 'js/gear.js'])
+    .split('\n')
+    .filter((line) => /^[+-]/.test(line) && !/^(\+\+\+|---) /.test(line));
+  const removed = gearBody.filter((line) => line.startsWith('-'));
+  assert.deepStrictEqual(removed, ['-  window.GearUI = { init, tick, render: renderTree };'], 'gear.js 只允许替换导出行');
+  assert.ok(gearBody.includes('+  window.GearUI = { init, tick, render: renderTree, grant };'));
+  assert.ok(gearBody.some((line) => line.includes('function grant(item)')));
+}
 // game.js 自幽冥基线起只允许洞府升级列表图标（home-up-*）改动。
 git(['diff', '-U0', YOUMING_BASE, '--', 'js/game.js'])
   .split('\n')
@@ -1064,7 +1074,7 @@ assert.match(css, /\.role-card\.role-q-xian:not\(\.is-active\) \{[^}]*#f4a3a3, #
 assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[^{]*\{[^}]*animation\s*:/.test(css));
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=86'));
+assert.ok(index.includes('css/style.css?v=87'));
 assert.ok(index.includes('js/config.js?v=75'));
 assert.ok(index.includes('js/state.js?v=33'));
 assert.ok(index.includes('js/battle.js?v=36'));

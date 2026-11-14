@@ -432,5 +432,19 @@
     }
   }
 
-  window.GearUI = { init, tick, render: renderTree };
+  // 机缘事件等外部来源发放装备：沿用摘桃的纳入/对比/自动分解流程。
+  function grant(item) {
+    if (!item) return;
+    const s = window.GameState.state;
+    if (item.q >= 1) s.flags.ling = true;
+    if (item.q >= 3) s.flags.di = true;
+    equipOrPrompt(item);
+    window.GameState.saveGame();
+    if (window.Titles) Titles.sync(window.GameState.state);
+    if (window.TitlesUI) TitlesUI.flushToasts();
+    onChange();
+    renderTree();
+  }
+
+  window.GearUI = { init, tick, render: renderTree, grant };
 })();
