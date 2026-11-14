@@ -1,0 +1,3 @@
+# 数值模拟运行产物（非基准快照）。需要时重新执行 tools/sim.js、tools/battle-sim.js、tools/beast-sim.js。
+tools/*-sim-output.txt
+tools/sim-output.txt

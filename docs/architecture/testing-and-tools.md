@@ -51,7 +51,7 @@ node tools/codex.test.js
 | :--- | :--- |
 | [tools/sim.js](../../tools/sim.js) | 贪心修炼模拟：有灵石买最便宜的功法/洞府，灵气够了就突破（不计失败），默认展望约 30 天。它用 `vm` **只加载 `config.js`**，并在脚本内重写了简化版 `qiPerSec` / `stonePerSec`（不含装备、称号、道果总量、章节加成等），结果只能作节奏粗探 |
 | [tools/battle-sim.js](../../tools/battle-sim.js) | 自走棋确定性、`step` 与 `runToEnd` 一致、棋盘不变量、胜率曲线与章节快照 |
-| [tools/beast-sim.js](../../tools/beast-sim.js) | 灵兽加成对关卡胜率影响的抽样（目录内另有 `beast-sim-output.txt` 可参考） |
+| [tools/beast-sim.js](../../tools/beast-sim.js) | 灵兽加成对关卡胜率影响的抽样。`tools/*-sim-output.txt` 与 `tools/sim-output.txt` 是运行产物，已列入 `.gitignore`，不是基准快照；需要时重新跑对应脚本即可再生 |
 
 ```bash
 node tools/sim.js

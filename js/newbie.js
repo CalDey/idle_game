@@ -825,6 +825,13 @@
     if (key === 'gear') ensureGuide(s).gearPopup = true;
   }
 
+  // 只有仓库里真实存在的 unlock_<key>.webp 才发请求，避免 gongfa:id 这类 key 去拉不存在的图。
+  const UNLOCK_ART_KEYS = { gear: 1, yaoyuan: 1, mijing: 1, bonds: 1 };
+  function unlockArtSrc(key) {
+    if (!UNLOCK_ART_KEYS[key]) return '';
+    return `assets/ui/unlock_${key}.webp?v=119`;
+  }
+
   function renderUnlockCard(u) {
     if (!els.unlockModal) return;
     const title = els.unlockModal.querySelector('#unlock-modal-title');
@@ -840,9 +847,16 @@
       if (glyph) glyph.textContent = u.glyph;
       const img = art.querySelector('img');
       if (img) {
-        img.onload = () => { if (currentUnlock === u) art.classList.add('has-art'); };
-        img.onerror = () => art.classList.remove('has-art');
-        img.src = `assets/ui/unlock_${u.key}.webp?v=119`;
+        img.onload = null;
+        img.onerror = null;
+        const src = unlockArtSrc(u.key);
+        if (src) {
+          img.onload = () => { if (currentUnlock === u) art.classList.add('has-art'); };
+          img.onerror = () => art.classList.remove('has-art');
+          img.src = src;
+        } else {
+          img.removeAttribute('src');
+        }
       }
     }
   }
@@ -1004,6 +1018,8 @@
     heroSelectLine,
     sayHeroSelectLine,
     UNLOCKS,
+    UNLOCK_ART_KEYS,
+    unlockArtSrc,
     itemUnlocks,
     unlockCatalog,
     unlockedKeys,

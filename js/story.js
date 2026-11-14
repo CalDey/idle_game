@@ -393,8 +393,15 @@
     return out;
   }
 
+  function currentBest() {
+    const s = window.GameState && window.GameState.state;
+    return (s && s.stage && s.stage.best) || 0;
+  }
+
   function replayChapter(ch, kind, done) {
     if (open) return false;
+    // 函数内部再校验已通关（第 N 章需 best >= N*10），未通关直接返回。
+    if (!isChapterCleared(ch, currentBest())) return false;
     const parts = kind === 'boss' ? bossDialogueParts(ch) : (introPart(ch) ? [introPart(ch)] : []);
     if (!parts.length) {
       if (typeof done === 'function') done();

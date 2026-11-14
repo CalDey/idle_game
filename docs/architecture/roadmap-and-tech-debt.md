@@ -14,6 +14,8 @@
 4. **损坏存档被静默覆盖**：`loadGame` 的 `catch` 会先写入 `xiuxian_idle_save_v1_corrupt` 再重置。`qa-round1.test.js` 覆盖。
 5. **秘境测力重复狂跑**：常数已进入 `GameConfig.MIJING`（`PROBE_SIMS: 12`、`PROBE_ITERS: 7`），**同签名结果会缓存**。但缓存未命中时仍可能一次开局跑满 `12 × 7 ≈ 84` 次模拟，见下方未决项。
 
+6. **统一 `?v=` 缓存版本（`tools/bump-version.js`）**：不再手改 `index.html` 里每个脚本/样式的版本号。本次已把本地 css/js 与洞府 `scene_*.webp` 统一到 **128**。以后发版只需在仓库根目录执行 `node tools/bump-version.js --auto`；与并行分支在 `?v=` 上冲突时，解决冲突标记后重跑同一条命令即可。回归：`node tools/version-consistency.test.js`。图标等单图版本号仍按资源单独维护。
+
 ---
 
 ## 2. 现存技术债
@@ -47,8 +49,10 @@
 6. **主循环里的重复计算**
    - `requestAnimationFrame` 每帧都会调用 `getQiPerSec` / `getStonePerSec`（点击收益内部还会再算一次产率）以及 `updateHeaderAndMeditationUI`。养成未变化时可用脏标记缓存。
 
-7. **手动维护 `?v=` 缓存版本号**
-   - `index.html` 里脚本版本已到 `config.js?v=82`、`style.css?v=109`、`state.js?v=47` 等，且 JS 内资源 URL 也有 `?v=`。并行提交时常要专门再补一次「版本号避开冲突」的 commit。建议按文件哈希自动 bump。
+7. **手动维护 `?v=` 缓存版本号**（已落地脚本，见第 1 节补充）
+   - 已提供 `tools/bump-version.js`：发版时 `node tools/bump-version.js --auto`（或传入明确版本号）即可把 `index.html` 里所有本地 css/js 的 `?v=`，以及洞府背景 `scene_*.webp?v=`（`index.html` / `js/game.js` 预加载列表 / `css/style.css`）统一成同一个值。合并冲突时先解决冲突标记，再重跑脚本（`--auto` 会取现有最高值 + 1）。`tools/version-consistency.test.js` 会检查 css/js 版本全部一致且不低于基准 128，并核对立府背景三处对齐。
+   - 图标、立绘、敌人图等资源仍按单图维护自己的 `?v=`，不要用这条命令一刀切，以免无意义刷新缓存或打断按精确路径断言的测试。
+   - 按文件哈希自动 bump 仍可作为后续增强（见下方 P2-1）。
 
 8. **`tools/sim.js` 仍是简化公式副本**
    - 只加载 `config.js`，基础吐纳/洞府产出与生产代码同形，但缺少装备、称号、道果总量、章节加成、聚灵石等乘区，不能当正式平衡回归。
@@ -73,7 +77,7 @@
 | P1-2 | 拆分超大模块 | 新 `home-ui.js` 等 | 单文件控制在可维护规模，停止向 `stage-ui.js` 堆功能 |
 | P1-3 | 存档导入导出与时间回拨保护 | `state.js`、设置弹窗 | Base64+校验；发现 `now < lastSaveTime` 时钳制计时字段 |
 | P1-4 | `sim.js` 复用 `GameState` | `tools/sim.js` | 提供 `localStorage` 桩并加载 `state.js` |
-| P2-1 | 自动 bump `?v=` 与 CI | `tools/`、`.github/workflows` | 按哈希更新版本号，Push 时跑全部 `tools/*.test.js` |
+| P2-1 | 按哈希自动 bump `?v=` 与 CI | `tools/bump-version.js`、`.github/workflows` | 发版脚本已落地（`--auto` / 指定版本号）；后续可改为按文件哈希，并在 Push 时跑全部 `tools/*.test.js` |
 
 ---
 

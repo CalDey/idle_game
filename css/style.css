@@ -1940,10 +1940,10 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   overflow: hidden;
 }
 
-/* 1. 章节条 (36px) */
+/* 1. 章节条（最小 36px，内容叠成两行时可增高，避免溢出压到战斗顶栏） */
 .stage-chapter-bar {
   flex: none;
-  height: 36px;
+  min-height: 36px;
   padding: 3px 10px;
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-sm);
@@ -3721,7 +3721,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=125") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=128") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3729,11 +3729,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=125");
+  background-image: url("../assets/home/scene_xuan.webp?v=128");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=125");
+  background-image: url("../assets/home/scene_xian.webp?v=128");
 }
 
 .home-stage {
@@ -8342,7 +8342,7 @@ button.mijing-bless-card:active {
   background: transparent;
   color: var(--accent-gold-bright);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   line-height: 18px;
   white-space: nowrap;

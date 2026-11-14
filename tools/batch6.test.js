@@ -159,14 +159,29 @@ function loadRuntime(storage, extraFiles) {
 
   GS.state.storySeen = {};
   const marked = JSON.stringify(GS.state.storySeen);
+  // 未通关章节：函数内部直接 return，不调用 done
+  let uncleared = false;
+  assert.strictEqual(Story.replayChapter(1, 'intro', () => { uncleared = true; }), false, '未通关应直接返回');
+  assert.strictEqual(uncleared, false, '未通关不得调用 done');
+  assert.strictEqual(Story.replayChapter(1, 'boss', () => { uncleared = true; }), false);
+
+  if (!GS.state.stage) GS.state.stage = {};
+  GS.state.stage.best = 10;
   // 无 DOM 时 play 会失败并调用 done，但 replay 标志仍须保证不写 storySeen
   let done = false;
   Story.replayChapter(1, 'intro', () => { done = true; });
   assert.strictEqual(JSON.stringify(GS.state.storySeen), marked, '回溯不得改写 storySeen');
   assert.strictEqual(GS.state.openingSeen, false, '回溯不得把开篇标成已看（新档）');
+  // 已通关后若误把 best 降回去，仍须拒绝
+  GS.state.stage.best = 9;
+  let again = false;
+  assert.strictEqual(Story.replayChapter(1, 'intro', () => { again = true; }), false);
+  assert.strictEqual(again, false);
+  GS.state.stage.best = 10;
 
   const storySrc = text('js/story.js');
   assert.ok(storySrc.includes('const RECALL_TEXT') && storySrc.includes('replay: true'));
+  assert.ok(storySrc.includes('isChapterCleared(ch, currentBest())'), 'replayChapter 内部须校验已通关');
   assert.ok(storySrc.includes('if (!replay && window.GameState'));
   const html = text('index.html');
   assert.ok(html.includes('id="btn-story-recall"') && html.includes('id="recall-modal"') && html.includes('id="recall-list"'));
