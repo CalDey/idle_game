@@ -571,13 +571,29 @@
     return out;
   }
 
+  function itemSubSig(sub) {
+    if (!sub || !sub.length) return '';
+    const parts = [];
+    for (let i = 0; i < sub.length; i += 1) {
+      const pair = sub[i];
+      if (!pair) continue;
+      parts.push(`${pair[0]}:${pair[1]}`);
+    }
+    parts.sort();
+    return parts.join(',');
+  }
+
+  function itemSig(it) {
+    if (!it) return '-';
+    return `${it.q}:${it.lv}:${it.m}:${it.id || ''}:${it.name || ''}:${itemSubSig(it.sub)}`;
+  }
+
   function equipSig(equip) {
     if (!equip) return '';
     const keys = Object.keys(equip).sort();
     let out = '';
     for (let i = 0; i < keys.length; i += 1) {
-      const it = equip[keys[i]];
-      out += keys[i] + ':' + (it ? `${it.q}:${it.lv}:${it.m}:${it.id || it.name || ''}` : '-') + ',';
+      out += keys[i] + ':' + itemSig(equip[keys[i]]) + ',';
     }
     return out;
   }
@@ -600,7 +616,9 @@
       Number(s.pityBonus) || 0,
       s.totalDaoGuo || 0,
       (s.stage && s.stage.best) || 0,
+      (s.tree && s.tree.lv) || 0,
       (s.tree && s.tree.peaches) || 0,
+      pitySig(s.pity),
       (s.squad || []).join(','),
       titles ? `${titles.worn || ''}:${(titles.owned || []).join(',')}` : '',
       path ? `${path.id || ''}:${(path.lv || []).join('')}` : '',
@@ -609,7 +627,7 @@
       mapLvSig(s.talents),
       beastsSig(s.beasts),
       equipSig(s.equip),
-      s.pending ? `${s.pending.s}:${s.pending.q}:${s.pending.lv}:${s.pending.m}` : '',
+      pendingSig(s.pending),
       budget,
       String(buyFirst || '')
     ].join('|');
@@ -622,7 +640,17 @@
     return path ? `${path.id || ''}:${(path.lv || []).join('')}` : '';
   }
   function pendingSig(pending) {
-    return pending ? `${pending.s}:${pending.q}:${pending.lv}:${pending.m}` : '';
+    return pending ? `${pending.s}:${itemSig(pending)}` : '';
+  }
+
+  function pitySig(pity) {
+    if (!pity || typeof pity !== 'object') return '';
+    const keys = Object.keys(pity).sort();
+    let out = '';
+    for (let i = 0; i < keys.length; i += 1) {
+      out += keys[i] + ':' + (Number(pity[keys[i]]) || 0) + ',';
+    }
+    return out;
   }
 
   function quickStateSame(s, budget, GS) {
@@ -633,10 +661,11 @@
     if (q.realm !== (s.realmIndex || 0)) return false;
     if (q.breakAttempts !== (s.breakAttempts || 0)) return false;
     if (q.pityBonus !== (Number(s.pityBonus) || 0)) return false;
+    if (q.treeLv !== ((s.tree && s.tree.lv) || 0)) return false;
     if (q.peaches !== ((s.tree && s.tree.peaches) || 0)) return false;
-    if (q.squad !== s.squad || q.equip !== s.equip || q.gongfa !== s.gongfa || q.dongfu !== s.dongfu) return false;
-    if (q.beasts !== s.beasts || q.titles !== s.titles || q.path !== s.path || q.pending !== s.pending || q.talents !== s.talents) return false;
+    if (q.pitySig !== pitySig(s.pity)) return false;
     if (q.best !== ((s.stage && s.stage.best) || 0) || q.dao !== (s.totalDaoGuo || 0)) return false;
+    // 不靠对象引用：restoreSim 的 JSON.parse 会换新引用，签名不变则视为同一输入
     if (q.equipSig !== equipSig(s.equip)) return false;
     if (q.gongfaSig !== mapLvSig(s.gongfa) || q.dongfuSig !== mapLvSig(s.dongfu)) return false;
     if (q.talentsSig !== mapLvSig(s.talents) || q.beastsSig !== beastsSig(s.beasts)) return false;
@@ -659,16 +688,9 @@
         realm: s.realmIndex || 0,
         breakAttempts: s.breakAttempts || 0,
         pityBonus: Number(s.pityBonus) || 0,
+        treeLv: (s.tree && s.tree.lv) || 0,
         peaches: (s.tree && s.tree.peaches) || 0,
-        squad: s.squad,
-        equip: s.equip,
-        gongfa: s.gongfa,
-        dongfu: s.dongfu,
-        beasts: s.beasts,
-        titles: s.titles,
-        path: s.path,
-        pending: s.pending,
-        talents: s.talents,
+        pitySig: pitySig(s.pity),
         best: (s.stage && s.stage.best) || 0,
         dao: s.totalDaoGuo || 0,
         equipSig: equipSig(s.equip),

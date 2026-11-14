@@ -285,6 +285,64 @@ check('P2-2 缓存键含装备/称号等，改装备或称号会失效重算', (
   assert.ok(JSON.stringify(s) !== snap);
 });
 
+check('P2 只改装备或待处理掉落的词条也会使连锁缓存失效', () => {
+  const W = loadRuntime();
+  const { NB, Equip } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  const base = s.equip.weapon || { s: 'weapon', q: 2, lv: 4, m: 46, id: 'affix-w', name: '试炼剑', sub: [] };
+  s.equip = Object.assign({}, s.equip, {
+    weapon: Object.assign({}, base, { q: base.q, lv: base.lv, m: base.m, id: base.id || 'affix-w', name: base.name || '试炼剑', sub: [['atkPct', 0.05]] })
+  });
+  NB.resetChainCache();
+  const first = NB.estimateBreakChain(s, 120);
+  const n1 = NB.chainComputeCalls();
+  const cp0 = Math.round(Equip.combatPower(s));
+  // 同品阶/强化/主属性，只改词条
+  s.equip.weapon.sub = [['atkPct', 0.25]];
+  const second = NB.estimateBreakChain(s, 120);
+  const n2 = NB.chainComputeCalls();
+  const cp1 = Math.round(Equip.combatPower(s));
+  assert.ok(cp1 > cp0, `改词条应提升顶栏战力，${cp0} -> ${cp1}`);
+  assert.ok(n2 > n1, `只改已装备词条应立即重算，实际 ${n1} -> ${n2}`);
+  assert.ok(second && first);
+
+  s.pending = {
+    s: 'weapon', q: s.equip.weapon.q, lv: s.equip.weapon.lv, m: s.equip.weapon.m,
+    id: 'pending-affix', name: '待鉴定剑', sub: [['atkPct', 0.10]]
+  };
+  NB.estimateBreakChain(s, 120, { buyFirst: 'peach' });
+  const n3 = NB.chainComputeCalls();
+  s.pending = Object.assign({}, s.pending, { sub: [['atkPct', 0.30]] });
+  NB.estimateBreakChain(s, 120, { buyFirst: 'peach' });
+  const n4 = NB.chainComputeCalls();
+  assert.ok(n4 > n3, `只改待处理掉落词条应立即重算，实际 ${n3} -> ${n4}`);
+  s.pending = Object.assign({}, s.pending, { id: 'pending-affix-2', sub: [['atkPct', 0.30]] });
+  NB.estimateBreakChain(s, 120, { buyFirst: 'peach' });
+  const n5 = NB.chainComputeCalls();
+  assert.ok(n5 > n4, `待处理掉落 id 变化应立即重算，实际 ${n4} -> ${n5}`);
+});
+
+check('P3 仙桃树等级与摘桃保底计入缓存键', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  s.tree = Object.assign({}, s.tree, { lv: 1, peaches: 12 });
+  s.pity = { di: 0, tian: 0 };
+  NB.resetChainCache();
+  NB.estimateBreakChain(s, 120, { buyFirst: 'peach' });
+  const n1 = NB.chainComputeCalls();
+  s.tree = Object.assign({}, s.tree, { lv: 3 });
+  NB.estimateBreakChain(s, 120, { buyFirst: 'peach' });
+  const n2 = NB.chainComputeCalls();
+  assert.ok(n2 > n1, `改 tree.lv 应立即重算，实际 ${n1} -> ${n2}`);
+  s.pity = { di: 2, tian: 0 };
+  NB.estimateBreakChain(s, 120, { buyFirst: 'peach' });
+  const n3 = NB.chainComputeCalls();
+  assert.ok(n3 > n2, `改 s.pity 应立即重算，实际 ${n2} -> ${n3}`);
+});
+
 check('P2-3 保底覆盖整段连锁时文案不变；保底用尽后停在首次非保底并附再成功一次', () => {
   const W = loadRuntime();
   const { GS, NB } = W;
