@@ -618,5 +618,20 @@ function breakAt(GS, roll) {
   assert.ok(ui.includes('renderFailGainActions(actionsEl)'));
 }
 
+// ---------- batch2 P2-5 目标条：深底金字卷轴样式，且全站只有一个目标组件 ----------
+{
+  const html = text('index.html');
+  assert.strictEqual((html.match(/class="goal-strip"/g) || []).length, 1, '只有一个目标条组件');
+  const css = text('css/style.css');
+  const i = css.indexOf('batch2 P2-5');
+  assert.ok(i > 0);
+  const block = css.slice(i);
+  assert.ok(/\.goal-strip \{[^}]*background:[^}]*#0d0a06/.test(block), '深色底');
+  assert.ok(/\.goal-text \{[^}]*color: #f1d48f/.test(block), '金色字');
+  assert.ok(/\.goal-strip::before,\s*\.goal-strip::after/.test(block), '卷轴轴头');
+  assert.ok(!/url\(/.test(block), '不引用新图片');
+  assert.ok(/\.goal-strip \{[^}]*height: 22px/.test(block), '高度不变，不挤压竖屏布局');
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');
