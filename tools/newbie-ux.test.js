@@ -697,7 +697,7 @@ function breakAt(GS, roll) {
   assert.ok(/\.unlock-art \{[^}]*aspect-ratio: 16 \/ 9/.test(css), '插画位 16:9');
   assert.ok(/\.unlock-art img \{[^}]*object-fit: cover/.test(css));
   const nb = text('js/newbie.js');
-  assert.ok(nb.includes('img.src = `assets/ui/unlock_${u.key}.webp`'), '有图则加载 assets/ui/unlock_<key>.webp');
+  assert.ok(/img\.src = `assets\/ui\/unlock_\$\{u\.key\}\.webp(?:\?v=\d+)?`/.test(nb), '有图则加载 assets/ui/unlock_<key>.webp');
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('确认开启（消耗 1 次'), '开启秘境二次确认');
   assert.ok(/if \(!mijingStartArmed\) \{\s*mijingStartArmed = true;/.test(ui));

@@ -682,7 +682,7 @@
       if (img) {
         img.onload = () => { if (currentUnlock === u) art.classList.add('has-art'); };
         img.onerror = () => art.classList.remove('has-art');
-        img.src = `assets/ui/unlock_${u.key}.webp`;
+        img.src = `assets/ui/unlock_${u.key}.webp?v=119`;
       }
     }
   }
