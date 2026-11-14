@@ -57,12 +57,20 @@
 8. **`tools/sim.js` 仍是简化公式副本**
    - 只加载 `config.js`，基础吐纳/洞府产出与生产代码同形，但缺少装备、称号、道果总量、章节加成、聚灵石等乘区，不能当正式平衡回归。
 
+9. **引导连锁试算直接改活 state，再靠快照还原**
+   - `newbie.js` 的 `estimateBreakChain` / `runBreakChain` 必须在活 `GameState` 上改 `qi`、`realmIndex`、功法洞府等字段，因为 `getQiPerSec`、`getGongfaCost`、`getCurrentStage`、`tribulationLock`、`getBreakthroughSuccessRate` 都读闭包里的当前档，不能对一份深拷贝调用。现在用 `SIM_KEYS` 快照 + `try/finally` 还原，并断言还原后 JSON 一致；漏记字段或中途抛错仍可能把试算写进存档。
+   - 建议：改为对 `structuredClone` 后的副本跑，或在 `GameState` 上提供只读/可注入 state 的试算 API，让连锁估算不再改活档。
+
+10. **`newbie.js` 已约 2000 行，引导连锁与机缘/目标条耦在同一 IIFE**
+    - 连锁缓存、推荐优先、目标条、解锁卡、引导气泡都挤在 `newbie.js` 里，改缓存键或解锁顺序时容易误伤其它路径。
+    - 建议：把连锁估算与缓存抽到独立的 `js/guide-chain.js`（读 `GameState` / `Equip`，由 `Newbie` 调用），`newbie.js` 只保留目标条、机缘卡与引导 UI。
+
 ### 2.3 低优先级（P2）
 
-9. **没有存档导入/导出（Base64 备份码）**，清缓存即丢档。时钟回拨保护不完整（派遣已做回拨重计时，离线结算尚未钳制未来时间戳）。
-10. **`state.stage.sweep` 仍只是预留字段**，没有扫荡玩法。
-11. **d620701 已修：轮回深拷 idleEvents 并 ensureState；loadGame catch 补了 HomeFortune.ensure**
-12. 存档仍明文、多标签互踩，见 [state-and-save.md 第 6 节](./state-and-save.md)。
+11. **没有存档导入/导出（Base64 备份码）**，清缓存即丢档。时钟回拨保护不完整（派遣已做回拨重计时，离线结算尚未钳制未来时间戳）。
+12. **`state.stage.sweep` 仍只是预留字段**，没有扫荡玩法。
+13. **d620701 已修：轮回深拷 idleEvents 并 ensureState；loadGame catch 补了 HomeFortune.ensure**
+14. 存档仍明文、多标签互踩，见 [state-and-save.md 第 6 节](./state-and-save.md)。
 
 ---
 
@@ -77,6 +85,8 @@
 | P1-2 | 拆分超大模块 | 新 `home-ui.js` 等 | 单文件控制在可维护规模，停止向 `stage-ui.js` 堆功能 |
 | P1-3 | 存档导入导出与时间回拨保护 | `state.js`、设置弹窗 | Base64+校验；发现 `now < lastSaveTime` 时钳制计时字段 |
 | P1-4 | `sim.js` 复用 `GameState` | `tools/sim.js` | 提供 `localStorage` 桩并加载 `state.js` |
+| P1-5 | 连锁试算离开活 state | `newbie.js`、`state.js` | `structuredClone` 副本或只读试算 API，不再快照还原活档 |
+| P1-6 | 抽出 `js/guide-chain.js` | `newbie.js` | 连锁估算与缓存独立成模块，引导 UI 留在 `newbie.js` |
 | P2-1 | 按哈希自动 bump `?v=` 与 CI | `tools/bump-version.js`、`.github/workflows` | 发版脚本已落地（`--auto` / 指定版本号）；后续可改为按文件哈希，并在 Push 时跑全部 `tools/*.test.js` |
 
 ---

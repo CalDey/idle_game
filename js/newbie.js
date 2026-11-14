@@ -601,7 +601,8 @@
   function beastsSig(beasts) {
     if (!beasts || typeof beasts !== 'object') return '';
     const owned = beasts.owned || beasts;
-    return mapLvSig(owned);
+    const active = beasts.active || '';
+    return `${active}|${mapLvSig(owned)}`;
   }
 
   function chainFullKey(s, budget, buyFirst, GS) {
@@ -1463,9 +1464,9 @@
       peachHoldGoal = { id: 'peach', text: peachGoalText(s), tab: 'tab-gear' };
     }
     if (peachHoldUntil && now < peachHoldUntil && peachHoldGoal) {
-      els.goal.hidden = false;
-      els.goal.dataset.goal = 'peach';
-      els.goal.dataset.tab = 'tab-gear';
+      if (els.goal.hidden) els.goal.hidden = false;
+      if (els.goal.dataset.goal !== 'peach') els.goal.dataset.goal = 'peach';
+      if (els.goal.dataset.tab !== 'tab-gear') els.goal.dataset.tab = 'tab-gear';
       if (els.goalText && els.goalText.textContent !== peachHoldGoal.text) els.goalText.textContent = peachHoldGoal.text;
       if (els.goalProgress && els.goalProgress.textContent) els.goalProgress.textContent = '';
       return;
@@ -1481,9 +1482,9 @@
       api.log(`目标达成：${lastGoal.text}。新目标：${goal.text}`, 'gold');
     }
     lastGoal = goal;
-    els.goal.hidden = false;
-    els.goal.dataset.goal = goal.id;
-    els.goal.dataset.tab = goal.tab;
+    if (els.goal.hidden) els.goal.hidden = false;
+    if (els.goal.dataset.goal !== goal.id) els.goal.dataset.goal = goal.id;
+    if (els.goal.dataset.tab !== goal.tab) els.goal.dataset.tab = goal.tab;
     if (els.goalText.textContent !== goal.text) els.goalText.textContent = goal.text;
     const prog = goalProgress(goal, s, stage);
     if (els.goalProgress.textContent !== prog) els.goalProgress.textContent = prog;
@@ -1492,10 +1493,10 @@
       if (rec && rec.name) {
         const recText = `推荐优先 ★${rec.name}`;
         if (els.goalRecommend.textContent !== recText) els.goalRecommend.textContent = recText;
-        els.goalRecommend.hidden = false;
+        if (els.goalRecommend.hidden) els.goalRecommend.hidden = false;
       } else {
-        els.goalRecommend.hidden = true;
-        els.goalRecommend.textContent = '';
+        if (els.goalRecommend.textContent) els.goalRecommend.textContent = '';
+        if (!els.goalRecommend.hidden) els.goalRecommend.hidden = true;
       }
     }
   }
@@ -1662,7 +1663,7 @@
     return null;
   }
 
-  // 法宝卡未弹过时只出法宝；闯关页未通 1-10 时不弹其它机缘，以免挡住通关引导。
+  // 法宝卡未弹过时只出法宝；未通 1-10 时（无论当前页签）不弹其它机缘，通关后再按队列弹出。
   function shouldDeferUnlock(s, u) {
     if (!u || u.key === 'gear') return false;
     const seen = s && s.unlockSeen;
@@ -1670,7 +1671,7 @@
       const gear = unlockCatalog().find((item) => item.key === 'gear');
       if (gear && gear.test(s)) return true;
     }
-    if (activeTab() === 'tab-stage' && bestStage(s) < 10) return true;
+    if (bestStage(s) < 10) return true;
     return false;
   }
 
@@ -1993,6 +1994,7 @@
     unlockTabDot,
     markUnlockPaneVisited,
     shouldShowGearBeforeStage,
+    shouldDeferUnlock,
     promptGearBeforeStage,
     showUnlockCard,
     topActiveModal,

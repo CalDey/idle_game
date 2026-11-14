@@ -1095,13 +1095,16 @@
     let shown = 0;
     actionsEl.querySelectorAll('[data-gain-key]').forEach((btn) => {
       const o = byKey[btn.getAttribute('data-gain-key')];
-      btn.hidden = !o;
+      const hide = !o;
+      if (btn.hidden !== hide) btn.hidden = hide;
       btn.classList.toggle('is-best', Boolean(o && o.best));
       btn.classList.toggle('btn-primary', Boolean(o && o.best));
       const lab = btn.querySelector('.fail-label');
-      if (lab) lab.textContent = o ? o.label : '';
+      const labText = o ? o.label : '';
+      if (lab && lab.textContent !== labText) lab.textContent = labText;
       const em = btn.querySelector('.fail-gain');
-      if (em) em.textContent = o && o.best ? '★' : '';
+      const emText = o && o.best ? '★' : '';
+      if (em && em.textContent !== emText) em.textContent = emText;
       if (o) shown += 1;
     });
     opts.forEach((o) => {

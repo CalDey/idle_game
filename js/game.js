@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=138',
-    'assets/home/scene_xuan.webp?v=138',
-    'assets/home/scene_xian.webp?v=138'
+    'assets/home/scene_base.webp?v=139',
+    'assets/home/scene_xuan.webp?v=139',
+    'assets/home/scene_xian.webp?v=139'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -1260,7 +1260,7 @@
     const hasQi = !stage.isMaxStage && s.qi >= stage.reqQi;
     const gateLocked = Boolean(gate && hasQi);
     const canBreak = hasQi && !gate;
-    els.btnBreakthrough.disabled = !hasQi;
+    if (els.btnBreakthrough.disabled !== !hasQi) els.btnBreakthrough.disabled = !hasQi;
     els.btnBreakthrough.classList.toggle('ready-pulse', canBreak);
     const breakText = stage.isMaxStage
       ? '境界圆满'
@@ -1283,7 +1283,7 @@
           ? window.Newbie.tribHintText(s, stage)
           : '大境界门槛大幅提升';
       }
-      els.breakthroughTribHint.hidden = !hint;
+      if (els.breakthroughTribHint.hidden !== !hint) els.breakthroughTribHint.hidden = !hint;
       if (hint && els.breakthroughTribHint.textContent !== hint) els.breakthroughTribHint.textContent = hint;
     }
 

@@ -516,6 +516,22 @@ check('缓存键含队伍/神兽/失败加成，改 squad 立即失效', () => {
   assert.ok(n4 > n3, `改 beasts 应立即重算，实际 ${n3} -> ${n4}`);
 });
 
+check('C1 只改出战灵兽 active 也会使连锁缓存失效', () => {
+  const W = loadRuntime();
+  const { NB } = W;
+  const found = findTesterSeed(W);
+  const s = mkTester(W, found.seed);
+  s.beasts = { active: 'xuanhu', owned: { xuanhu: { lv: 5 }, jinwu: { lv: 3 } } };
+  NB.resetChainCache();
+  NB.estimateBreakChain(s, 120);
+  const n1 = NB.chainComputeCalls();
+  // 与 Beasts.setActive 相同：只改 active，owned 等级不变
+  s.beasts.active = 'jinwu';
+  NB.estimateBreakChain(s, 120);
+  const n2 = NB.chainComputeCalls();
+  assert.ok(n2 > n1, `Beasts.setActive 只改 active 时应立即重算，实际 ${n1} -> ${n2}`);
+});
+
 check('B1 引导战力与顶栏同一口径，相对实测 +75 误差不超过 10%', () => {
   const W = loadRuntime();
   const { GS, NB, Equip, Battle } = W;
@@ -575,7 +591,39 @@ check('B2 搬血后空 unlockSeen 仍先弹法宝，不把灵泉眼插到 1-10 �
   assert.strictEqual(NB.shouldShowGearBeforeStage(s), true);
   const src = text('js/newbie.js');
   assert.ok(src.includes('shouldDeferUnlock'));
-  assert.ok(src.includes("activeTab() === 'tab-stage' && bestStage(s) < 10"));
+});
+
+check('C2 未通 1-10 时任意页签都延后非法宝机缘，通关后按队列弹出；旧档不受影响', () => {
+  const W = loadRuntime();
+  const { GS, NB } = W;
+  GS.loadGame();
+  const s = GS.state;
+  s.realmIndex = 2;
+  s.stage.best = 0;
+  s.stage.cur = 1;
+  s.unlockSeen = { gear: true };
+  // 默认不在闯关页（无 app dataset）也应延后
+  const first = NB.pendingUnlock(s);
+  assert.ok(first && first.key !== 'gear', `法宝已看过时应轮到下一张机缘，实际 ${first && first.key}`);
+  assert.strictEqual(NB.shouldDeferUnlock(s, first), true, 'best<10 时非法宝卡必须延后，与当前页签无关');
+  const gear = NB.unlockCatalog().find((u) => u.key === 'gear');
+  assert.strictEqual(NB.shouldDeferUnlock(s, gear), false, '法宝卡本身不延后');
+
+  s.stage.best = 10;
+  const after = NB.pendingUnlock(s);
+  assert.ok(after && after.key !== 'gear', `通关 1-10 后应按队列弹出非法宝卡，实际 ${after && after.key}`);
+  assert.strictEqual(NB.shouldDeferUnlock(s, after), false, 'best>=10 后不再延后');
+
+  // 旧档：best>=10 且无 unlockSeen，补记已看、不重弹
+  const mid = loadRuntime();
+  mid.GS.loadGame();
+  const s2 = mid.GS.state;
+  s2.realmIndex = 6;
+  s2.stage.best = 20;
+  s2.guide = Object.assign({}, s2.guide, { gearPopup: true });
+  s2.unlockSeen = null;
+  assert.strictEqual(mid.NB.pendingUnlock(s2), null, 'best>=10 的旧档不把已解锁机缘再弹一遍');
+  assert.strictEqual(s2.unlockSeen.gear, true);
 });
 
 check('B3 缓存命中时不重建键；fullKey 变化仍立刻重算', () => {
@@ -590,6 +638,19 @@ check('B3 缓存命中时不重建键；fullKey 变化仍立刻重算', () => {
   for (let i = 0; i < 80; i += 1) NB.estimateBreakChain(s, 120);
   assert.strictEqual(NB.chainComputeCalls(), n1, '命中缓存不得重跑模拟');
   assert.strictEqual(NB.chainKeyBuildCalls(), builds, '命中时不得反复拼键 / JSON.stringify');
+});
+
+check('引导相关 DOM 只在文案/显隐变化时写入', () => {
+  const nb = text('js/newbie.js');
+  const game = text('js/game.js');
+  const stage = text('js/stage-ui.js');
+  assert.ok(nb.includes("if (els.goalRecommend.textContent) els.goalRecommend.textContent = ''"));
+  assert.ok(nb.includes('if (els.goalRecommend.hidden) els.goalRecommend.hidden = false'));
+  assert.ok(nb.includes("if (els.goal.dataset.goal !== goal.id) els.goal.dataset.goal = goal.id"));
+  assert.ok(/breakLabel\.textContent !== breakText/.test(game));
+  assert.ok(game.includes('if (els.btnBreakthrough.disabled !== !hasQi)'));
+  assert.ok(stage.includes('if (lab && lab.textContent !== labText) lab.textContent = labText'));
+  assert.ok(stage.includes('if (em && em.textContent !== emText) em.textContent = emText'));
 });
 
 console.log(`guide-chain: ${passed} checks passed`);
