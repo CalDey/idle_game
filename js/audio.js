@@ -6,7 +6,8 @@
   'use strict';
 
   const PREF_KEY = 'xiuxian_audio';
-  const DEFAULT_PREFS = { music: false, sfx: false };
+  const DEFAULT_VOLUME = 0.9;
+  const DEFAULT_PREFS = { music: false, sfx: false, volume: DEFAULT_VOLUME };
   // D 小调五声（D F G A C），偏低音区
   const PENTA = [146.83, 174.61, 196.0, 220.0, 261.63, 293.66];
   const DRONE = 73.42; // D2
@@ -40,8 +41,17 @@
     }
     return {
       music: Boolean(raw && raw.music === true),
-      sfx: Boolean(raw && raw.sfx === true)
+      sfx: Boolean(raw && raw.sfx === true),
+      volume: clampVolume(raw && Object.prototype.hasOwnProperty.call(raw, 'volume') ? raw.volume : undefined)
     };
+  }
+
+  // 旧偏好没有 volume 时沿用原先主音量 0.9，以便其它分支写入的低默认音量能被原样读出。
+  function clampVolume(v) {
+    if (v == null || v === '') return DEFAULT_VOLUME;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return DEFAULT_VOLUME;
+    return Math.max(0, Math.min(1, n));
   }
 
   function savePrefs() {
@@ -56,10 +66,10 @@
     return window.AudioContext || window.webkitAudioContext || null;
   }
 
-  // 只在手势之后、且至少开了一个开关时创建
-  function ensureCtx() {
+  // 只在手势之后创建：开关打开，或试听强制建上下文
+  function ensureCtx(force) {
     if (ctx) return ctx;
-    if (!gestured || !(prefs.music || prefs.sfx)) return null;
+    if (!gestured || !(force || prefs.music || prefs.sfx)) return null;
     const Ctor = AC();
     if (!Ctor) return null;
     try {
@@ -69,7 +79,7 @@
       return null;
     }
     master = ctx.createGain();
-    master.gain.value = 0.9;
+    master.gain.value = prefs.volume;
     master.connect(ctx.destination);
     musicBus = ctx.createGain();
     musicBus.gain.value = 0.0;
@@ -345,6 +355,43 @@
     syncUi();
   }
 
+  function applyVolume() {
+    if (!master) return;
+    try {
+      if (ctx && master.gain.cancelScheduledValues) {
+        master.gain.cancelScheduledValues(ctx.currentTime);
+        master.gain.setValueAtTime(prefs.volume, ctx.currentTime);
+      } else {
+        master.gain.value = prefs.volume;
+      }
+    } catch (err) {
+      master.gain.value = prefs.volume;
+    }
+  }
+
+  function setVolume(v) {
+    prefs.volume = clampVolume(v);
+    savePrefs();
+    applyVolume();
+    syncUi();
+    return prefs.volume;
+  }
+
+  function preview() {
+    gestured = true;
+    const c = ensureCtx(true);
+    if (!c) return false;
+    if (c.state === 'suspended') resumeCtx(c);
+    try {
+      const t0 = c.currentTime + 0.02;
+      pluck(PENTA[3], t0, 0.2, master);
+      pluck(PENTA[5], t0 + 0.16, 0.16, master);
+    } catch (err) {
+      return false;
+    }
+    return true;
+  }
+
   function onGesture() {
     if (gestured) return;
     gestured = true;
@@ -364,8 +411,13 @@
     if (typeof document === 'undefined') return;
     const m = document.getElementById('chk-music');
     const s = document.getElementById('chk-sfx');
+    const r = document.getElementById('rng-volume');
+    const lab = document.getElementById('volume-value');
     if (m) m.checked = prefs.music;
     if (s) s.checked = prefs.sfx;
+    const pct = Math.round(prefs.volume * 100);
+    if (r && Number(r.value) !== pct) r.value = String(pct);
+    if (lab) lab.textContent = `${pct}%`;
   }
 
   function tick() {
@@ -380,8 +432,16 @@
     syncUi();
     const m = document.getElementById('chk-music');
     const s = document.getElementById('chk-sfx');
+    const r = document.getElementById('rng-volume');
+    const previewBtn = document.getElementById('btn-audio-preview');
     if (m) m.addEventListener('change', () => { gestured = true; setMusic(m.checked); });
     if (s) s.addEventListener('change', () => { gestured = true; setSfx(s.checked); if (s.checked) play('tuna'); });
+    if (r) {
+      const onVol = () => setVolume(Number(r.value) / 100);
+      r.addEventListener('input', onVol);
+      r.addEventListener('change', onVol);
+    }
+    if (previewBtn) previewBtn.addEventListener('click', () => { preview(); });
     document.addEventListener('pointerdown', onGesture, true);
     document.addEventListener('keydown', onGesture, true);
     document.addEventListener('visibilitychange', onVisibility);
@@ -402,9 +462,12 @@
   window.GameAudio = {
     PREF_KEY,
     DEFAULT_PREFS,
-    prefs: () => ({ music: prefs.music, sfx: prefs.sfx }),
+    DEFAULT_VOLUME,
+    prefs: () => ({ music: prefs.music, sfx: prefs.sfx, volume: prefs.volume }),
     setMusic,
     setSfx,
+    setVolume,
+    preview,
     play,
     startMusic,
     stopMusic,

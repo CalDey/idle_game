@@ -251,7 +251,7 @@ function oldSave(fields) {
   assert.strictEqual(NB.upgradeDot(s, upApi), false);
   s.stones = 1e9;
   assert.strictEqual(NB.upgradeDot(s, upApi), true);
-  assert.ok(text('js/game.js').includes("els.badgeUpgrade.classList.toggle('visible', anyAffordable)"));
+  assert.ok(/els\.badgeUpgrade\.classList\.toggle\('visible', anyAffordable/.test(text('js/game.js')));
 }
 
 // 法宝文案与一次性解锁提示
@@ -675,6 +675,8 @@ function breakAt(GS, roll) {
   s.realmIndex = 6;
   assert.strictEqual(NB.pendingUnlock(s).key, 'yaoyuan', '化灵初开启百草灵药园');
   s.unlockSeen.yaoyuan = true;
+  // 化灵初同时会解锁功法等单项，先记为已看，以免挡住后面的功能卡断言
+  NB.itemUnlocks().forEach((u) => { if (u.test(s)) s.unlockSeen[u.key] = true; });
   s.stage.best = 10;
   assert.strictEqual(NB.pendingUnlock(s).key, 'mijing', '首通第 10 关开启秘境');
   s.unlockSeen.mijing = true;
@@ -926,7 +928,7 @@ function breakAt(GS, roll) {
     return { A: sandbox.GameAudio, created: () => created, listeners, storage };
   }
   const a = makeAudio();
-  assert.deepStrictEqual(plain(a.A.prefs()), { music: false, sfx: false }, '默认全关');
+  assert.deepStrictEqual(plain(a.A.prefs()), { music: false, sfx: false, volume: 0.9 }, '默认全关，音量沿用原主音量');
   assert.strictEqual(a.A.play('tuna'), false);
   a.A.setSfx(true);
   assert.strictEqual(a.A.play('tuna'), false, '无手势不出声');
@@ -939,12 +941,12 @@ function breakAt(GS, roll) {
   assert.strictEqual(a.A.startMusic(), true);
   // 偏好持久化 + 坏数据兜底
   const b = makeAudio({ xiuxian_audio: a.storage.getItem('xiuxian_audio') });
-  assert.deepStrictEqual(plain(b.A.prefs()), { music: true, sfx: true });
+  assert.deepStrictEqual(plain(b.A.prefs()), { music: true, sfx: true, volume: 0.9 });
   assert.strictEqual(b.created(), 0, '已开启也要等手势');
   b.listeners.keydown();
   assert.strictEqual(b.created(), 1, '手势后自动起 BGM');
   const c = makeAudio({ xiuxian_audio: '{bad' });
-  assert.deepStrictEqual(plain(c.A.prefs()), { music: false, sfx: false });
+  assert.deepStrictEqual(plain(c.A.prefs()), { music: false, sfx: false, volume: 0.9 });
   // 不含音频文件；来源许可写入仓库；接线
   const audioSrc = text('js/audio.js');
   assert.ok(!/\.(mp3|ogg|wav|m4a)\b/i.test(audioSrc), '纯合成，无外部音频');
@@ -953,6 +955,7 @@ function breakAt(GS, roll) {
   assert.ok(lic.includes('Web Audio') && lic.includes('CC0') && lic.includes('默认关闭'));
   const html = text('index.html');
   assert.ok(html.includes('id="chk-music"') && html.includes('id="chk-sfx"'));
+  assert.ok(html.includes('id="rng-volume"') && html.includes('id="btn-audio-preview"') && html.includes('试听'));
   assert.ok(text('js/stage-ui.js').includes("window.GameAudio.play('boss')"));
 }
 

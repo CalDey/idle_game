@@ -115,7 +115,7 @@
     return realm;
   }
 
-  // 「新机缘开启」卡片已看过的功能。旧档没有该字段 → null，由 Newbie 按当前已解锁的功能补记（老玩家不补弹）。
+  // 「新机缘开启」卡片已看过 / 对应页签已去过。旧档没有该字段 → null，由 Newbie 按当前已解锁的功能补记（老玩家不补弹、不补红点）。
   function normalizeUnlockSeen(raw) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
     const out = {};
@@ -246,6 +246,7 @@
       guide: defaultGuide(),
       breakAttempts: 0,
       unlockSeen: {},
+      unlockVisited: {},
       storySeen: {},
       // 开篇五屏（世界观 batch5）：只给全新存档播一次；旧档读档时视为已看过
       openingSeen: false,
@@ -853,6 +854,7 @@
       guide: normalizeGuide(saved.guide, saved),
       breakAttempts: normalizeBreakAttempts(saved),
       unlockSeen: normalizeUnlockSeen(saved.unlockSeen),
+      unlockVisited: normalizeUnlockSeen(saved.unlockVisited),
       storySeen: normalizeStorySeen(saved.storySeen, saved),
       openingSeen: saved.openingSeen !== false,
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
@@ -1191,6 +1193,7 @@
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);
     fresh.unlockSeen = normalizeUnlockSeen(state.unlockSeen) || {};
+    fresh.unlockVisited = normalizeUnlockSeen(state.unlockVisited) || {};
     fresh.storySeen = normalizeStorySeen(state.storySeen, state);
     fresh.openingSeen = true;
     fresh.titles = {

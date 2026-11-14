@@ -118,4 +118,16 @@ assert.ok(T.FLASH_MS === 80, '每道雷的白闪约 80ms');
 assert.ok(typeof T.play === 'function' && typeof T.skip === 'function');
 assert.strictEqual(T.isPlaying(), false, '无 DOM 时不得误判为播放中');
 
+// 成功阶段金光包住立绘；减弱动态仍走压暗/天雷/金光，不直接只出文字
+assert.ok(html.includes('id="trib-hero-wrap"') && html.includes('id="trib-hero-img"'));
+assert.ok(css.includes('.trib-hero-wrap') && css.includes('.trib-hero-glow') && css.includes('tribHeroHalo'));
+assert.ok(css.includes('drop-shadow') && css.includes('#e0b44a'));
+assert.ok(!/getImageData\s*\(/.test(js) && !/getImageData\s*\(/.test(css), '立绘金光不得使用 getImageData');
+assert.ok(js.includes('setHeroVisible') && js.includes('bindHeroPortrait'));
+assert.ok(js.includes('hero-still') || js.includes('hero-fallback'));
+assert.ok(js.includes('is-reduced') && /prefersReducedMotion\(\)[\s\S]{0,400}playStrike/.test(js), '减弱动态仍播至少一道天雷');
+assert.ok(!/prefersReducedMotion\(\)[\s\S]{0,200}showSuccess\(\);\s*later\(\s*close/.test(js), '减弱动态不得跳过演出只留成功文案');
+assert.ok(game.includes('const played = window.Tribulation.play') || game.includes('played = window.Tribulation.play'), '播放失败须回退闪光');
+assert.ok(game.includes("if (!played) triggerRealmFx('success')"));
+
 console.log('tribulation.test.js ok');

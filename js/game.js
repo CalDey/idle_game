@@ -357,11 +357,12 @@
       GameState.saveGame();
       // 状态已写入；大境界渡劫成功只补纯视觉演出，不阻塞存档与 UI 刷新。
       if (stage.isMajorTribulation && window.Tribulation && typeof window.Tribulation.play === 'function') {
-        window.Tribulation.play({
+        const played = window.Tribulation.play({
           realmName: nextStage.fullName,
           realmDesc: nextStage.desc,
           majorName: nextStage.majorName
         });
+        if (!played) triggerRealmFx('success');
       } else {
         triggerRealmFx('success');
       }
@@ -747,6 +748,9 @@
     if (resetScroll && els.homeModalScroll) {
       els.homeModalScroll.scrollTop = 0;
     }
+    if (isHomeUpgradeModalOpen() && window.Newbie && typeof window.Newbie.markUnlockPaneVisited === 'function') {
+      window.Newbie.markUnlockPaneVisited(GameState.state, nextTab);
+    }
   }
 
   function openHomeUpgradeModal(focusBuildingId, tabKey) {
@@ -756,6 +760,9 @@
     switchHomeModalTab(targetTab, !focusBuildingId);
     els.homeUpgradeModal.classList.add('active');
     els.homeUpgradeModal.setAttribute('aria-hidden', 'false');
+    if (window.Newbie && typeof window.Newbie.markUnlockPaneVisited === 'function') {
+      window.Newbie.markUnlockPaneVisited(GameState.state, targetTab === 'gongfa' ? 'gongfa' : 'dongfu');
+    }
 
     if (focusBuildingId && els.homeUpgradeList) {
       requestAnimationFrame(() => {
@@ -1010,17 +1017,22 @@
 
     const anyAffordable = anyGongfaAffordable || anyDongfuAffordable;
 
+    const unlockDot = window.Newbie && typeof window.Newbie.unlockTabDot === 'function'
+      ? window.Newbie.unlockTabDot
+      : null;
+    const gongfaNew = unlockDot ? unlockDot(s, 'gongfa') : false;
+    const dongfuNew = unlockDot ? unlockDot(s, 'dongfu') : false;
     if (els.badgeUpgrade) {
-      els.badgeUpgrade.classList.toggle('visible', anyAffordable);
+      els.badgeUpgrade.classList.toggle('visible', anyAffordable || gongfaNew || dongfuNew);
     }
     if (els.badgeHomeUpgrade) {
-      els.badgeHomeUpgrade.classList.toggle('visible', anyAffordable);
+      els.badgeHomeUpgrade.classList.toggle('visible', anyAffordable || gongfaNew || dongfuNew);
     }
     if (els.badgeHomeTabDongfu) {
-      els.badgeHomeTabDongfu.classList.toggle('visible', anyDongfuAffordable);
+      els.badgeHomeTabDongfu.classList.toggle('visible', anyDongfuAffordable || dongfuNew);
     }
     if (els.badgeHomeTabGongfa) {
-      els.badgeHomeTabGongfa.classList.toggle('visible', anyGongfaAffordable);
+      els.badgeHomeTabGongfa.classList.toggle('visible', anyGongfaAffordable || gongfaNew);
     }
 
     updateHomeUpgradeButtons();
@@ -1903,7 +1915,7 @@
     }
 
     if (window.Newbie) {
-      Newbie.init({ switchTab: switchToTab, log: addLog });
+      Newbie.init({ switchTab: switchToTab, log: addLog, openHome: (pane) => openHomeUpgradeModal(null, pane) });
     }
 
     lastTickTime = performance.now();

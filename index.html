@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=125" />
+  <link rel="stylesheet" href="css/style.css?v=126" />
 </head>
 
 <body>
@@ -217,6 +217,7 @@
             </div>
             <div class="chapter-dots-row">
               <div id="stage-chapter-dots" class="chapter-dots" aria-label="章节进度"></div>
+              <button id="btn-story-recall" class="story-recall-entry" type="button">往事回溯</button>
             </div>
           </div>
 
@@ -498,6 +499,18 @@
 
           <div class="setting-row">
             <div>
+              <div class="setting-label">音量</div>
+              <div class="setting-sub">同时作用于音乐与音效，可先试听再开关</div>
+            </div>
+            <div class="setting-volume">
+              <input id="rng-volume" type="range" min="0" max="100" step="1" value="90" aria-label="音量" />
+              <span id="volume-value">90%</span>
+              <button id="btn-audio-preview" class="btn" type="button">试听</button>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div>
               <div class="setting-label">境界体系</div>
               <div class="setting-sub">搬血 → 洞天 → 化灵 → 铭纹 → 列阵 → 尊者 → 神火 → 真一 → 圣祭 → 天神 → 虚道 → 斩我 → 遁一 → 至尊（各分初/中/后）</div>
             </div>
@@ -569,6 +582,17 @@
           <button id="btn-story-skip" class="btn story-skip" type="button" data-modal-close>跳过</button>
           <button id="btn-story-next" class="btn btn-primary story-next" type="button">下一句</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="recall-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog recall-dialog" role="dialog" aria-modal="true" aria-labelledby="recall-modal-title">
+      <h2 id="recall-modal-title" class="modal-title">往事回溯</h2>
+      <p id="recall-modal-hint" class="recall-hint">重看已通章节的开篇与 Boss 对白，不发放奖励。</p>
+      <div id="recall-list" class="recall-list"></div>
+      <div class="modal-actions">
+        <button id="btn-recall-close" class="btn btn-primary" type="button" data-modal-close>关闭</button>
       </div>
     </div>
   </div>
@@ -878,6 +902,10 @@
       <div class="trib-gold-core"></div>
     </div>
     <div class="trib-copy">
+      <div id="trib-hero-wrap" class="trib-hero-wrap" hidden aria-hidden="true">
+        <div class="trib-hero-glow" aria-hidden="true"></div>
+        <img id="trib-hero-img" class="trib-hero-img" alt="" />
+      </div>
       <div id="trib-caption" class="trib-caption" hidden></div>
       <div id="trib-success" class="trib-success" hidden>
         <div id="trib-success-main" class="trib-success-main"></div>
@@ -893,7 +921,7 @@
   <script src="js/beasts.js?v=2"></script>
   <script src="js/ui-text.js?v=3"></script>
   <script src="js/equip.js?v=23"></script>
-  <script src="js/state.js?v=122"></script>
+  <script src="js/state.js?v=126"></script>
   <script src="js/titles.js?v=125"></script>
   <script src="js/grow.js?v=1"></script>
   <script src="js/battle.js?v=123"></script>
@@ -901,14 +929,14 @@
   <script src="js/mijing.js?v=121"></script>
   <script src="js/tower.js?v=123"></script>
   <script src="js/gear.js?v=36"></script>
-  <script src="js/stage-ui.js?v=125"></script>
+  <script src="js/stage-ui.js?v=126"></script>
   <script src="js/story-data.js?v=115"></script>
-  <script src="js/story.js?v=2"></script>
-  <script src="js/audio.js?v=2"></script>
-  <script src="js/newbie.js?v=124"></script>
+  <script src="js/story.js?v=126"></script>
+  <script src="js/audio.js?v=126"></script>
+  <script src="js/newbie.js?v=126"></script>
   <script src="js/tribulation-data.js?v=117"></script>
-  <script src="js/tribulation.js?v=124"></script>
-  <script src="js/game.js?v=125"></script>
+  <script src="js/tribulation.js?v=126"></script>
+  <script src="js/game.js?v=126"></script>
   <script src="js/events-data.js?v=116"></script>
   <script src="js/idle-events.js?v=116"></script>
   <script src="js/daily.js?v=1"></script>

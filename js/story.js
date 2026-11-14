@@ -6,6 +6,19 @@
 
   const CHAPTER_SIZE = 10;
 
+  // 往事回溯文案集中在此，便于世界观后续替换（用户拍板前先用占位）。
+  const RECALL_TEXT = {
+    entry: '往事回溯',
+    entryHint: '重看已通章节的开篇与 Boss 对白，不发放奖励。',
+    modalTitle: '往事回溯',
+    empty: '尚未通关任何章节。',
+    replayIntro: '开篇',
+    replayBoss: 'Boss 对白',
+    close: '关闭',
+    // 每章一句话简介：先留空，等世界观文案与用户拍板后再填。
+    chapterIntro: {}
+  };
+
   function data() {
     return (typeof window !== 'undefined' && window.StoryData) || { chapters: [], lastWords: {} };
   }
@@ -236,12 +249,13 @@
   }
 
   // 播放若干段落；全部看完 / 跳过后调用 done。段落一开播即记为看过（跳过也算）。
-  function play(parts, done) {
+  function play(parts, done, opts) {
     const e = ensureEls();
     if (!e || !parts || !parts.length) {
       if (typeof done === 'function') done();
       return false;
     }
+    const replay = Boolean(opts && opts.replay);
     const seen = seenMap();
     const squad = currentSquad();
     const heroName = (id) => {
@@ -250,11 +264,13 @@
     };
     const lines = [];
     parts.forEach((p) => {
-      if (p.key === OPENING_KEY) {
-        const st = S();
-        if (st) st.openingSeen = true;
-      } else {
-        seen[p.key] = true;
+      if (!replay) {
+        if (p.key === OPENING_KEY) {
+          const st = S();
+          if (st) st.openingSeen = true;
+        } else if (p.key) {
+          seen[p.key] = true;
+        }
       }
       resolveLines(p.lines, { bossId: p.bossId, squad, heroName }).forEach((l) => {
         if (p.key === OPENING_KEY) l.opening = true;
@@ -262,7 +278,7 @@
       });
       ctxBossId = p.bossId || ctxBossId;
     });
-    if (window.GameState && window.GameState.saveGame) window.GameState.saveGame();
+    if (!replay && window.GameState && window.GameState.saveGame) window.GameState.saveGame();
     if (!lines.length) {
       if (typeof done === 'function') done();
       return false;
@@ -321,8 +337,75 @@
     return open;
   }
 
+  function chapterMeta(ch) {
+    const list = (window.GameConfig && window.GameConfig.BATTLE && window.GameConfig.BATTLE.CHAPTERS) || [];
+    return list.find((c) => c && c.chapter === ch) || null;
+  }
+
+  function chapterTitle(ch) {
+    const meta = chapterMeta(ch);
+    const name = (meta && meta.name) || '';
+    return name ? `第 ${ch} 章 · ${name}` : `第 ${ch} 章`;
+  }
+
+  function chapterIntroText(ch) {
+    const map = RECALL_TEXT.chapterIntro || {};
+    return map[ch] || map[String(ch)] || '';
+  }
+
+  // 已通关：best 达到该章 Boss 关（第 N 章 = N*10）
+  function isChapterCleared(ch, best) {
+    const n = Math.floor(Number(ch) || 0);
+    const b = Math.max(0, Math.floor(Number(best) || 0));
+    return n >= 1 && b >= n * CHAPTER_SIZE;
+  }
+
+  function clearedChapters(best) {
+    const list = (window.GameConfig && window.GameConfig.BATTLE && window.GameConfig.BATTLE.CHAPTERS) || [];
+    return list.filter((c) => c && isChapterCleared(c.chapter, best)).map((c) => ({
+      chapter: c.chapter,
+      name: c.name || '',
+      title: chapterTitle(c.chapter),
+      intro: chapterIntroText(c.chapter),
+      bossStage: c.chapter * CHAPTER_SIZE
+    }));
+  }
+
+  function introPart(ch) {
+    const cd = chapterData(ch);
+    if (!cd || !Array.isArray(cd.intro) || !cd.intro.length) return null;
+    return { key: `c${ch}:intro`, lines: cd.intro, bossId: cd.bosses && cd.bosses[0] && cd.bosses[0].bossId };
+  }
+
+  function bossDialogueParts(ch) {
+    const cd = chapterData(ch);
+    if (!cd || !Array.isArray(cd.bosses) || !cd.bosses.length) return [];
+    const out = [];
+    cd.bosses.forEach((be) => {
+      if (!be) return;
+      if (Array.isArray(be.pre) && be.pre.length) out.push({ key: `b${be.stage}:pre`, lines: be.pre, bossId: be.bossId });
+      const lines = [];
+      const lw = lastWordsFor(be.bossId, be.stage);
+      if (lw) lines.push({ speaker: 'Boss', text: lw, kind: 'last' });
+      if (Array.isArray(be.post)) be.post.forEach((l) => lines.push(l));
+      if (lines.length) out.push({ key: `b${be.stage}:post`, lines, bossId: be.bossId });
+    });
+    return out;
+  }
+
+  function replayChapter(ch, kind, done) {
+    if (open) return false;
+    const parts = kind === 'boss' ? bossDialogueParts(ch) : (introPart(ch) ? [introPart(ch)] : []);
+    if (!parts.length) {
+      if (typeof done === 'function') done();
+      return false;
+    }
+    return play(parts, done, { replay: true });
+  }
+
   window.Story = {
     CHAPTER_SIZE,
+    RECALL_TEXT,
     chapterOf,
     bossForStage,
     bossEntry,
@@ -338,6 +421,13 @@
     openingPending,
     playOpening,
     isOpen,
-    finish
+    finish,
+    chapterTitle,
+    chapterIntroText,
+    isChapterCleared,
+    clearedChapters,
+    introPart,
+    bossDialogueParts,
+    replayChapter
   };
 })();

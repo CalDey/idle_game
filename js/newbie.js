@@ -701,14 +701,44 @@
     }
   ];
 
+  // 功法 / 洞府单项解锁（如《尊者血祭大道》、地底极品灵脉）。跳过开局即有的，以及已有专用卡片的百草灵药园。
+  function itemUnlocks() {
+    const out = [];
+    const add = (kind, item) => {
+      if (!item || !item.id || !item.name) return;
+      if (!item.unlockRealmIndex || item.unlockRealmIndex <= 0) return;
+      if (kind === 'dongfu' && item.id === 'yaoyuan') return;
+      const short = String(item.name).replace(/[《》]/g, '');
+      out.push({
+        key: `${kind}:${item.id}`,
+        kind,
+        itemId: item.id,
+        title: `${item.name}已开启`,
+        desc: item.desc || (kind === 'gongfa' ? '新功法可在洞府页参悟。' : '新建筑可在洞府页升级。'),
+        go: kind === 'gongfa' ? '去参悟' : '去洞府',
+        tab: 'tab-upgrades',
+        pane: kind,
+        glyph: short.charAt(0) || (kind === 'gongfa' ? '功' : '府'),
+        test: (s) => (s.realmIndex || 0) >= item.unlockRealmIndex
+      });
+    };
+    ((window.GameConfig && window.GameConfig.GONGFA_LIST) || []).forEach((item) => add('gongfa', item));
+    ((window.GameConfig && window.GameConfig.DONGFU_LIST) || []).forEach((item) => add('dongfu', item));
+    return out;
+  }
+
+  function unlockCatalog() {
+    return UNLOCKS.concat(itemUnlocks());
+  }
+
   function dongfuUnlockRealm(id, fallback) {
     const list = (window.GameConfig && window.GameConfig.DONGFU_LIST) || [];
     const item = list.find((d) => d.id === id);
     return item && item.unlockRealmIndex != null ? item.unlockRealmIndex : fallback;
   }
 
-  function unlockedKeys(s) {
-    return UNLOCKS.filter((u) => {
+  function unlockedKeys(s, list) {
+    return (list || unlockCatalog()).filter((u) => {
       try {
         return Boolean(u.test(s));
       } catch (err) {
@@ -730,14 +760,61 @@
     return s.unlockSeen;
   }
 
+  // 旧档（unlockVisited 为 null）：已解锁的记为去过，避免读档时所有旧功法/建筑都亮红点
+  function ensureUnlockVisited(s) {
+    if (!s.unlockVisited || typeof s.unlockVisited !== 'object') {
+      const visited = {};
+      unlockedKeys(s, itemUnlocks()).forEach((k) => { visited[k] = true; });
+      s.unlockVisited = visited;
+    }
+    return s.unlockVisited;
+  }
+
   function pendingUnlock(s) {
     const seen = ensureUnlockSeen(s);
-    const keys = unlockedKeys(s);
-    for (let i = 0; i < UNLOCKS.length; i += 1) {
-      const u = UNLOCKS[i];
+    ensureUnlockVisited(s);
+    const catalog = unlockCatalog();
+    const keys = unlockedKeys(s, catalog);
+    for (let i = 0; i < catalog.length; i += 1) {
+      const u = catalog[i];
       if (!seen[u.key] && keys.indexOf(u.key) >= 0) return u;
     }
     return null;
+  }
+
+  function unlockTabDot(s, kind) {
+    if (!s) return false;
+    ensureUnlockSeen(s);
+    const visited = ensureUnlockVisited(s);
+    return itemUnlocks().some((u) => {
+      if (kind && u.kind !== kind) return false;
+      try {
+        return Boolean(u.test(s)) && !visited[u.key];
+      } catch (err) {
+        return false;
+      }
+    });
+  }
+
+  function markUnlockPaneVisited(s, pane) {
+    if (!s) return false;
+    const visited = ensureUnlockVisited(s);
+    const kind = pane === 'gongfa' ? 'gongfa' : pane === 'dongfu' ? 'dongfu' : '';
+    if (!kind) return false;
+    let changed = false;
+    itemUnlocks().forEach((u) => {
+      if (u.kind !== kind) return;
+      try {
+        if (u.test(s) && !visited[u.key]) {
+          visited[u.key] = true;
+          changed = true;
+        }
+      } catch (err) { /* ignore */ }
+    });
+    if (changed && window.GameState && typeof window.GameState.saveGame === 'function') {
+      window.GameState.saveGame();
+    }
+    return changed;
   }
 
   let unlockTimer = 0;
@@ -876,6 +953,7 @@
         const u = currentUnlock || UNLOCKS[0];
         closeUnlockModal();
         api.switchTab(u.tab);
+        if (u.pane && typeof api.openHome === 'function') api.openHome(u.pane);
         tick();
       });
     }
@@ -926,9 +1004,14 @@
     heroSelectLine,
     sayHeroSelectLine,
     UNLOCKS,
+    itemUnlocks,
+    unlockCatalog,
     unlockedKeys,
     ensureUnlockSeen,
+    ensureUnlockVisited,
     pendingUnlock,
+    unlockTabDot,
+    markUnlockPaneVisited,
     topActiveModal,
     closeModal,
     handleEscKey,

@@ -1385,6 +1385,7 @@
     if (squadModalOpen) {
       renderSquadModal();
     }
+    renderRecallEntry();
   }
 
   function refreshCodexBadge() {
@@ -3143,6 +3144,126 @@
     autoNextTimer = 0;
   }
 
+
+  function recallText() {
+    return (window.Story && window.Story.RECALL_TEXT) || {
+      entry: '往事回溯',
+      entryHint: '重看已通章节的开篇与 Boss 对白，不发放奖励。',
+      modalTitle: '往事回溯',
+      empty: '尚未通关任何章节。',
+      replayIntro: '开篇',
+      replayBoss: 'Boss 对白',
+      close: '关闭'
+    };
+  }
+
+  function bestStageOf(s) {
+    return Math.max(0, Math.floor(Number(s && s.stage && s.stage.best) || 0));
+  }
+
+  function renderRecallEntry() {
+    const btn = $('btn-story-recall');
+    if (!btn) return;
+    const T = recallText();
+    if (btn.textContent !== T.entry) btn.textContent = T.entry;
+    const St = window.Story;
+    const s = window.GameState && window.GameState.state;
+    const cleared = St && typeof St.clearedChapters === 'function' ? St.clearedChapters(bestStageOf(s)) : [];
+    const locked = typeof unlocked === 'function' ? !unlocked() : false;
+    btn.hidden = Boolean(locked);
+    btn.disabled = locked || !cleared.length;
+  }
+
+  function closeRecallModal() {
+    const modal = $('recall-modal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function playRecall(ch, kind) {
+    const St = window.Story;
+    if (!St || typeof St.replayChapter !== 'function') return;
+    if (St.isOpen && St.isOpen()) return;
+    St.replayChapter(ch, kind);
+  }
+
+  function renderRecallList() {
+    const list = $('recall-list');
+    if (!list) return;
+    const T = recallText();
+    const St = window.Story;
+    const s = window.GameState && window.GameState.state;
+    const cleared = St && typeof St.clearedChapters === 'function' ? St.clearedChapters(bestStageOf(s)) : [];
+    list.innerHTML = '';
+    if (!cleared.length) {
+      const empty = document.createElement('div');
+      empty.className = 'recall-empty';
+      empty.textContent = T.empty;
+      list.appendChild(empty);
+      return;
+    }
+    cleared.forEach((ch) => {
+      const row = document.createElement('div');
+      row.className = 'recall-chapter';
+      const title = document.createElement('div');
+      title.className = 'recall-chapter-title';
+      title.textContent = ch.title;
+      row.appendChild(title);
+      if (ch.intro) {
+        const intro = document.createElement('div');
+        intro.className = 'recall-chapter-intro';
+        intro.textContent = ch.intro;
+        row.appendChild(intro);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'recall-chapter-actions';
+      const b1 = document.createElement('button');
+      b1.type = 'button';
+      b1.className = 'btn';
+      b1.textContent = T.replayIntro;
+      b1.addEventListener('click', () => playRecall(ch.chapter, 'intro'));
+      const b2 = document.createElement('button');
+      b2.type = 'button';
+      b2.className = 'btn';
+      b2.textContent = T.replayBoss;
+      b2.addEventListener('click', () => playRecall(ch.chapter, 'boss'));
+      actions.appendChild(b1);
+      actions.appendChild(b2);
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  function openRecallModal() {
+    const modal = $('recall-modal');
+    if (!modal) return;
+    const T = recallText();
+    const title = $('recall-modal-title');
+    const hint = $('recall-modal-hint');
+    const closeBtn = $('btn-recall-close');
+    if (title) title.textContent = T.modalTitle;
+    if (hint) hint.textContent = T.entryHint;
+    if (closeBtn) closeBtn.textContent = T.close;
+    renderRecallList();
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function initRecall() {
+    const btn = $('btn-story-recall');
+    const closeBtn = $('btn-recall-close');
+    const modal = $('recall-modal');
+    if (btn) btn.addEventListener('click', () => { if (!btn.disabled) openRecallModal(); });
+    if (closeBtn) closeBtn.addEventListener('click', closeRecallModal);
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeRecallModal();
+      });
+    }
+    renderRecallEntry();
+  }
+
   function init(hooks) {
     log = (hooks && hooks.log) || log;
     onChange = (hooks && hooks.onChange) || onChange;
@@ -3150,6 +3271,7 @@
 
     ensureGridCells();
     initBoardInteraction();
+    initRecall();
 
     const btnSquad = $('btn-stage-squad');
     const btnChallenge = $('btn-stage-challenge');

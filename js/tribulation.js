@@ -13,6 +13,8 @@
   let boltEl = null;
   let captionEl = null;
   let successEl = null;
+  let heroWrapEl = null;
+  let heroImgEl = null;
   let nameEl = null;
   let mainEl = null;
   let descEl = null;
@@ -55,6 +57,8 @@
     boltEl = rootEl.querySelector('.trib-bolt');
     captionEl = document.getElementById('trib-caption');
     successEl = document.getElementById('trib-success');
+    heroWrapEl = document.getElementById('trib-hero-wrap');
+    heroImgEl = document.getElementById('trib-hero-img');
     nameEl = document.getElementById('trib-realm-name');
     mainEl = document.getElementById('trib-success-main');
     descEl = document.getElementById('trib-realm-desc');
@@ -115,6 +119,22 @@
     captionEl.hidden = !text;
   }
 
+  function bindHeroPortrait() {
+    if (!heroImgEl || typeof document === 'undefined') return false;
+    const srcEl = document.getElementById('hero-still') || document.getElementById('hero-fallback') || document.getElementById('ult-hero-img');
+    const src = srcEl && (srcEl.currentSrc || srcEl.getAttribute('src') || srcEl.src);
+    if (!src) return false;
+    heroImgEl.src = src;
+    return true;
+  }
+
+  function setHeroVisible(on) {
+    if (!heroWrapEl) return;
+    const show = Boolean(on) && bindHeroPortrait();
+    heroWrapEl.hidden = !show;
+    heroWrapEl.setAttribute('aria-hidden', show ? 'false' : 'true');
+  }
+
   function fillSuccess(opts) {
     const D = data();
     const realmName = (opts && opts.realmName) || '';
@@ -134,6 +154,7 @@
     setCaption('');
     if (boltEl) boltEl.setAttribute('points', '');
     if (successEl) successEl.hidden = false;
+    setHeroVisible(true);
   }
 
   function hideRoot() {
@@ -151,6 +172,7 @@
     }
     setCaption('');
     if (successEl) successEl.hidden = true;
+    setHeroVisible(false);
     if (boltEl) boltEl.setAttribute('points', '');
   }
 
@@ -213,6 +235,7 @@
     skipIgnoreUntil = 0;
     fillSuccess(options);
     if (successEl) successEl.hidden = true;
+    setHeroVisible(false);
     setCaption('');
     if (boltEl) boltEl.setAttribute('points', '');
     rootEl.hidden = false;
@@ -224,15 +247,18 @@
       try { rootEl.focus(); } catch (err) { /* ignore */ }
     }
 
+    const D = data();
+    const captions = D ? D.strikeCaptions(options.majorName) : ['', '', ''];
+
+    // 减弱动态：仍展示压暗、一道天雷和金光立绘，只取消闪/震/旋转，避免被看成「只有文字弹窗」。
     if (prefersReducedMotion()) {
       rootEl.classList.add('is-reduced');
-      showSuccess();
-      later(close, 1400);
+      later(() => playStrike(0, captions), 200);
+      later(showSuccess, 800);
+      later(close, 2400);
       return true;
     }
 
-    const D = data();
-    const captions = D ? D.strikeCaptions(options.majorName) : ['', '', ''];
     later(() => playStrike(0, captions), FIRST_STRIKE_MS);
     later(() => playStrike(1, captions), FIRST_STRIKE_MS + STRIKE_GAP_MS);
     later(() => playStrike(2, captions), FIRST_STRIKE_MS + STRIKE_GAP_MS * 2);
