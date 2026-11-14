@@ -6446,6 +6446,9 @@ button.mijing-bless-card:active {
   width: 100%;
 /* === 新手体验 batch2 P2-5：当前目标条改为深底金字「卷轴符箓」样式（纯 CSS，无新图；同一组件兼任常驻下一目标） === */
 .goal-strip {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #0d0a06;
   width: calc(100% - 8px);
   height: 22px;
   margin: 0 4px 4px;
