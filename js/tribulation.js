@@ -64,8 +64,8 @@
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         skipOrClose();
       };
+      // 只绑一种指针事件：pointerdown 已覆盖鼠标/触摸，再绑 click 会触发两次跳过
       rootEl.addEventListener('pointerdown', skip);
-      rootEl.addEventListener('click', skip);
       rootEl.addEventListener('keydown', (e) => {
         if (!playing) return;
         if (e && (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ')) {

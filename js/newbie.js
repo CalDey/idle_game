@@ -223,22 +223,14 @@
     const building = nextLockedBuilding(st);
     if (realm < total - 1) {
       const target = realm + 1;
-      // 下一重正好解锁建筑时，目标条直接写出解锁条件；否则建筑提示放在进度位。
-      if (building && building.unlockRealmIndex === target) {
-        return {
-          id: `unlock_${building.id}`,
-          text: buildingUnlockHint(st),
-          tab: 'tab-upgrades',
-          realm: target,
-          buildingId: building.id
-        };
-      }
+      // 下一重正好解锁建筑时，主目标仍是修行突破（点目标条去突破），建筑提示附在进度里但不盖掉灵气百分比。
       return {
         id: `realm${target}`,
         text: `突破至${realmName(target)}`,
         tab: 'tab-cultivate',
         realm: target,
-        buildingHint: building ? buildingUnlockHint(st) : ''
+        buildingHint: building ? buildingUnlockHint(st) : '',
+        buildingId: building && building.unlockRealmIndex === target ? building.id : undefined
       };
     }
     return { id: 'reincarnate', text: '去轮回转世，凝结道果', tab: 'tab-reincarnate' };
@@ -253,14 +245,16 @@
     return currentGoal(s).id !== goal.id;
   }
 
-  // 目标进度：只给「下一重突破」显示灵气进度。
+  // 目标进度：下一重突破显示灵气百分比；若有下一座建筑提示，附在百分比后面，不盖掉。
   function goalProgress(goal, s, stage) {
-    if (goal && goal.buildingHint) return goal.buildingHint;
+    let qiText = '';
     if (goal && goal.realm !== undefined && stage && !stage.isMaxStage && (s.realmIndex || 0) + 1 === goal.realm) {
       const pct = Math.min(100, Math.floor(((s.qi || 0) / Math.max(1, stage.reqQi)) * 100));
-      return `灵气 ${pct}%`;
+      qiText = `灵气 ${pct}%`;
     }
-    return '';
+    const hint = goal && goal.buildingHint ? goal.buildingHint : '';
+    if (qiText && hint) return `${qiText} · ${hint}`;
+    return qiText || hint || '';
   }
 
   // ---------- 红点 ----------

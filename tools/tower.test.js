@@ -278,4 +278,59 @@ assert.strictEqual(Tower.BOSS_EVERY, 5);
   assert.ok(!/tower|镇妖塔/.test(daily), '未把镇妖塔加入每日功课');
 }
 
+// ---------- 预估胜率与实战使用同一份 Bonds.modsForState（含道途，只计一次） ----------
+{
+  const sandbox = {
+    window: {},
+    console,
+    localStorage: memoryStorage(),
+    document: { readyState: 'loading', addEventListener() {}, getElementById() { return null; } }
+  };
+  sandbox.globalThis = sandbox.window;
+  sandbox.window.document = sandbox.document;
+  [
+    'js/config.js',
+    'js/beasts.js',
+    'js/equip.js',
+    'js/state.js',
+    'js/titles.js',
+    'js/grow.js',
+    'js/battle.js',
+    'js/bonds.js',
+    'js/mijing.js',
+    'js/path.js',
+    'js/tower.js'
+  ].forEach((rel) => {
+    vm.runInNewContext(text(rel), sandbox, { filename: rel });
+  });
+  const W = sandbox.window;
+  const s = W.GameState.state;
+  s.realmIndex = 8;
+  s.stage = { best: 80, cur: 81 };
+  s.squad = ['saintess', 'qingkui', 'jianghua', 'molan', 'sweetmaid', 'lanyi'];
+  s.heroId = s.squad[0];
+  s.unlockedHeroes = W.GameConfig.HEROES.map((h) => h.id);
+  kitTypical(W, s, 3);
+  s.path = { id: 'jian', lv: [3, 3, 3] };
+  const floor = 65;
+  const enemy = W.Tower.floorEnemy(floor);
+  const mods = W.Bonds.modsForState(s);
+  assert.ok(mods && W.Path.battleMods(s), '应有羁绊/道途加成');
+  assert.ok(mods.critAdd > 0 || mods.ultDmgMult > 1, 'mods 须包含剑道加成');
+  const twice = W.Bonds.mergeMods(mods, W.Path.battleMods(s));
+  assert.ok(Math.abs((mods.ultDmgMult || 1) - (twice.ultDmgMult || 1)) > 1e-9, '若再叠一次道途会不同，用于确认只计一次');
+  const preview = W.TowerUI.previewRate(s, floor);
+  const wr = W.Battle.winRate(s, enemy, 12, mods);
+  assert.strictEqual(preview.rate, wr, '预估与实战同一份 mods、同一跑次数');
+  assert.deepStrictEqual(W.Bonds.modsForState(s), mods, '实战 createSession 与预估共用同一份 mods（只合并一次）');
+  const tw = text('js/tower.js');
+  const su = text('js/stage-ui.js');
+  assert.ok(/function previewRate[\s\S]{0,800}battleMods\(s\)/.test(tw) && /modsForState/.test(tw), 'previewRate 走 Bonds.modsForState');
+  assert.ok(!/Path\.battleMods/.test(tw) && !/Path\.battleMods/.test(su), '镇妖塔不单独再叠道途');
+  assert.ok(/function getTowerWinRate[\s\S]{0,500}bondModsFor\(state\)/.test(su), '闯关页塔内预估也走同一 mods');
+  assert.ok(/function getTowerWinRate[\s\S]{0,400}beastKey\(state\)/.test(su), '塔内预估缓存键含道途签名');
+  assert.ok(/function previewRate[\s\S]{0,500}previewCacheSig\(s\)/.test(tw), '塔外预估缓存键含道途签名');
+  assert.ok(/function getRecommendedCp[\s\S]{0,900}isTower[\s\S]{0,300}return towerRecommendedCp/.test(su), '镇妖塔推荐战力取塔层敌人并带 mods，不再把层号当成主线关号');
+}
+
 console.log('tower.test.js: ok');

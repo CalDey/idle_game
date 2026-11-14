@@ -669,6 +669,8 @@ check('开局展示推荐战力与每波预估，结算列出逐波奖励和已�
   assert.ok(!ui.includes('返还半次') && !ui.includes('failureRefund') && !/补偿次数/.test(ui), '本批不做失败补偿');
   const css = text('css/style.css');
   assert.ok(css.includes('.mijing-wave-list') && css.includes('scrollbar-width: none'));
+  assert.ok(ui.includes('mijing-wave-rewards-wrap'), '结算列表包一层以便底部渐隐');
+  assert.ok(/@media \(max-width: 375px\)[\s\S]{0,400}\.mijing-wave-rewards-wrap::after/.test(css), '375 宽下结算列表底部有渐隐，提示可滚动');
 });
 
 Promise.all(pending)

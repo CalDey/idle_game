@@ -50,6 +50,19 @@
   PATHS.forEach((p) => { PATH_MAP[p.id] = p; });
   const MULT_KEYS = ['atkMult', 'hpMult', 'defMult', 'ultDmgMult', 'bossDmgMult', 'frontDmgTakenMult'];
 
+  // 界面文案集中在此，便于整批替换（不改逻辑）
+  const TEXT = {
+    entryLocked: '化灵初开启',
+    combatNote: '加成在战斗内生效，不计入面板战力',
+    respecNoRefund: '已投入灵石不退还',
+    chooseConfirmTitle: '择道确认',
+    chooseConfirm: '确定择【{name}】为本命道途？',
+    respecConfirmTitle: '重定确认',
+    respecConfirm: '改修【{name}】后，{refund}。确定改修？',
+    confirmYes: '确定',
+    confirmNo: '取消'
+  };
+
   function defaults() {
     return { v: 1, id: null, lv: [0, 0, 0], freeRespec: 0, respecs: 0, spent: 0 };
   }
@@ -227,7 +240,7 @@
   }
 
   const core = {
-    RULES, PATHS, PATH_MAP,
+    RULES, PATHS, PATH_MAP, TEXT,
     defaults, normalize, ensureState, peek, isUnlocked, tierOpen,
     nodeCost, respecCost, choose, upgrade, respec, onReincarnate,
     effects, battleMods, qiFactor, stoneFactor, signature, hasAction
@@ -243,6 +256,13 @@
   let view = 'main'; // main | choose | respec
   let flash = '';
   let lastEntry = '';
+  let pending = null; // { kind: 'choose'|'respec', pathId }
+
+  function t(key, vars) {
+    const src = TEXT[key] == null ? '' : String(TEXT[key]);
+    if (!vars) return src;
+    return src.replace(/\{(\w+)\}/g, (_, k) => (vars[k] == null ? '' : String(vars[k])));
+  }
 
   function GS() { return root.GameState; }
 
@@ -250,8 +270,23 @@
     if (!els) return;
     const s = GS().state;
     const unlocked = isUnlocked(s);
-    els.entry.hidden = !unlocked;
-    if (!unlocked) return;
+    els.entry.hidden = false;
+    if (!unlocked) {
+      const key = `locked|${t('entryLocked')}`;
+      if (key !== lastEntry) {
+        lastEntry = key;
+        els.entryText.textContent = t('entryLocked');
+        els.entry.disabled = true;
+        els.entry.setAttribute('aria-disabled', 'true');
+        els.entry.classList.add('is-locked');
+        els.entry.classList.remove('has-action');
+        if (els.badge) els.badge.classList.remove('visible');
+      }
+      return;
+    }
+    els.entry.disabled = false;
+    els.entry.removeAttribute('aria-disabled');
+    els.entry.classList.remove('is-locked');
     const p = peek(s);
     const total = p.lv[0] + p.lv[1] + p.lv[2];
     const text = p.id ? `本命道途 · ${PATH_MAP[p.id].name} ${total}/9` : '本命道途 · 待择道';
@@ -277,11 +312,26 @@
       </div>`;
   }
 
+  function confirmHtml() {
+    if (!pending || !PATH_MAP[pending.pathId]) return '';
+    const path = PATH_MAP[pending.pathId];
+    const kind = pending.kind === 'respec' ? 'respec' : 'choose';
+    return `<div class="path-confirm">
+      <div class="path-confirm-title">${t(kind + 'ConfirmTitle')}</div>
+      <div class="path-confirm-msg">${t(kind + 'Confirm', { name: path.name, refund: t('respecNoRefund') })}</div>
+      <div class="path-confirm-actions">
+        <button type="button" class="btn btn-primary btn-sm" data-path-confirm="yes">${t('confirmYes')}</button>
+        <button type="button" class="btn btn-sm" data-path-confirm="no">${t('confirmNo')}</button>
+      </div>
+    </div>`;
+  }
+
   function render() {
     if (!els) return;
     const s = GS().state;
     const p = ensureState(s);
     let html = flash ? `<div class="path-flash">${flash}</div>` : '';
+    html += confirmHtml();
     let actions = '';
     if (!p.id || view === 'choose') {
       html += '<div class="path-intro">择一条本命道途，参悟节点需消耗灵石（按当前灵石产出折算）。圆满后的效果如下，可随时花费灵石重定。</div>';
@@ -291,7 +341,7 @@
       actions = '<button type="button" class="btn" data-path-close="1">关闭</button>';
     } else if (view === 'respec') {
       const cost = respecCost(s);
-      html += `<div class="path-intro">重定道途：已参悟层数按节点位置保留到新道途。${cost === 0 ? '本次免费（轮回所赠）。' : `花费灵石 ${fmtN(cost)}（约 ${RULES.RESPEC_MINUTES} 分钟产出）。`}</div>`;
+      html += `<div class="path-intro">重定道途：已参悟层数按节点位置保留到新道途。${cost === 0 ? '本次免费（轮回所赠）。' : `花费灵石 ${fmtN(cost)}（约 ${RULES.RESPEC_MINUTES} 分钟产出）。`} ${t('respecNoRefund')}。</div>`;
       PATHS.filter((path) => path.id !== p.id).forEach((path) => {
         const afford = (Number(s.stones) || 0) >= cost;
         html += pathCard(path, { button: `<button type="button" class="btn btn-sm" data-path-respec="${path.id}"${afford ? '' : ' disabled'}>改修${path.name}</button>` });
@@ -321,9 +371,11 @@
           </div>`;
       });
       html += '<div class="path-note">转世后保留道途，参悟层数清零并赠 1 次免费重定。</div>';
+      html += `<div class="path-note">${t('combatNote')}</div>`;
       const rc = respecCost(s);
       actions = `<button type="button" class="btn" data-path-torespec="1">${rc === 0 ? '重定（免费）' : `重定 · 灵石 ${fmtN(rc)}`}</button><button type="button" class="btn" data-path-close="1">关闭</button>`;
     }
+    if (view !== 'main' || !p.id) html += `<div class="path-note">${t('combatNote')}</div>`;
     els.body.innerHTML = html;
     els.actions.innerHTML = actions;
   }
@@ -336,6 +388,7 @@
     if (!els || !isUnlocked(GS().state)) return false;
     view = 'main';
     flash = '';
+    pending = null;
     render();
     els.modal.classList.add('active');
     els.modal.setAttribute('aria-hidden', 'false');
@@ -347,6 +400,7 @@
     els.modal.classList.remove('active');
     els.modal.setAttribute('aria-hidden', 'true');
     view = 'main';
+    pending = null;
     renderEntry();
   }
 
@@ -360,10 +414,8 @@
     const s = GS().state;
     const ds = t.dataset || {};
     if (ds.pathChoose) {
-      const res = choose(s, ds.pathChoose);
-      flash = res.ok ? `已立本命：${res.path.name}` : (res.message || '未能择道');
-      if (res.ok) afterChange();
-      view = 'main';
+      pending = { kind: 'choose', pathId: ds.pathChoose };
+      flash = '';
     } else if (ds.pathUp !== undefined) {
       const res = upgrade(s, Number(ds.pathUp), {});
       if (res.ok) {
@@ -373,14 +425,29 @@
       } else flash = res.message || '参悟失败';
     } else if (ds.pathTorespec) {
       view = 'respec';
+      pending = null;
       flash = '';
     } else if (ds.pathRespec) {
-      const res = respec(s, ds.pathRespec, {});
-      if (res.ok) {
-        flash = `已改修${PATH_MAP[res.to].name}${res.free ? '（免费）' : `，灵石 -${fmtN(res.cost)}`}`;
-        afterChange();
+      pending = { kind: 'respec', pathId: ds.pathRespec };
+      flash = '';
+    } else if (ds.pathConfirm === 'yes' && pending && pending.pathId) {
+      if (pending.kind === 'respec') {
+        const res = respec(s, pending.pathId, {});
+        if (res.ok) {
+          flash = `已改修${PATH_MAP[res.to].name}${res.free ? '（免费）' : `，灵石 -${fmtN(res.cost)}`}`;
+          afterChange();
+          view = 'main';
+        } else flash = res.message || '重定失败';
+      } else {
+        const res = choose(s, pending.pathId);
+        flash = res.ok ? `已立本命：${res.path.name}` : (res.message || '未能择道');
+        if (res.ok) afterChange();
         view = 'main';
-      } else flash = res.message || '重定失败';
+      }
+      pending = null;
+    } else if (ds.pathConfirm === 'no') {
+      pending = null;
+      flash = '';
     } else if (ds.pathBack) {
       view = 'main';
       flash = '';

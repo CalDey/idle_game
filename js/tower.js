@@ -313,6 +313,21 @@
     return String(x);
   }
 
+  // 与闯关一致：羁绊 + 灵兽 + 道途只经 Bonds.modsForState 合并一次
+  function battleMods(s) {
+    const Bd = window.Bonds;
+    return Bd && typeof Bd.modsForState === 'function' ? Bd.modsForState(s) : null;
+  }
+
+  function previewCacheSig(s) {
+    const Bs = window.Beasts;
+    const b = Bs && s ? Bs.activeBeast(s) : null;
+    const beast = b ? `${b.id}${Bs.levelOf(s, b.id)}` : '';
+    const P = window.Path;
+    const path = P && typeof P.signature === 'function' ? P.signature(s) : '';
+    return `${beast}|${path}`;
+  }
+
   function env() {
     const GS = window.GameState;
     if (!GS) return { qiPerSec: 1, stonePerSec: 0.5, now: Date.now() };
@@ -364,11 +379,11 @@
       const p = window.Battle && window.Battle.playerStats(s);
       const enemy = T.floorEnemy(T.currentFloor(s));
       const squad = window.Battle && window.Battle.getSquadIds ? window.Battle.getSquadIds(s).join(',') : '';
-      const key = `${T.currentFloor(s)}:${Math.round((p && p.cp) || 0)}:${squad}:${t.date}:${left}`;
+      const key = `${T.currentFloor(s)}:${Math.round((p && p.cp) || 0)}:${squad}:${t.date}:${left}:${previewCacheSig(s)}`;
       if (dotCache.key === key && Date.now() - dotCache.at < 5000) {
         dot = dotCache.on;
       } else {
-        dot = T.hasRedDot(s, Date.now(), { runs: 8 });
+        dot = T.hasRedDot(s, Date.now(), { runs: 8, mods: battleMods(s) });
         dotCache = { key, on: dot, at: Date.now() };
       }
     }
@@ -384,18 +399,11 @@
     const p = Battle.playerStats(s);
     const form = s && s.formation ? JSON.stringify(s.formation) : '';
     const squad = Battle.getSquadIds ? Battle.getSquadIds(s).join(',') : '';
-    const key = `${floor}:${Math.round((p && p.cp) || 0)}:${squad}:${form}`;
+    const key = `${floor}:${Math.round((p && p.cp) || 0)}:${squad}:${form}:${previewCacheSig(s)}`;
     if (winCache.key === key && Date.now() - winCache.at < 4000) return winCache;
-    const mods = window.StageUI && window.StageUI._bondModsFor ? null : undefined;
-    let bondMods;
-    try {
-      // stage-ui 内部函数不导出时，winRate 仍会用战斗默认（无羁绊也可）
-      bondMods = undefined;
-    } catch (e) {
-      bondMods = undefined;
-    }
-    const rate = Battle.winRate(s, enemy, 12, bondMods);
-    const rec = Battle.recommendedCp(s, enemy, { runs: 12 });
+    const mods = battleMods(s);
+    const rate = Battle.winRate(s, enemy, 12, mods);
+    const rec = Battle.recommendedCp(s, enemy, { runs: 12, mods });
     winCache = { key, rate, rec, at: Date.now() };
     return winCache;
   }

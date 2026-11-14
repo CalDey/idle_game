@@ -181,8 +181,12 @@ assert.ok(css.includes('.payback-label.payback-grey'), '须有灰色档样式');
 
 const html = text('index.html');
 assert.ok(!/payback.*\.(png|jpg|webp)/.test(html));
-assert.ok(html.includes('css/style.css?v=122'));
-assert.ok(html.includes('js/state.js?v=122'));
-assert.ok(Number((html.match(/js\/game\.js\?v=(\d+)/) || [])[1]) >= 122, 'game.js 版本号不低于 122（后续提交可继续递增）');
+function ver(src, rel) {
+  const m = src.match(new RegExp(rel.replace('.', '\\.') + '\\?v=(\\d+)'));
+  return m ? Number(m[1]) : 0;
+}
+assert.ok(ver(html, 'css/style.css') >= 122, 'style 版本不低于回本那一版');
+assert.ok(ver(html, 'js/state.js') >= 122, 'state 版本不低于回本那一版');
+assert.ok(ver(html, 'js/game.js') >= 122, 'game 版本不低于回本那一版');
 
 console.log('payback.test.js ok');

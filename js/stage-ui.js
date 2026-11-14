@@ -363,10 +363,14 @@
 
   function getRecommendedCp(state, enemyOrStage, playerCp) {
     const isMijing = enemyOrStage && typeof enemyOrStage === 'object' && enemyOrStage.mijingWave;
+    const isTower = enemyOrStage && typeof enemyOrStage === 'object' && enemyOrStage.towerFloor;
     if (isMijing) {
       const run = mijingRun();
       if (run) getMijingWinRate(state, run, playerCp);
       if (mijingRecommendedCp) return mijingRecommendedCp;
+    } else if (isTower) {
+      getTowerWinRate(state, enemyOrStage, playerCp);
+      return towerRecommendedCp;
     } else {
       const id = enemyOrStage && typeof enemyOrStage === 'object' ? enemyOrStage.n : enemyOrStage;
       getCachedWinRate(state, id, playerCp);
@@ -2469,11 +2473,12 @@
     const formStr = serializeFormation(state && state.formation);
     const squadStr = window.Battle.getSquadIds(state).join(',');
     const floor = (enemy && enemy.towerFloor) || 0;
-    const key = `tw:${floor}:${Math.round(playerCp)}:${squadStr}:${formStr}`;
+    const key = `tw:${floor}:${Math.round(playerCp)}:${squadStr}:${formStr}:${beastKey(state)}`;
     if (key !== towerWinRateKey) {
       towerWinRateKey = key;
-      towerWinRateVal = window.Battle.winRate(state, enemy, 16);
-      towerRecommendedCp = window.Battle.recommendedCp(state, enemy, { runs: 16 });
+      const mods = bondModsFor(state);
+      towerWinRateVal = window.Battle.winRate(state, enemy, 16, mods);
+      towerRecommendedCp = window.Battle.recommendedCp(state, enemy, { runs: 16, mods });
     }
     return towerWinRateVal;
   }
@@ -2800,7 +2805,7 @@
       const got = w <= done;
       rows += `<li class="${got ? 'is-cleared' : 'is-missed'}"><span class="mijing-wave-idx">第 ${w} 波·${kind}${got ? '' : '（未过）'}</span><span class="mijing-wave-rw">${rewardLineHtml(rw)}</span></li>`;
     }
-    return `<div class="mijing-cleared">已通 ${done}/${M.WAVES}</div><ul class="mijing-wave-rewards">${rows}</ul>`;
+    return `<div class="mijing-cleared">已通 ${done}/${M.WAVES}</div><div class="mijing-wave-rewards-wrap"><ul class="mijing-wave-rewards">${rows}</ul></div>`;
   }
 
 

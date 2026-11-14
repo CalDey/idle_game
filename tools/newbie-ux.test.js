@@ -1048,23 +1048,34 @@ if (require.main === module)
   assert.strictEqual(NB.currentGoal(s).text, '突破至洞天中', '未到解锁重时主目标仍是下一重突破');
   assert.strictEqual(NB.currentGoal(s).buildingHint, '还差3重解锁百草灵药园');
 
+  function qiProg(state) {
+    const st = GS.getCurrentStage();
+    const pct = Math.min(100, Math.floor(((state.qi || 0) / Math.max(1, st.reqQi)) * 100));
+    return `灵气 ${pct}%`;
+  }
+
   s.realmIndex = 8;
   s.stage.best = 30;
   assert.strictEqual(NB.currentGoal(s).text, '突破至铭纹初');
+  assert.strictEqual(NB.currentGoal(s).tab, 'tab-cultivate');
   assert.strictEqual(NB.currentGoal(s).buildingHint, '还差7重解锁地底极品灵脉');
-  assert.strictEqual(NB.goalProgress(NB.currentGoal(s), s, GS.getCurrentStage()), '还差7重解锁地底极品灵脉');
+  assert.strictEqual(NB.goalProgress(NB.currentGoal(s), s, GS.getCurrentStage()), `${qiProg(s)} · 还差7重解锁地底极品灵脉`);
+  assert.ok(NB.goalProgress(NB.currentGoal(s), s, GS.getCurrentStage()).startsWith('灵气 '), '建筑提示不得盖掉灵气百分比');
 
   s.realmIndex = 12;
   assert.strictEqual(NB.nextLockedBuilding(s).id, 'lingmai');
   assert.strictEqual(NB.buildingUnlockHint(s), '还差3重解锁地底极品灵脉');
   assert.strictEqual(NB.currentGoal(s).buildingHint, '还差3重解锁地底极品灵脉');
-  assert.strictEqual(NB.goalProgress(NB.currentGoal(s), s, GS.getCurrentStage()), '还差3重解锁地底极品灵脉');
+  assert.strictEqual(NB.goalProgress(NB.currentGoal(s), s, GS.getCurrentStage()), `${qiProg(s)} · 还差3重解锁地底极品灵脉`);
 
   s.realmIndex = 14;
   const g = NB.currentGoal(s);
-  assert.strictEqual(g.text, '还差1重解锁地底极品灵脉');
-  assert.strictEqual(g.tab, 'tab-upgrades');
+  assert.ok(/^突破至/.test(g.text), '下一重恰好解锁建筑时主目标仍是突破');
+  assert.strictEqual(g.tab, 'tab-cultivate', '应指向修行突破而不是洞府');
   assert.strictEqual(g.realm, 15);
+  assert.strictEqual(g.buildingHint, '还差1重解锁地底极品灵脉');
+  const prog = NB.goalProgress(g, s, GS.getCurrentStage());
+  assert.ok(prog.startsWith('灵气 ') && prog.includes('还差1重解锁地底极品灵脉'), `进度应保留灵气百分比并附建筑提示，实际：${prog}`);
   s.realmIndex = 15;
   assert.ok(NB.nextLockedBuilding(s).id !== 'lingmai');
 

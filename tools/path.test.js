@@ -300,7 +300,7 @@ check('存档：旧存档无 path 字段时默认未择道；保存/读档往返
 function fakeDom() {
   function makeEl(id) {
     return {
-      id, children: [], style: {}, dataset: {}, attributes: {}, hidden: false, textContent: '', _html: '', listeners: {},
+      id, children: [], style: {}, dataset: {}, attributes: {}, hidden: false, disabled: false, textContent: '', _html: '', listeners: {},
       classList: {
         set: new Set(),
         add(...c) { c.forEach((x) => this.set.add(x)); },
@@ -312,6 +312,7 @@ function fakeDom() {
       set innerHTML(v) { this._html = String(v); },
       setAttribute(k, v) { this.attributes[k] = String(v); },
       getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attributes, k) ? this.attributes[k] : null; },
+      removeAttribute(k) { delete this.attributes[k]; },
       addEventListener(t, fn) { (this.listeners[t] = this.listeners[t] || []).push(fn); }
     };
   }
@@ -336,7 +337,24 @@ function clickData(container, attr, value) {
   fire(container, 'click', { target: btn });
 }
 
-check('UI 冒烟：境界卡入口（化灵前隐藏）、择道、参悟、重定、Esc/遮罩/✕ 关闭', () => {
+check('文案对象：E2–E5 新界面字符串集中在 Path.TEXT，不散落在 HTML', () => {
+  const T = P.TEXT;
+  assert.ok(T && typeof T === 'object');
+  assert.strictEqual(T.entryLocked, '化灵初开启');
+  assert.strictEqual(T.combatNote, '加成在战斗内生效，不计入面板战力');
+  assert.strictEqual(T.respecNoRefund, '已投入灵石不退还');
+  assert.ok(T.chooseConfirmTitle && T.chooseConfirm.includes('{name}'));
+  assert.ok(T.respecConfirmTitle && T.respecConfirm.includes('{name}'));
+  assert.ok(T.confirmYes && T.confirmNo);
+  const src = text('js/path.js');
+  ['化灵初开启', '加成在战斗内生效，不计入面板战力', '已投入灵石不退还'].forEach((str) => {
+    const n = src.split(str).length - 1;
+    assert.ok(n === 1, `${str} 应只出现在 TEXT 中一次，实际 ${n}`);
+  });
+  assert.ok(!text('index.html').includes('化灵初开启'));
+});
+
+check('UI 冒烟：境界卡入口（化灵前锁定）、择道/重定需确认、参悟一键、Esc/遮罩/✕ 关闭', () => {
   const { els, document, docListeners } = fakeDom();
   const sandbox = { window: {}, console, document, localStorage: memoryStorage(), setInterval() { return 0; } };
   sandbox.window = sandbox;
@@ -347,17 +365,23 @@ check('UI 冒烟：境界卡入口（化灵前隐藏）、择道、参悟、重�
     vm.runInNewContext(src, sandbox, { filename: `${f}.js` });
   });
   const GS = sandbox.GameState;
+  const TXT = sandbox.Path.TEXT;
   GS.loadGame();
   const st = GS.state;
   st.realmIndex = 3;
   const UI = sandbox.Path.ui;
   UI.tick();
-  assert.strictEqual(els['btn-path-open'].hidden, true);
+  assert.strictEqual(els['btn-path-open'].hidden, false);
+  assert.strictEqual(els['btn-path-open'].disabled, true);
+  assert.ok(els['btn-path-open'].classList.contains('is-locked'));
+  assert.strictEqual(els['path-entry-text'].textContent, TXT.entryLocked);
   assert.strictEqual(UI.open(), false);
   st.realmIndex = 6;
   st.stones = 0;
   UI.tick();
   assert.strictEqual(els['btn-path-open'].hidden, false);
+  assert.strictEqual(els['btn-path-open'].disabled, false);
+  assert.ok(!els['btn-path-open'].classList.contains('is-locked'));
   assert.strictEqual(els['path-entry-text'].textContent, '本命道途 · 待择道');
   assert.ok(els['badge-path'].classList.contains('visible'));
   fire(els['btn-path-open'], 'click', {});
@@ -365,23 +389,38 @@ check('UI 冒烟：境界卡入口（化灵前隐藏）、择道、参悟、重�
   const body = els['path-modal-body'];
   const actions = els['path-modal-actions'];
   assert.strictEqual((body.innerHTML.match(/data-path-choose=/g) || []).length, 3);
+  assert.ok(body.innerHTML.includes(TXT.combatNote), '弹窗注明战斗内生效');
   clickData(body, 'path-choose', 'jian');
+  assert.ok(!st.path || !st.path.id, '择道需二次确认，不应立即生效');
+  assert.ok(body.innerHTML.includes('data-path-confirm="yes"'));
+  assert.ok(body.innerHTML.includes(TXT.chooseConfirmTitle));
+  clickData(body, 'path-confirm', 'no');
+  assert.ok(!st.path || !st.path.id, '取消确认后仍未择道');
+  assert.ok(!body.innerHTML.includes('data-path-confirm="yes"'));
+  clickData(body, 'path-choose', 'jian');
+  clickData(body, 'path-confirm', 'yes');
   assert.strictEqual(st.path.id, 'jian');
   assert.ok(body.innerHTML.includes('已立本命：剑道'));
   assert.ok(body.innerHTML.includes('剑心锋芒') && body.innerHTML.includes('尊者初开放'));
+  assert.ok(body.innerHTML.includes(TXT.combatNote));
   assert.ok(sandbox.localStorage._data.xiuxian_idle_save_v1.includes('"path"'), '择道后已存档');
   assert.ok(/data-path-up="0" disabled/.test(body.innerHTML), '灵石不足按钮禁用');
   st.stones = 1e9;
   UI.render();
   clickData(body, 'path-up', '0');
   assert.deepStrictEqual(Array.from(st.path.lv), [1, 0, 0]);
-  assert.ok(body.innerHTML.includes('参悟【剑心锋芒】至 1 层'));
+  assert.ok(body.innerHTML.includes('参悟【剑心锋芒】至 1 层'), '参悟仍是一键生效');
+  assert.ok(!body.innerHTML.includes('data-path-confirm="yes"'), '参悟不加确认');
   UI.tick();
   assert.strictEqual(els['path-entry-text'].textContent, '本命道途 · 剑道 1/9');
   clickData(actions, 'path-torespec', '1');
   assert.strictEqual(UI._view(), 'respec');
+  assert.ok(body.innerHTML.includes(TXT.respecNoRefund), '重定说明含不退还');
   assert.ok(!/data-path-respec="jian"/.test(body.innerHTML));
   clickData(body, 'path-respec', 'ti');
+  assert.strictEqual(st.path.id, 'jian', '改修需二次确认');
+  assert.ok(body.innerHTML.includes(TXT.respecConfirmTitle));
+  clickData(body, 'path-confirm', 'yes');
   assert.strictEqual(st.path.id, 'ti');
   assert.deepStrictEqual(Array.from(st.path.lv), [1, 0, 0]);
   assert.strictEqual(UI._view(), 'main');
@@ -401,8 +440,13 @@ check('index.html 引用 path.js 且有入口/弹窗节点；样式存在', () =
   assert.match(index, /<script src="js\/path\.js\?v=\d+"><\/script>/);
   assert.ok(index.indexOf('js/path.js') > index.indexOf('js/state.js'));
   ['btn-path-open', 'path-entry-text', 'badge-path', 'path-modal', 'path-modal-body', 'path-modal-actions', 'btn-path-close'].forEach((id) => assert.ok(index.includes(`id="${id}"`), id));
+  const row = index.slice(index.indexOf('class="breakthrough-row"'), index.indexOf('id="tab-gear"'));
+  assert.ok(row.includes('id="btn-path-open"') && row.includes('class="breakthrough-actions"'), '入口应与突破按钮同一行');
+  assert.ok(!/id="btn-path-open"[^>]*\shidden(?:\s|\/|>)/.test(row), '化灵前入口不再 hidden');
   const css = text('css/style.css');
-  ['.path-entry', '.path-dialog', '.path-modal-body::-webkit-scrollbar', '.path-node', '.path-card'].forEach((c) => assert.ok(css.includes(c), c));
+  ['.path-entry', '.path-dialog', '.path-modal-body::-webkit-scrollbar', '.path-node', '.path-card', '.breakthrough-actions', '.path-entry.is-locked', '.path-confirm'].forEach((c) => assert.ok(css.includes(c), c));
+  const hero = css.slice(css.indexOf('/* Hero stage */'));
+  assert.ok(/min-height:\s*168px/.test(hero.slice(0, 400)), 'hero-stage 高度保持不变');
   assert.ok(fs.existsSync(path.join(root, 'assets/icons/gf_taiqingjue@64.webp')));
 });
 
