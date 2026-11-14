@@ -1035,7 +1035,13 @@ assert.ok(css.includes('MaShanZheng-Role.woff2?v=13'));
 ['js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
   assert.strictEqual(git(['diff', '--stat', BASE, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
-assert.strictEqual(git(['diff', '--stat', YOUMING_BASE, '--', 'js/game.js']).trim(), '');
+// game.js 自幽冥基线起只允许洞府升级列表图标（home-up-*）改动。
+git(['diff', '-U0', YOUMING_BASE, '--', 'js/game.js'])
+  .split('\n')
+  .filter((line) => /^[+-]/.test(line) && !/^(\+\+\+|---) /.test(line))
+  .forEach((line) => {
+    assert.ok(/home-up|^[+-]\s*<\/div>\s*$/.test(line), `game.js 出现洞府图标以外的改动：${line}`);
+  });
 const ROLE_BORDER_BASE = 'ab9cd8d2f0891e788aa5bda263cf73f5283b14d2';
 const roleTouched = git(['diff', '--name-only', ROLE_BORDER_BASE, YOUMING_BASE]).trim().split('\n').filter(Boolean).sort();
 assert.deepStrictEqual(roleTouched, ['css/style.css', 'index.html', 'js/game.js', 'tools/hero-roster.test.js']);
@@ -1056,11 +1062,11 @@ assert.match(css, /\.role-card\.role-q-xian:not\(\.is-active\) \{[^}]*#f4a3a3, #
 assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[^{]*\{[^}]*animation\s*:/.test(css));
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=84'));
+assert.ok(index.includes('css/style.css?v=85'));
 assert.ok(index.includes('js/config.js?v=75'));
 assert.ok(index.includes('js/state.js?v=32'));
 assert.ok(index.includes('js/battle.js?v=35'));
-assert.ok(index.includes('js/game.js?v=45'));
+assert.ok(index.includes('js/game.js?v=46'));
 const battleDiff = git(['diff', '-U0', MAIN, '--', 'js/battle.js']);
 const battleBody = battleDiff.split('\n').filter((line) => (
   (line.startsWith('+') || line.startsWith('-')) && !line.startsWith('+++') && !line.startsWith('---')

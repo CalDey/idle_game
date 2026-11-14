@@ -707,15 +707,22 @@
         row.className = 'home-up-row';
         row.dataset.buildingId = item.id;
         row.innerHTML = `
-          <div class="home-up-head">
-            <div class="home-up-title">
-              <span class="home-up-name">${item.name}</span>
-              <span class="home-up-tier"></span>
-              <span class="upgrade-lv home-up-lv"></span>
+          <div class="home-up-top">
+            <div class="home-up-icon-wrap">
+              <img class="gi home-up-icon" src="assets/icons/df_${item.id}.webp?v=18" alt="" aria-hidden="true" loading="lazy">
+            </div>
+            <div class="home-up-main">
+              <div class="home-up-head">
+                <div class="home-up-title">
+                  <span class="home-up-name">${item.name}</span>
+                  <span class="home-up-tier"></span>
+                  <span class="upgrade-lv home-up-lv"></span>
+                </div>
+              </div>
+              <div class="home-up-output"></div>
+              <div class="home-up-link" hidden></div>
             </div>
           </div>
-          <div class="home-up-output"></div>
-          <div class="home-up-link" hidden></div>
           <div class="home-up-meta-row">
             <span class="home-up-cost"></span>
             <span class="home-up-next"></span>
