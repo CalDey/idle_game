@@ -666,7 +666,7 @@ function breakAt(GS, roll) {
   GS.loadGame();
   const s = GS.state;
   assert.deepStrictEqual(plain(s.unlockSeen), {}, '新档默认未看过');
-  assert.deepStrictEqual(plain(NB.UNLOCKS.map((u) => u.key)), ['gear', 'yaoyuan', 'mijing', 'bonds']);
+  assert.deepStrictEqual(plain(NB.UNLOCKS.map((u) => u.key)), ['gear', 'yaoyuan', 'mijing', 'bonds', 'dispatch']);
   assert.strictEqual(NB.pendingUnlock(s), null);
   s.realmIndex = 1;
   assert.strictEqual(NB.pendingUnlock(s).key, 'gear');

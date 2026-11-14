@@ -816,6 +816,19 @@
     return 0;
   }
 
+  // 渡劫按钮旁「大境界门槛大幅提升」：大境界渡劫，或下一阶灵气需求至少 5 倍。
+  const TRIB_HINT_COST_RATIO = 5;
+  function shouldShowTribHint(stage, stages) {
+    if (!stage || stage.isMaxStage) return false;
+    if (stage.isMajorTribulation) return true;
+    const list = stages || REALM_STAGES;
+    const idx = Number.isInteger(stage.index) ? stage.index : list.indexOf(stage);
+    const next = idx >= 0 ? list[idx + 1] : null;
+    const cur = Number(stage.reqQi) || 0;
+    const nxt = next ? Number(next.reqQi) || 0 : 0;
+    return cur > 0 && nxt / cur >= TRIB_HINT_COST_RATIO;
+  }
+
   // 秘境劫运开局测力：二分探测次数与满编战力下限倍率（见 Mijing.measureStrength）
   const MIJING = {
     PROBE_SIMS: 12,
@@ -840,6 +853,8 @@
     REINCARNATION_MIN_STAGE: 27, // 天神初 (index 27)
     ENABLE_STAGE_GATES: true,
     LATE_REALM_QI_MULT,
+    TRIB_HINT_COST_RATIO,
+    shouldShowTribHint,
     EQUIP_SLOTS,
     QUALITIES,
     GEAR_UNIQUE_NAMES,

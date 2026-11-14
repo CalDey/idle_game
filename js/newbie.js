@@ -268,6 +268,19 @@
     return false;
   }
 
+  // 法宝页内红点：页签亮着时，让玩家看见是「摘桃/处理掉落」还是「树已升级完成」。
+  function gearPickDot(s) {
+    if (!s || (s.realmIndex || 0) < peachUnlockRealm()) return false;
+    if (s.pending) return true;
+    return ((s.tree && s.tree.peaches) || 0) >= 10;
+  }
+
+  function gearTreeDot(s, now) {
+    if (!s || (s.realmIndex || 0) < peachUnlockRealm()) return false;
+    const tree = s.tree || {};
+    return Boolean(tree.upEnd && tree.upEnd <= (now || Date.now()));
+  }
+
   // api: { playerStats(s), enemyFor(n) }
   function stageDot(s, api, now) {
     if (!s || (s.realmIndex || 0) < stageUnlockRealm()) return false;
@@ -698,6 +711,20 @@
           return false;
         }
       }
+    },
+    {
+      key: 'dispatch',
+      title: '仙姬派遣已开启',
+      desc: '未上阵的仙姬可去洞府接限时悬赏，到点领取灵石、灵玉或仙桃。',
+      go: '去派遣',
+      tab: 'tab-upgrades',
+      glyph: '遣',
+      test: (s) => {
+        const D = typeof window !== 'undefined' && window.Dispatch;
+        if (D && typeof D.isUnlocked === 'function') return D.isUnlocked(s);
+        const need = (D && D.RULES && D.RULES.UNLOCK_BEST) || 5;
+        return ((s.stage && s.stage.best) || 0) >= need;
+      }
     }
   ];
 
@@ -796,6 +823,20 @@
     });
   }
 
+  function unlockItemUnvisited(s, kind, id) {
+    if (!s || !kind || !id) return false;
+    const visited = ensureUnlockVisited(s);
+    const key = `${kind}:${id}`;
+    return itemUnlocks().some((u) => {
+      if (u.key !== key) return false;
+      try {
+        return Boolean(u.test(s)) && !visited[u.key];
+      } catch (err) {
+        return false;
+      }
+    });
+  }
+
   function markUnlockPaneVisited(s, pane) {
     if (!s) return false;
     const visited = ensureUnlockVisited(s);
@@ -861,6 +902,23 @@
     }
   }
 
+  function showUnlockCard(s, u) {
+    if (!s || !u) return false;
+    if (unlockTimer) {
+      clearTimeout(unlockTimer);
+      unlockTimer = 0;
+    }
+    currentUnlock = u;
+    markUnlockSeen(s, u.key);
+    if (window.GameState && typeof window.GameState.saveGame === 'function') window.GameState.saveGame();
+    renderUnlockCard(u);
+    if (els.unlockModal) {
+      els.unlockModal.classList.add('active');
+      els.unlockModal.setAttribute('aria-hidden', 'false');
+    }
+    return true;
+  }
+
   function maybeUnlockCard(s) {
     if (unlockTimer || (els.unlockModal && els.unlockModal.classList.contains('active'))) return;
     if (!pendingUnlock(s)) return;
@@ -876,15 +934,23 @@
         return;
       }
       unlockTimer = 0;
-      currentUnlock = u;
-      markUnlockSeen(st, u.key);
-      window.GameState.saveGame();
-      renderUnlockCard(u);
-      if (els.unlockModal) {
-        els.unlockModal.classList.add('active');
-        els.unlockModal.setAttribute('aria-hidden', 'false');
-      }
+      showUnlockCard(st, u);
     }, GEAR_POPUP_DELAY_MS);
+  }
+
+  // 闯关已开且第一次进闯关页时，若「法宝已开启」还没弹过，立刻弹出，避免没拿法宝就打 1-1。
+  // 不改 peachGoalDone / stageDot：赠桃没摘完时闯关红点仍不亮，与 ed7efa0 引导不冲突。
+  function shouldShowGearBeforeStage(s) {
+    if (!s || (s.realmIndex || 0) < stageUnlockRealm()) return false;
+    if ((s.realmIndex || 0) < peachUnlockRealm()) return false;
+    const seen = ensureUnlockSeen(s);
+    return !seen.gear;
+  }
+
+  function promptGearBeforeStage(s) {
+    if (!shouldShowGearBeforeStage(s)) return false;
+    const u = unlockCatalog().find((item) => item.key === 'gear');
+    return showUnlockCard(s, u);
   }
 
   function closeUnlockModal() {
@@ -968,6 +1034,7 @@
         closeUnlockModal();
         api.switchTab(u.tab);
         if (u.pane && typeof api.openHome === 'function') api.openHome(u.pane);
+        if (u.key === 'dispatch' && typeof api.openDispatch === 'function') api.openDispatch();
         tick();
       });
     }
@@ -1009,8 +1076,11 @@
     isGoalDone,
     goalProgress,
     gearDot,
+    gearPickDot,
+    gearTreeDot,
     stageDot,
     upgradeDot,
+    unlockItemUnvisited,
     compareDiff,
     cpGainOptions,
     heroQuality,
@@ -1028,6 +1098,9 @@
     pendingUnlock,
     unlockTabDot,
     markUnlockPaneVisited,
+    shouldShowGearBeforeStage,
+    promptGearBeforeStage,
+    showUnlockCard,
     topActiveModal,
     closeModal,
     handleEscKey,

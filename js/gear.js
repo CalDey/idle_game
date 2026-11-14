@@ -19,6 +19,20 @@
     return document.getElementById(id);
   }
 
+  function setActionBadge(el, on) {
+    if (!el) return;
+    let badge = el.querySelector('.action-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'action-badge';
+      badge.setAttribute('aria-hidden', 'true');
+      el.appendChild(badge);
+    }
+    badge.classList.toggle('visible', Boolean(on));
+    el.classList.toggle('has-action-badge', Boolean(on));
+  }
+
+
   function unlocked() {
     return window.GameState.state.realmIndex >= window.GameConfig.PEACH.UNLOCK_REALM;
   }
@@ -245,10 +259,19 @@
     if (document.activeElement !== autoOn) autoOn.checked = !!(s.autoDecomp && s.autoDecomp.on);
     if (document.activeElement !== autoQ) autoQ.value = String((s.autoDecomp && s.autoDecomp.maxQ) || 0);
     const badge = $('badge-gear');
+    const now = Date.now();
     const ready = window.Newbie
-      ? window.Newbie.gearDot(s, Date.now())
-      : tree.peaches >= 10 || (tree.upEnd && tree.upEnd <= Date.now());
+      ? window.Newbie.gearDot(s, now)
+      : tree.peaches >= 10 || (tree.upEnd && tree.upEnd <= now);
     if (badge) badge.classList.toggle('visible', Boolean(ready));
+    const pickOn = window.Newbie && typeof window.Newbie.gearPickDot === 'function'
+      ? window.Newbie.gearPickDot(s)
+      : Boolean(s.pending) || tree.peaches >= 10;
+    const treeOn = window.Newbie && typeof window.Newbie.gearTreeDot === 'function'
+      ? window.Newbie.gearTreeDot(s, now)
+      : Boolean(tree.upEnd && tree.upEnd <= now);
+    setActionBadge($('btn-pick-peach'), pickOn);
+    setActionBadge($('btn-tree-up'), treeOn);
     renderGrid();
   }
 

@@ -486,6 +486,9 @@
             <span class="payback-label${pb.tone ? ` payback-${pb.tone}` : ''}"${pb.text ? '' : ' hidden'}>${pb.text}</span>
           </div>
         `;
+        const gongfaNew = window.Newbie && typeof window.Newbie.unlockItemUnvisited === 'function'
+          && window.Newbie.unlockItemUnvisited(s, 'gongfa', item.id);
+        setActionBadge(row.querySelector('button[data-gongfa-id]'), canAfford || gongfaNew);
         els.gongfaList.appendChild(row);
       });
     }
@@ -960,9 +963,13 @@
         }
 
         const canAfford = s.stones >= nextCost;
+        const dongfuNew = window.Newbie && typeof window.Newbie.unlockItemUnvisited === 'function'
+          && window.Newbie.unlockItemUnvisited(s, 'dongfu', item.id);
         row.querySelectorAll('button[data-home-buy]').forEach((btn) => {
           btn.disabled = !canAfford;
         });
+        const buyOne = row.querySelector('button[data-home-buy="1"]');
+        setActionBadge(buyOne, canAfford || dongfuNew);
       }
     });
   }
@@ -985,6 +992,9 @@
       row.querySelectorAll('button[data-home-buy]').forEach((btn) => {
         btn.disabled = !canAfford;
       });
+      const dongfuNew = window.Newbie && typeof window.Newbie.unlockItemUnvisited === 'function'
+        && window.Newbie.unlockItemUnvisited(s, 'dongfu', item.id);
+      setActionBadge(row.querySelector('button[data-home-buy="1"]'), canAfford || dongfuNew);
     });
   }
 
@@ -999,6 +1009,19 @@
       updateHeaderAndMeditationUI();
       if (window.StageUI) StageUI.render();
     }
+  }
+
+  function setActionBadge(el, on) {
+    if (!el) return;
+    let badge = el.querySelector('.action-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'action-badge';
+      badge.setAttribute('aria-hidden', 'true');
+      el.appendChild(badge);
+    }
+    badge.classList.toggle('visible', Boolean(on));
+    el.classList.toggle('has-action-badge', Boolean(on));
   }
 
   // 动态刷新功法与洞府按钮的可用状态，避免整表重建闪烁
@@ -1017,6 +1040,9 @@
         if (btn) {
           btn.disabled = !canAfford;
           btn.classList.toggle('btn-primary', canAfford);
+          const gongfaNew = window.Newbie && typeof window.Newbie.unlockItemUnvisited === 'function'
+            && window.Newbie.unlockItemUnvisited(s, 'gongfa', item.id);
+          setActionBadge(btn, canAfford || gongfaNew);
           setPaybackEl(btn.parentElement && btn.parentElement.querySelector('.payback-label'), unlocked ? paybackView('gongfa', item) : { text: '', tone: '' });
         }
       }
@@ -1226,13 +1252,16 @@
       ? '渡劫晋升'
       : '突破境界';
     if (els.breakthroughTribHint) {
-      const showTribHint = Boolean(stage.isMajorTribulation) && !stage.isMaxStage;
+      const showTribHint = window.GameConfig && typeof window.GameConfig.shouldShowTribHint === 'function'
+        ? window.GameConfig.shouldShowTribHint(stage)
+        : Boolean(stage.isMajorTribulation) && !stage.isMaxStage;
       els.breakthroughTribHint.hidden = !showTribHint;
     }
 
     if (els.badgeBreakthrough) {
       els.badgeBreakthrough.classList.toggle('visible', canBreak);
     }
+    setActionBadge(els.btnBreakthrough, canBreak);
 
     // 若已达天神境，实时更新可获取道果数
     if (s.realmIndex >= REINCARNATION_MIN_STAGE) {
@@ -1339,6 +1368,9 @@
     if (window.StageUI) {
       if (targetId === 'tab-stage') window.StageUI.onShow();
       else window.StageUI.onHide();
+    }
+    if (targetId === 'tab-stage' && window.Newbie && typeof window.Newbie.promptGearBeforeStage === 'function') {
+      window.Newbie.promptGearBeforeStage(GameState.state);
     }
   }
 
@@ -1952,7 +1984,16 @@
     }
 
     if (window.Newbie) {
-      Newbie.init({ switchTab: switchToTab, log: addLog, openHome: (pane) => openHomeUpgradeModal(null, pane) });
+      Newbie.init({
+        switchTab: switchToTab,
+        log: addLog,
+        openHome: (pane) => openHomeUpgradeModal(null, pane),
+        openDispatch: () => {
+          if (window.Dispatch && window.Dispatch.ui && typeof window.Dispatch.ui.open === 'function') {
+            window.Dispatch.ui.open();
+          }
+        }
+      });
     }
 
     lastTickTime = performance.now();
