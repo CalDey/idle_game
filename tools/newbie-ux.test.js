@@ -694,5 +694,13 @@ function breakAt(GS, roll) {
   assert.ok(/if \(!mijingStartArmed\) \{\s*mijingStartArmed = true;/.test(ui));
 }
 
+// ---------- batch3 P3-8 文案统一 ----------
+{
+  const all = ['index.html', 'js/game.js', 'js/stage-ui.js', 'js/newbie.js'].map(text).join('\n');
+  assert.ok(!all.includes('看完整立绘') && !all.includes('隐藏境界突破'), '旧文案已移除');
+  assert.strictEqual((text('index.html').match(/赏玩立绘模式/g) || []).length, 2);
+  assert.ok(text('index.html').includes('胜算：<strong id="stage-winrate">'));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');
