@@ -140,6 +140,7 @@
       state.qi = Math.max(0, state.qi - stage.reqQi);
       state.realmIndex += 1;
       state.pityBonus = 0;
+      if (window.Codex && typeof window.Codex.syncMaxRealm === 'function') window.Codex.syncMaxRealm(state);
       return { success: true, guaranteed, rate, loss: 0, stage, nextStage: getCurrentStage() };
     }
     const loss = Math.floor(Math.min(state.qi, stage.reqQi) * stage.failureLossRatio);
@@ -899,6 +900,13 @@
     fresh.failBreakthroughs = state.failBreakthroughs || 0;
     fresh.peachesPicked = state.peachesPicked || 0;
     fresh.decomposed = state.decomposed || 0;
+    // 图鉴：轮回保留历史最高境界（及其它 codex 字段），避免已解锁条目重新上锁
+    if (window.Codex && typeof window.Codex.syncMaxRealm === 'function') {
+      window.Codex.syncMaxRealm(state);
+    }
+    if (state.codex && typeof state.codex === 'object' && !Array.isArray(state.codex)) {
+      fresh.codex = JSON.parse(JSON.stringify(state.codex));
+    }
     // 轮回不重置秘境当日次数，进行中的一局按开局快照继续（避免轮回刷次数）
     if (state.mijing && typeof state.mijing === 'object') {
       fresh.mijing = JSON.parse(JSON.stringify(state.mijing));

@@ -132,7 +132,17 @@
     return (data().entries || []).filter((e) => e.category === catId);
   }
 
-  const core = { ensureState, progress, isUnlocked, hintText, heroOwned, bossList, mobList, bossLore, bossImgUrl, registerTab, tabs, entriesFor };
+  // 突破成功时立刻记下历史最高境界，不依赖打开图鉴。
+  function syncMaxRealm(s) {
+    const st = s || (typeof window !== 'undefined' && window.GameState && window.GameState.state);
+    if (!st) return null;
+    const c = ensureState(st);
+    const r = Math.max(0, Math.floor(Number(st.realmIndex) || 0));
+    if (r > c.maxRealm) c.maxRealm = r;
+    return c;
+  }
+
+  const core = { ensureState, progress, isUnlocked, hintText, heroOwned, bossList, mobList, bossLore, bossImgUrl, registerTab, tabs, entriesFor, syncMaxRealm };
   window.Codex = core;
 
   // ===================== 界面 =====================
@@ -197,14 +207,6 @@
     renderTabs(s, prog);
     const tab = tabs.find((t) => t.id === activeTab);
     els.list.innerHTML = !tab ? '' : tab.kind === 'bestiary' ? renderBestiary(s) : (typeof tab.render === 'function' ? tab.render(s) : renderEntries(s, tab.id, prog));
-  }
-
-  function syncMaxRealm() {
-    const GS = window.GameState;
-    if (!GS || !GS.state) return;
-    const c = ensureState(GS.state);
-    const r = Number(GS.state.realmIndex) || 0;
-    if (r > c.maxRealm) c.maxRealm = r;
   }
 
   function open() {

@@ -221,3 +221,36 @@ console.log('codex.test.js ok: 52 entries, 30/30 bosses, 18 mobs');
     assert.ok(!stripped.includes(oldName), `js 中仍有旧名：${oldName}`);
   });
 }
+
+// ---------- 轮回保留图鉴解锁；突破时更新 maxRealm ----------
+{
+  const storage = memoryStorage();
+  const { GS, CX } = loadRuntime(storage);
+  GS.state.qi = 1e18;
+  GS.state.realmIndex = 5;
+  GS.state.codex = { v: 1, maxRealm: 0 };
+  const br = GS.applyBreakthroughAttempt(0);
+  assert.ok(br.success, '突破应成功以便记下 maxRealm');
+  assert.strictEqual(GS.state.realmIndex, 6);
+  assert.strictEqual(GS.state.codex.maxRealm, 6, '突破成功应立刻更新 maxRealm，不必打开图鉴');
+
+  GS.state.realmIndex = 30;
+  CX.syncMaxRealm(GS.state);
+  assert.strictEqual(GS.state.codex.maxRealm, 30);
+  assert.ok(CX.isUnlocked(GS.state, byId('realm_xudao')));
+  const snap = JSON.parse(JSON.stringify(GS.state.codex));
+
+  GS.state.lifetimeQi = 1e40;
+  GS.state.qi = 1e40;
+  const re = GS.performReincarnation();
+  assert.ok(re.ok, '应能轮回');
+  assert.strictEqual(GS.state.realmIndex, 0, '轮回后境界归零');
+  assert.ok(GS.state.codex && typeof GS.state.codex === 'object', '轮回应深拷 state.codex');
+  assert.strictEqual(GS.state.codex.maxRealm, 30, '轮回后 maxRealm 应保留');
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(GS.state.codex)), snap);
+  assert.ok(CX.isUnlocked(GS.state, byId('realm_xudao')), '轮回后已解锁境界不应重新上锁');
+  GS.state.codex.maxRealm = 0;
+  assert.strictEqual(snap.maxRealm, 30, '深拷贝后改新档不应写回轮回前快照');
+}
+
+console.log('codex.test.js also ok: reincarnation keeps maxRealm, breakthrough syncs it');
