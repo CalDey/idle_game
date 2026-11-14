@@ -73,6 +73,59 @@
     return M ? M.activeRun(window.GameState.state) : null;
   }
 
+  // ===== 仙缘阵法（羁绊）=====
+  function BD() {
+    return window.Bonds || null;
+  }
+
+  function bondModsFor(state) {
+    const Bd = BD();
+    return Bd ? Bd.modsForState(state) : null;
+  }
+
+  function bondTagsHtml(heroId) {
+    const Bd = BD();
+    if (!Bd) return '';
+    const tags = Bd.tagsOf(heroId);
+    if (!tags.length) return '';
+    return `<span class="bond-tags">${tags
+      .map((t) => `<span class="bond-tag bond-${t}">${Bd.BOND_MAP[t] ? Bd.BOND_MAP[t].name : t}</span>`)
+      .join('')}</span>`;
+  }
+
+  function bondChipsHtml(heroIds, withDesc) {
+    const Bd = BD();
+    if (!Bd) return '';
+    const list = Bd.evaluate(heroIds).filter((b) => b.count > 0);
+    list.sort((a, b) => (b.level - a.level) || (b.count - a.count));
+    if (!list.length) return '';
+    return list
+      .map((b) => {
+        const def = Bd.BOND_MAP[b.id];
+        const lvCls = b.active ? ` is-active lv-${b.level}` : '';
+        const desc = withDesc
+          ? `<span class="bond-chip-desc">${b.active ? b.tier.desc : `差 ${b.nextNeed - b.count} 人：${def.tiers[0].desc}`}${
+            b.active && !b.maxed ? `（${b.nextNeed} 人：${def.tiers[b.level].desc}）` : ''
+          }</span>`
+          : '';
+        return `<span class="bond-chip bond-${b.id}${lvCls}"><span class="bond-chip-name">${b.name}</span><span class="bond-chip-count">${b.count}/${b.nextNeed}</span>${desc}</span>`;
+      })
+      .join('');
+  }
+
+  function renderStageBondRow(squadIds) {
+    const row = $('stage-bond-row');
+    if (!row) return;
+    const html = bondChipsHtml(squadIds, false) || '<span class="bond-row-empty">仙缘：同标签角色上阵 2 人激活羁绊</span>';
+    const full = `<span class="bond-row-label">仙缘</span>${html}`;
+    if (row._lastHtml !== full) {
+      row._lastHtml = full;
+      row.innerHTML = full;
+    }
+    const n = BD() ? BD().activeBonds(squadIds).length : 0;
+    row.setAttribute('aria-label', `仙缘羁绊：已激活 ${n} 个，点击编辑队伍`);
+  }
+
   function inMijing() {
     return Boolean(mijingView && mijingRun());
   }
@@ -202,7 +255,7 @@
     const key = `${stageNum}:${Math.round(playerCp)}:${state && state.heroId}:${squadStr}:${formStr}`;
     if (key !== cachedWinRateKey) {
       cachedWinRateKey = key;
-      cachedWinRateVal = window.Battle.winRate(state, stageNum, 40);
+      cachedWinRateVal = window.Battle.winRate(state, stageNum, 40, bondModsFor(state));
     }
     return cachedWinRateVal;
   }
@@ -872,6 +925,7 @@
       renderChapterBar(enemy, st.best || 0);
     }
     renderMijingEntry();
+    renderStageBondRow(activeSquadIds);
 
     const stageBox = $('battle-stage');
     const regionIdx = Math.min(5, Math.floor((enemy.chapter - 1) / 5));
@@ -1260,11 +1314,11 @@
     let session;
     if (mjRun) {
       // 秘境每波种子由局种子决定：刷新页面重打同一波，结果不会因重开而改变
-      session = window.Battle.createSession(s, enemy, MJ().waveSeed(mjRun, mjRun.wave), MJ().buildMods(mjRun.blessings));
+      session = window.Battle.createSession(s, enemy, MJ().waveSeed(mjRun, mjRun.wave), MJ().combinedMods(s, mjRun.blessings));
     } else {
       s.seq = (s.seq || 0) + 1;
       const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x9e3779b1)) >>> 0;
-      session = window.Battle.createSession(s, enemy, seed);
+      session = window.Battle.createSession(s, enemy, seed, bondModsFor(s));
     }
     if (!session || session.emptySquad || session.playerUnits.length < 1) {
       const logLine = $('battle-log-line');
@@ -1649,6 +1703,12 @@
       slotsEl.innerHTML = slotsHtml;
     }
 
+    const bondPanel = $('squad-bond-panel');
+    if (bondPanel) {
+      const chips = bondChipsHtml(draftSquad, true);
+      bondPanel.innerHTML = chips || '<span class="bond-row-empty">仙缘：同标签角色上阵 2 人激活羁绊，3 人进阶</span>';
+    }
+
     const listEl = $('squad-hero-list');
     if (listEl) {
       let listHtml = '';
@@ -1670,6 +1730,7 @@
               <div class="squad-hero-info">
                 <div class="squad-hero-name-row">
                   <span class="squad-hero-name">${h.name || '未解锁角色'}</span>
+                  ${bondTagsHtml(h.id)}
                 </div>
                 <div class="squad-hero-skill">绝技 · ${skillName}</div>
                 <div class="squad-hero-status is-locked">未解锁</div>
@@ -1698,6 +1759,7 @@
               <div class="squad-hero-info">
                 <div class="squad-hero-name-row">
                   <span class="squad-hero-name">${h.name}</span>
+                  ${bondTagsHtml(h.id)}
                 </div>
                 <div class="squad-hero-skill">绝技 · ${skillName}</div>
                 <div class="squad-hero-status">${statusText}</div>
@@ -2447,6 +2509,18 @@
       btnChallenge.addEventListener('click', () => startBattle(true));
     }
     initMijingUI();
+    const bondRow = $('stage-bond-row');
+    if (bondRow) {
+      bondRow.addEventListener('click', () => {
+        if (!isPlaying) openSquadModal();
+      });
+      bondRow.addEventListener('keydown', (e) => {
+        if (e && (e.key === 'Enter' || e.key === ' ') && !isPlaying) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          openSquadModal();
+        }
+      });
+    }
     if (btnAuto) {
       btnAuto.addEventListener('click', toggleAuto);
     }

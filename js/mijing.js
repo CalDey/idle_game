@@ -241,10 +241,11 @@
     const guess = fullSquadCp(state) || refCp(ref);
     let lo = Math.log(guess * 0.3);
     let hi = Math.log(guess * 3);
+    const probeMods = bondMods(state);
     const rate = (cp) => {
       let w = 0;
       for (let i = 0; i < PROBE_SIMS; i++) {
-        if (B.createSession(state, probeEnemy(ref, cp), 0x51ed27 + i * 7919, null).runToEnd(true).win) w += 1;
+        if (B.createSession(state, probeEnemy(ref, cp), 0x51ed27 + i * 7919, probeMods).runToEnd(true).win) w += 1;
       }
       return w / PROBE_SIMS;
     };
@@ -376,6 +377,19 @@
     return m;
   }
 
+  // 劫运 + 仙缘羁绊（由当前上阵阵容推导）合并后的战斗 mods
+  function bondMods(state) {
+    const Bd = root.Bonds;
+    return Bd && typeof Bd.modsForState === 'function' ? Bd.modsForState(state) : null;
+  }
+
+  function combinedMods(state, blessings) {
+    const Bd = root.Bonds;
+    const base = buildMods(blessings);
+    const bm = bondMods(state);
+    return Bd && bm ? Bd.mergeMods(base, bm) : base;
+  }
+
   function hasActiveMods(blessings) {
     return Boolean(blessings && Object.keys(blessings).some((id) => (blessings[id] || 0) > 0));
   }
@@ -505,7 +519,7 @@
     const total = Math.max(1, int(runs, 20));
     if (!B.canStartBattle(state).ok) return 0;
     const enemy = waveEnemy(run, run.wave);
-    const mods = buildMods(run.blessings);
+    const mods = combinedMods(state, run.blessings);
     let wins = 0;
     for (let i = 0; i < total; i++) {
       const s = B.createSession(state, enemy, waveSeed(run, run.wave) + i * 7919, mods);
@@ -546,6 +560,7 @@
     waveEnemy,
     waveSeed,
     buildMods,
+    combinedMods,
     hasActiveMods,
     drawChoices,
     pickBlessing,

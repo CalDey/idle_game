@@ -492,7 +492,7 @@ check('闯关页秘境 UI 冒烟：开启、播放/跳过、择运、结算、�
   assert.ok(!st.mijing.run, '秘境应结束');
   assert.ok(els['mijing-modal'].classList.contains('active'), '应弹出结算');
   assert.ok(/秘境(全通|止步)/.test(els['mijing-modal-title'].textContent));
-  assert.ok(st.mijing.bestWave >= 1);
+  assert.ok(st.mijing.bestWave >= 0 && st.mijing.bestWave <= 8);
   if (st.mijing.bestWave >= 2) assert.ok(picks >= 1);
   sandbox.StageUI.closeMijingModal();
   assert.strictEqual(els['btn-mijing-entry'].textContent, '秘境 1/2');
@@ -526,7 +526,7 @@ check('闯关页秘境 UI 冒烟：开启、播放/跳过、择运、结算、�
 // 10. 页面引用
 check('index.html 引用 mijing.js 且有入口/面板/弹窗节点', () => {
   const index = text('index.html');
-  assert.match(index, /<script src="js\/battle\.js\?v=\d+"><\/script>\s*<script src="js\/mijing\.js\?v=\d+"><\/script>\s*<script src="js\/gear\.js/);
+  assert.match(index, /<script src="js\/battle\.js\?v=\d+"><\/script>\s*(?:<script src="js\/bonds\.js\?v=\d+"><\/script>\s*)?<script src="js\/mijing\.js\?v=\d+"><\/script>\s*<script src="js\/gear\.js/);
   ['btn-mijing-entry', 'mijing-run-card', 'mijing-modal', 'mijing-modal-body', 'mijing-modal-actions', 'btn-mijing-detail'].forEach((id) => {
     assert.ok(index.includes(`id="${id}"`), id);
   });

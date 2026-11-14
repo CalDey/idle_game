@@ -145,14 +145,15 @@ function enemyAtCp(cp, n) {
   assert.strictEqual(round1A.length, 2, '2 倍速一方每回合应出手 2 次');
   assert.strictEqual(round1B.length, 1, '正常速度一方每回合出手 1 次');
 
-  // 验证 20 回合打不完算失败（超时）
+  // 验证 MAX_ROUNDS 回合打不完算失败（超时；当前配置为 24 回合）
   const timeoutSim = Battle.simulate(
     { atk: 1, hp: 100000, def: 1000, spd: 100, crit: 0, critDmg: 1.5 },
     { atk: 1, hp: 100000, def: 1000, spd: 100, crit: 0, critDmg: 1.5 },
     1
   );
-  assert.strictEqual(timeoutSim.win, false, '20 回合超时应判负');
-  assert.strictEqual(timeoutSim.rounds, 20, '超时回合数应为 20');
+  assert.strictEqual(timeoutSim.win, false, `${CFG.BATTLE.MAX_ROUNDS} 回合超时应判负`);
+  assert.strictEqual(timeoutSim.timeout, true, '应标记超时');
+  assert.strictEqual(timeoutSim.rounds, CFG.BATTLE.MAX_ROUNDS, `超时回合数应为 MAX_ROUNDS=${CFG.BATTLE.MAX_ROUNDS}`);
 
   // 验证首通奖励累计与设计稿一致（第 30/90/210 关累计）
   function sumRewards(upTo) {
@@ -186,12 +187,14 @@ lines.push('');
 // 尊者后 · 玄品: 0% / 2% / 79% / 100% / 100%
 // 圣祭后 · 地品: 1% / 25% / 94% / 100% / 100%
 // 至尊后 · 天品: 1% / 30% / 89% / 100% / 100%
+// 目标值为当前 6 人自走棋内核（MAX_ROUNDS=24、按敌人数校准伤害系数）的实测基线，早期 1v1 设计稿数值已不适用；
+// 本表用于防止内核数值被意外改动（误差 ±5%）。
 const ratios = [0.9, 0.95, 1.0, 1.05, 1.1];
 const ratioRows = [
-  { r: 8, q: 1, n: 30, label: '化灵后 · 灵品', target: [0, 0, 0, 11, 72] },
-  { r: 17, q: 2, n: 90, label: '尊者后 · 玄品', target: [0, 2, 79, 100, 100] },
-  { r: 26, q: 3, n: 150, label: '圣祭后 · 地品', target: [1, 25, 94, 100, 100] },
-  { r: 41, q: 4, n: 290, label: '至尊后 · 天品', target: [1, 30, 89, 100, 100] }
+  { r: 8, q: 1, n: 30, label: '化灵后 · 灵品', target: [0, 0, 9, 48, 85] },
+  { r: 17, q: 2, n: 90, label: '尊者后 · 玄品', target: [2, 28, 75, 96, 100] },
+  { r: 26, q: 3, n: 150, label: '圣祭后 · 地品', target: [11, 49, 88, 99, 100] },
+  { r: 41, q: 4, n: 290, label: '至尊后 · 天品', target: [10, 46, 84, 98, 100] }
 ];
 
 lines.push('=== 表 1：胜率 vs 战力比（每格 1000 场，mulberry32 种子） ===');
@@ -222,10 +225,10 @@ lines.push('');
 // 圣祭后 → 第 15 章 赤炎魔君 (2.4万): 0% / 0% / 0% / 100% / 100%
 // 斩我后 → 第 21 章 九幽鬼母 (9.0万): 0% / 0% / 0% / 1% / 100%
 const gateRows = [
-  { r: 8, stage: 30, label: '化灵后 → 第 3 章 黑风寨主', target: [0, 100, 100, 100, 100], note: '灵品一套，约 20～30 分钟' },
-  { r: 17, stage: 90, label: '尊者后 → 第 9 章 青冥蛟王', target: [0, 0, 100, 100, 100], note: '玄品一套，约第 1 天' },
+  { r: 8, stage: 30, label: '化灵后 → 第 3 章 黑风寨主', target: [9, 100, 100, 100, 100], note: '灵品一套，约 20～30 分钟' },
+  { r: 17, stage: 90, label: '尊者后 → 第 9 章 青冥蛟王', target: [0, 0, 98, 100, 100], note: '玄品一套，约第 1 天' },
   { r: 26, stage: 150, label: '圣祭后 → 第 15 章 赤炎魔君', target: [0, 0, 0, 100, 100], note: '地品一套，约第 2～3 天' },
-  { r: 35, stage: 210, label: '斩我后 → 第 21 章 九幽鬼母', target: [0, 0, 0, 1, 100], note: '地天混搭，约第 5～7 天' }
+  { r: 35, stage: 210, label: '斩我后 → 第 21 章 九幽鬼母', target: [0, 0, 0, 15, 100], note: '地天混搭，约第 5～7 天' }
 ];
 
 lines.push('=== 表 2：门槛校准（大境后打章末 Boss，每格 1000 场） ===');

@@ -1082,12 +1082,13 @@ function assertAssetVersionAtLeast(file, min) {
   assert.ok(m, `index.html 缺少 ${file}`);
   assert.ok(Number(m[1]) >= min, `${file} 版本号应 ≥ ${min}，实际 ${m[1]}`);
 }
-assertAssetVersionAtLeast('css/style.css', 88);
+assertAssetVersionAtLeast('css/style.css', 90);
 assertAssetVersionAtLeast('js/config.js', 75);
 assertAssetVersionAtLeast('js/state.js', 34);
-assertAssetVersionAtLeast('js/battle.js', 36);
-assertAssetVersionAtLeast('js/mijing.js', 1);
-assertAssetVersionAtLeast('js/stage-ui.js', 50);
+assertAssetVersionAtLeast('js/battle.js', 37);
+assertAssetVersionAtLeast('js/bonds.js', 1);
+assertAssetVersionAtLeast('js/mijing.js', 2);
+assertAssetVersionAtLeast('js/stage-ui.js', 52);
 assertAssetVersionAtLeast('js/game.js', 48);
 // 秘境劫运给战斗内核加了可选 mods 参数（缺省时逐事件一致，见 tools/mijing.test.js），故只检查此前区间
 const battleDiff = git(['diff', '-U0', MAIN, PRE_MIJING, '--', 'js/battle.js']);

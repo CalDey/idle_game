@@ -887,44 +887,79 @@
     return Math.abs(a.c - b.c) + Math.abs(a.r - b.r);
   }
 
-  // 秘境劫运等玩法的局内加成（mods）：缺省为 null，此时战斗结果与随机序列与原版完全一致
+  // 局内加成（mods）：秘境劫运（全队）与仙缘羁绊（按角色 heroMods）共用。
+  // 缺省为 null，此时战斗结果与随机序列与原版完全一致。
+  const MOD_MULT_KEYS = ['atkMult', 'hpMult', 'defMult', 'ultDmgMult', 'bossDmgMult', 'frontDmgTakenMult'];
+  const MOD_ADD_KEYS = ['critAdd', 'critDmgAdd', 'spdAdd', 'rageStart', 'rageOnAtkAdd', 'ultLifesteal', 'freezeChance', 'atkSplash'];
+
+  function normalizeModPart(mods) {
+    const num = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
+    const out = {};
+    MOD_MULT_KEYS.forEach((k) => {
+      out[k] = Math.max(0, num(mods && mods[k], 1));
+    });
+    MOD_ADD_KEYS.forEach((k) => {
+      out[k] = num(mods && mods[k], 0);
+    });
+    out.rageStart = Math.max(0, out.rageStart);
+    out.rageOnAtkAdd = Math.max(0, out.rageOnAtkAdd);
+    out.ultLifesteal = Math.max(0, out.ultLifesteal);
+    out.atkSplash = Math.max(0, out.atkSplash);
+    return out;
+  }
+
   function normalizeBattleMods(mods) {
     if (!mods || typeof mods !== 'object') return null;
     const num = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
-    return {
-      atkMult: Math.max(0, num(mods.atkMult, 1)),
-      hpMult: Math.max(0, num(mods.hpMult, 1)),
-      defMult: Math.max(0, num(mods.defMult, 1)),
-      critAdd: num(mods.critAdd, 0),
-      critDmgAdd: num(mods.critDmgAdd, 0),
-      spdAdd: num(mods.spdAdd, 0),
-      rageStart: Math.max(0, num(mods.rageStart, 0)),
-      rageOnAtkAdd: Math.max(0, num(mods.rageOnAtkAdd, 0)),
-      ultDmgMult: Math.max(0, num(mods.ultDmgMult, 1)),
-      bossDmgMult: Math.max(0, num(mods.bossDmgMult, 1)),
-      frontDmgTakenMult: Math.max(0, num(mods.frontDmgTakenMult, 1)),
-      ultLifesteal: Math.max(0, num(mods.ultLifesteal, 0)),
-      freezeChance: Math.max(0, Math.min(1, num(mods.freezeChance, 0))),
-      atkSplash: Math.max(0, num(mods.atkSplash, 0)),
-      revives: Math.max(0, Math.floor(num(mods.revives, 0))),
-      reviveHpRatio: Math.max(0.01, Math.min(1, num(mods.reviveHpRatio, 0.3)))
-    };
+    const M = normalizeModPart(mods);
+    M.revives = Math.max(0, Math.floor(num(mods.revives, 0)));
+    M.reviveHpRatio = Math.max(0.01, Math.min(1, num(mods.reviveHpRatio, 0.3)));
+    M.heroMods = {};
+    if (mods.heroMods && typeof mods.heroMods === 'object') {
+      Object.keys(mods.heroMods).forEach((heroId) => {
+        if (mods.heroMods[heroId] && typeof mods.heroMods[heroId] === 'object') {
+          M.heroMods[heroId] = normalizeModPart(mods.heroMods[heroId]);
+        }
+      });
+    }
+    return M;
+  }
+
+  // 全队加成与该角色加成合并：倍率类按增量相加（1+a+b），加值类直接相加
+  function effectiveUnitMods(M, heroId) {
+    const h = M.heroMods && M.heroMods[heroId];
+    if (!h) return M;
+    const e = {};
+    MOD_MULT_KEYS.forEach((k) => {
+      e[k] = Math.max(0, M[k] + (h[k] - 1));
+    });
+    MOD_ADD_KEYS.forEach((k) => {
+      e[k] = M[k] + h[k];
+    });
+    return e;
   }
 
   function applyModsToPlayerUnits(playerUnits, M) {
     const rageCap = ((cfg() && cfg().BATTLE && cfg().BATTLE.RAGE_MAX) || 100) - 1;
     for (let i = 0; i < playerUnits.length; i++) {
       const u = playerUnits[i];
-      u.atk *= M.atkMult;
-      u.hp *= M.hpMult;
-      u.maxHp *= M.hpMult;
-      u.def *= M.defMult;
-      u.crit = Math.max(0, Math.min(1, (u.crit || 0) + M.critAdd));
-      u.critDmg = (u.critDmg || 1.5) + M.critDmgAdd;
-      u.spd = (u.spd || 100) + M.spdAdd;
+      const E = effectiveUnitMods(M, u.heroId);
+      u.atk *= E.atkMult;
+      u.hp *= E.hpMult;
+      u.maxHp *= E.hpMult;
+      u.def *= E.defMult;
+      u.crit = Math.max(0, Math.min(1, (u.crit || 0) + E.critAdd));
+      u.critDmg = (u.critDmg || 1.5) + E.critDmgAdd;
+      u.spd = (u.spd || 100) + E.spdAdd;
       // 开局怒气不直接满怒，避免第一步就跳过战斗节奏
-      u.rage = Math.min(rageCap, (u.rage || 0) + M.rageStart);
-      if (M.frontDmgTakenMult !== 1 && u.r <= 5) u.dmgTakenMult = M.frontDmgTakenMult;
+      u.rage = Math.min(rageCap, (u.rage || 0) + E.rageStart);
+      if (E.frontDmgTakenMult !== 1 && u.r <= 5) u.dmgTakenMult = Math.max(0.5, E.frontDmgTakenMult);
+      u.modUltDmgMult = E.ultDmgMult;
+      u.modBossDmgMult = E.bossDmgMult;
+      u.modUltLifesteal = E.ultLifesteal;
+      u.modRageOnAtk = E.rageOnAtkAdd;
+      u.modAtkSplash = E.atkSplash;
+      u.modFreeze = Math.max(0, Math.min(0.5, E.freezeChance));
     }
   }
 
@@ -1023,8 +1058,8 @@
       }
       if (M) {
         if (attacker.side === 'player') {
-          if (isUlt) d *= M.ultDmgMult;
-          if (defender.isBoss) d *= M.bossDmgMult;
+          if (isUlt) d *= attacker.modUltDmgMult;
+          if (defender.isBoss) d *= attacker.modBossDmgMult;
         }
         if (defender.side === 'player' && defender.dmgTakenMult) d *= defender.dmgTakenMult;
       }
@@ -1340,10 +1375,10 @@
       }
 
       // 秘境劫运「噬魂」：绝技按造成伤害的比例为施法者回血
-      if (M && M.ultLifesteal > 0 && caster.alive && caster.hp > 0) {
+      if (M && caster.modUltLifesteal > 0 && caster.alive && caster.hp > 0) {
         let dealt = 0;
         for (let i = 0; i < hitTargets.length; i++) dealt += hitTargets[i].dmg || 0;
-        const lsAmt = Math.max(1, Math.round(dealt * M.ultLifesteal));
+        const lsAmt = Math.max(1, Math.round(dealt * caster.modUltLifesteal));
         caster.hp = Math.min(caster.maxHp, caster.hp + lsAmt);
         heals.push({
           unitId: caster.id,
@@ -1612,7 +1647,7 @@
           const targetDied = applyDamageToUnit(target, res.dmg, true);
 
           if (actor.side === 'player' || actor.isBoss) {
-            const rageGain = rageOnAtk + (M && actor.side === 'player' ? M.rageOnAtkAdd : 0);
+            const rageGain = rageOnAtk + (M && actor.side === 'player' ? actor.modRageOnAtk || 0 : 0);
             actor.rage = Math.min(rageMax, actor.rage + rageGain);
           }
           if ((target.side === 'player' || target.isBoss) && target.hp > 0 && !targetDied) {
@@ -1624,17 +1659,17 @@
           const splashDead = [];
           let froze = false;
           if (M && actor.side === 'player') {
-            if (M.atkSplash > 0) {
+            if (actor.modAtkSplash > 0) {
               for (let i = 0; i < enemyUnits.length; i++) {
                 const e = enemyUnits[i];
                 if (!e.alive || e.id === target.id || chebyshevDist(target, e) > 1) continue;
-                const spRaw = res.dmg * M.atkSplash;
+                const spRaw = res.dmg * actor.modAtkSplash;
                 const died = applyDamageToUnit(e, spRaw, false);
                 if (died) splashDead.push(e);
                 splashHits.push({ unitId: e.id, c: e.c, r: e.r, dmg: Math.max(1, Math.round(spRaw)), died });
               }
             }
-            if (M.freezeChance > 0 && target.alive && target.hp > 0 && rng() < M.freezeChance) {
+            if (actor.modFreeze > 0 && target.alive && target.hp > 0 && rng() < actor.modFreeze) {
               target.skipNextAtk = true;
               froze = true;
             }
@@ -1839,12 +1874,12 @@
     return { win: false, rounds: maxRounds, timeout: true, events, maxHpA, maxHpB };
   }
 
-  function simulate(a, b, seed) {
-    const session = createSession(a, b, seed);
+  function simulate(a, b, seed, mods) {
+    const session = createSession(a, b, seed, mods);
     return session.runToEnd(true);
   }
 
-  function winRate(state, n, runs = 50) {
+  function winRate(state, n, runs = 50, mods) {
     const check = canStartBattle(state);
     if (!check.ok) return 0;
     const total = Math.max(1, Math.floor(runs || 50));
@@ -1852,7 +1887,7 @@
     const e = typeof n === 'object' && n !== null ? n : enemyFor(n);
     let wins = 0;
     for (let i = 0; i < total; i++) {
-      if (simulate(p, e, i + 1).win) wins += 1;
+      if (simulate(p, e, i + 1, mods).win) wins += 1;
     }
     return wins / total;
   }
