@@ -178,3 +178,11 @@ assert.ok(/\.boss-quote-banner\s*\{[^}]*pointer-events:\s*none/.test(text('css/s
 assert.ok(!/getImageData/.test(codexJs));
 
 console.log('codex.test.js ok: 52 entries, 30/30 bosses, 18 mobs');
+
+// 世界观修订：两条 Boss 开场台词
+{
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/codex-data.js'), 'utf8');
+  require('assert').ok(src.includes('"quote": "那一剑还没收回去。我也不走。"'));
+  require('assert').ok(src.includes('"quote": "长到这里，就够了。"'));
+  require('assert').ok(!src.includes('破妄的人呢') && !src.includes('熟了。可以收了。'));
+}
