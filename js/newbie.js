@@ -165,6 +165,25 @@
     };
   }
 
+
+  function nextLockedBuilding(s) {
+    const realm = (s && s.realmIndex) || 0;
+    const list = cfg().DONGFU_LIST || [];
+    let best = null;
+    list.forEach((item) => {
+      if (realm < item.unlockRealmIndex && (!best || item.unlockRealmIndex < best.unlockRealmIndex)) {
+        best = item;
+      }
+    });
+    return best;
+  }
+
+  function buildingUnlockHint(s) {
+    const b = nextLockedBuilding(s);
+    if (!b) return '';
+    return `${realmGapText((s && s.realmIndex) || 0, b.unlockRealmIndex)}解锁${b.name}`;
+  }
+
   function currentGoal(s) {
     const st = s || {};
     const block = blockingBoss(st);
@@ -182,8 +201,26 @@
       return blockingGoal({ stage: gate.stage, chapter: gate.chapter, name: gate.boss }, realm);
     }
     const total = (cfg().REALM_STAGES || []).length || TOTAL_REALMS;
+    const building = nextLockedBuilding(st);
     if (realm < total - 1) {
-      return { id: `realm${realm + 1}`, text: `突破至${realmName(realm + 1)}`, tab: 'tab-cultivate', realm: realm + 1 };
+      const target = realm + 1;
+      // 下一重正好解锁建筑时，目标条直接写出解锁条件；否则建筑提示放在进度位。
+      if (building && building.unlockRealmIndex === target) {
+        return {
+          id: `unlock_${building.id}`,
+          text: buildingUnlockHint(st),
+          tab: 'tab-upgrades',
+          realm: target,
+          buildingId: building.id
+        };
+      }
+      return {
+        id: `realm${target}`,
+        text: `突破至${realmName(target)}`,
+        tab: 'tab-cultivate',
+        realm: target,
+        buildingHint: building ? buildingUnlockHint(st) : ''
+      };
     }
     return { id: 'reincarnate', text: '去轮回转世，凝结道果', tab: 'tab-reincarnate' };
   }
@@ -199,10 +236,12 @@
 
   // 目标进度：只给「下一重突破」显示灵气进度。
   function goalProgress(goal, s, stage) {
-    if (!goal || goal.realm === undefined || !stage || stage.isMaxStage) return '';
-    if ((s.realmIndex || 0) + 1 !== goal.realm) return '';
-    const pct = Math.min(100, Math.floor(((s.qi || 0) / Math.max(1, stage.reqQi)) * 100));
-    return `灵气 ${pct}%`;
+    if (goal && goal.buildingHint) return goal.buildingHint;
+    if (goal && goal.realm !== undefined && stage && !stage.isMaxStage && (s.realmIndex || 0) + 1 === goal.realm) {
+      const pct = Math.min(100, Math.floor(((s.qi || 0) / Math.max(1, stage.reqQi)) * 100));
+      return `灵气 ${pct}%`;
+    }
+    return '';
   }
 
   // ---------- 红点 ----------
@@ -238,6 +277,25 @@
     const ok = (list, costFn) =>
       (list || []).some((item) => realm >= item.unlockRealmIndex && stones >= costFn(item));
     return ok(cfg().GONGFA_LIST, api.getGongfaCost) || ok(cfg().DONGFU_LIST, api.getDongfuCost);
+  }
+
+  // 敌方战力高出我方 15% 以上时，战败页给出「先回洞府/突破」。
+  function enemyExceedsTeam(playerCp, enemyCp, ratio) {
+    const p = Number(playerCp);
+    const e = Number(enemyCp);
+    const r = Number(ratio);
+    const lim = Number.isFinite(r) && r > 0 ? r : 1.15;
+    if (!Number.isFinite(p) || !Number.isFinite(e) || p <= 0) return false;
+    return (e - p) * 100 > p * Math.round((lim - 1) * 100);
+  }
+
+  function powerJumpTab(s) {
+    const st = s || {};
+    const list = (cfg().REALM_STAGES || []);
+    const idx = Math.max(0, Math.min(list.length - 1, Math.floor(st.realmIndex || 0)));
+    const stage = list[idx];
+    if (stage && !stage.isMaxStage && (st.qi || 0) >= stage.reqQi) return 'tab-cultivate';
+    return 'tab-upgrades';
   }
 
   // ---------- 装备对比 ----------
@@ -821,6 +879,10 @@
     advanceGuide,
     guideTarget,
     currentGoal,
+    nextLockedBuilding,
+    buildingUnlockHint,
+    enemyExceedsTeam,
+    powerJumpTab,
     blockingBoss,
     focusBlockingBoss,
     bossNameForStage,

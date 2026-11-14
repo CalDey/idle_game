@@ -1108,7 +1108,14 @@
       titleEl.textContent = `${prefix} · 此战惜败，可再战或调整布阵`;
     }
 
-    const shown = renderFailGainActions(actionsEl);
+    const shownGains = renderFailGainActions(actionsEl);
+    const jumpBtn = $('btn-goto-power');
+    const exceed = window.Newbie && typeof window.Newbie.enemyExceedsTeam === 'function'
+      ? window.Newbie.enemyExceedsTeam(player && player.cp, enemy && enemy.cp)
+      : (Number(enemy && enemy.cp) > Number(player && player.cp) * 1.15 && Number(player && player.cp) > 0);
+    if (jumpBtn) jumpBtn.hidden = !exceed;
+    if (exceed) actionsEl.hidden = false;
+    const shown = shownGains || (exceed ? 1 : 0);
     if (fails >= 2) {
       subEl.textContent = shown
         ? `本关已连败 ${fails} 次，先提升战力再战（★ 为提升最多）`
@@ -3196,6 +3203,17 @@
         e.stopPropagation();
         hideResultOverlay();
         switchTab('tab-cultivate');
+      });
+    }
+    const btnGotoPower = $('btn-goto-power');
+    if (btnGotoPower) {
+      btnGotoPower.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideResultOverlay();
+        const tab = window.Newbie && typeof window.Newbie.powerJumpTab === 'function'
+          ? window.Newbie.powerJumpTab(window.GameState && window.GameState.state)
+          : 'tab-upgrades';
+        switchTab(tab);
       });
     }
     if (btnGotoGongfa) {

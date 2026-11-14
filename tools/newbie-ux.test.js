@@ -1017,4 +1017,50 @@ function breakAt(GS, roll) {
 }
 
 module.exports = { loadRuntime, memoryStorage, text };
-if (require.main === module) console.log('newbie-ux.test.js ok');
+if (require.main === module)
+
+// ---------- batch4：当前目标纳入下一座锁定建筑；战败战力差 >15% 给出跳转 ----------
+{
+  const { GS, NB } = loadRuntime();
+  GS.loadGame();
+  const s = GS.state;
+  s.peachesPicked = 1;
+  s.gongfa[Object.keys(s.gongfa)[0]] = 2;
+  s.realmIndex = 3;
+  s.stage.best = 10;
+  assert.strictEqual(NB.currentGoal(s).text, '突破至洞天中', '未到解锁重时主目标仍是下一重突破');
+  assert.strictEqual(NB.currentGoal(s).buildingHint, '还差3重解锁百草灵药园');
+
+  s.realmIndex = 8;
+  s.stage.best = 30;
+  assert.strictEqual(NB.currentGoal(s).text, '突破至铭纹初');
+  assert.strictEqual(NB.currentGoal(s).buildingHint, '还差7重解锁地底极品灵脉');
+  assert.strictEqual(NB.goalProgress(NB.currentGoal(s), s, GS.getCurrentStage()), '还差7重解锁地底极品灵脉');
+
+  s.realmIndex = 12;
+  assert.strictEqual(NB.nextLockedBuilding(s).id, 'lingmai');
+  assert.strictEqual(NB.buildingUnlockHint(s), '还差3重解锁地底极品灵脉');
+  assert.strictEqual(NB.currentGoal(s).buildingHint, '还差3重解锁地底极品灵脉');
+  assert.strictEqual(NB.goalProgress(NB.currentGoal(s), s, GS.getCurrentStage()), '还差3重解锁地底极品灵脉');
+
+  s.realmIndex = 14;
+  const g = NB.currentGoal(s);
+  assert.strictEqual(g.text, '还差1重解锁地底极品灵脉');
+  assert.strictEqual(g.tab, 'tab-upgrades');
+  assert.strictEqual(g.realm, 15);
+  s.realmIndex = 15;
+  assert.ok(NB.nextLockedBuilding(s).id !== 'lingmai');
+
+  assert.strictEqual(NB.enemyExceedsTeam(100, 115), false);
+  assert.strictEqual(NB.enemyExceedsTeam(100, 116), true);
+  assert.strictEqual(NB.enemyExceedsTeam(0, 100), false);
+  assert.strictEqual(NB.powerJumpTab({ realmIndex: 0, qi: 1e15 }), 'tab-cultivate');
+  assert.strictEqual(NB.powerJumpTab({ realmIndex: 0, qi: 0 }), 'tab-upgrades');
+
+  const html = text('index.html');
+  assert.ok(html.includes('id="btn-goto-power"') && html.includes('先回洞府/突破'));
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('enemyExceedsTeam') && ui.includes('btn-goto-power') && ui.includes('powerJumpTab'));
+}
+
+console.log('newbie-ux.test.js ok');

@@ -50,6 +50,6 @@ const bosses = sandbox.window.GameConfig.BATTLE.BOSSES;
 });
 
 assert.ok(read('index.html').includes('js/config.js?v=119'));
-assert.ok(read('index.html').includes('js/newbie.js?v=119'));
+assert.ok(/js\/newbie\.js\?v=\d+/.test(read('index.html')), 'index 引用 newbie.js 带缓存版本');
 
 console.log('unlock-art.test.js ok: 4 unlock cards + hanchao/beiming');
