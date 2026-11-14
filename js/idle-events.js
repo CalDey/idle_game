@@ -1,6 +1,7 @@
 // 挂机随机事件（机缘）：抽取、折算、结算、存档字段与非阻塞入口。
 // 规则：
-// - 只在 realmIndex >= minRealmStage 时抽取；同一时间最多 1 个待处理事件（离线回来也最多 1 个）。
+// - 只在 realmIndex >= minRealmStage，且（若有 minChapter）章节进度 >= minChapter 时抽取；同一时间最多 1 个待处理事件（离线回来也最多 1 个）。
+// - 章节进度与 BATTLE.CHAPTERS / 主线剧情相同：每 10 关一章，取 lifeBestStage、stage.best、stage.cur 的最高关换算。
 // - 结算后进入 10–20 分钟（按游戏时长 playTimeMs 计）的冷却，冷却结束才会再出现。
 // - 不强制弹窗：顶栏「机缘」按钮亮起，玩家点开再选。
 // - 先扣 cost，资源不足的选项禁用；再发放 reward。只用现有资源：灵气、灵石、灵玉、仙桃、道果、装备。
@@ -125,10 +126,27 @@
     return [RULES.POOL_IDLE];
   }
 
+  // 与 story.js / BATTLE.CHAPTERS 相同：第 n 章 = 关卡 (n-1)*10+1 … n*10。
+  function chapterProgress(s) {
+    const stage = (s && s.stage) || {};
+    const n = Math.max(
+      Number(s && s.lifeBestStage) || 0,
+      Number(stage.best) || 0,
+      Number(stage.cur) || 0
+    );
+    if (n <= 0) return 0;
+    return Math.floor((n - 1) / 10) + 1;
+  }
+
   function eligibleEvents(s, pool) {
     const want = pool || RULES.POOL_IDLE;
     const realm = Number(s.realmIndex) || 0;
-    return allEvents().filter((e) => eventPools(e).includes(want) && realm >= (Number(e.minRealmStage) || 0));
+    const chapter = chapterProgress(s);
+    return allEvents().filter((e) => (
+      eventPools(e).includes(want)
+      && realm >= (Number(e.minRealmStage) || 0)
+      && chapter >= (Number(e.minChapter) || 0)
+    ));
   }
 
   function drawEvent(s, pool, rng) {
@@ -276,6 +294,7 @@
     tierOf,
     tierRefs,
     ensureState,
+    chapterProgress,
     eligibleEvents,
     drawEvent,
     maybeSpawn,

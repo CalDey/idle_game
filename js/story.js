@@ -80,7 +80,7 @@
     return lore && lore.quote ? lore.quote : '';
   }
 
-  // 击败 Boss 后的段落：遗言（一定有）+ post（前 6 章）+ 图鉴已收录
+  // 击败 Boss 后的段落：遗言 + post（有则播）+ 图鉴已收录
   function pendingAfter(stageNum, seen) {
     const boss = bossForStage(stageNum);
     if (!boss) return null;

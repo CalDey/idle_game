@@ -62,13 +62,14 @@ function fresh(extra) {
 [0, 1, 5, 6, 14, 15, 27, 39, 41].forEach((realm) => {
   const s = fresh({ realmIndex: realm });
   const ids = host(IE.eligibleEvents(s, 'idle').map((e) => e.id));
-  const expected = host(events.filter((e) => realm >= e.minRealmStage).map((e) => e.id));
+  const chapter = IE.chapterProgress(s);
+  const expected = host(events.filter((e) => realm >= e.minRealmStage && chapter >= (Number(e.minChapter) || 0)).map((e) => e.id));
   assert.deepStrictEqual(ids, expected, `realm ${realm} 可抽事件不对`);
   assert.ok(ids.length > 0);
 });
 assert.deepStrictEqual(host(IE.eligibleEvents(fresh({ realmIndex: 0 }), 'idle').map((e) => e.id).sort()), ['evt_blood_debt', 'evt_village_ash']);
 assert.ok(IE.eligibleEvents(fresh({ realmIndex: 41 }), 'home').length > 0, '洞府机缘可复用已标记的事件');
-assert.ok(IE.eligibleEvents(fresh({ realmIndex: 41 }), 'idle').length === events.length, '挂机池仍含全部 24 条');
+assert.ok(IE.eligibleEvents(fresh({ realmIndex: 41, lifeBestStage: 300, stage: { cur: 300, best: 300 } }), 'idle').length === events.length, '挂机池在高章节仍含全部 24 条');
 for (let i = 0; i < 200; i++) {
   const s = fresh({ realmIndex: 7 });
   const e = IE.drawEvent(s, 'idle', Math.random);
@@ -328,6 +329,40 @@ events.forEach((e) => {
   assert.deepStrictEqual(after.recent, before.recent, '轮回应保留最近记录');
   assert.deepStrictEqual(after.dgDay, before.dgDay, '轮回应保留当日道果上限计数');
   assert.strictEqual(after.count, before.count, '轮回应保留累计次数');
+}
+
+// ---------- 防剧透：收割/至高天不得出现；「果子」只允许出现在 minChapter>=26 的事件；章节门槛生效 ----------
+{
+  const evText = text('js/events-data.js');
+  const cdText = text('js/codex-data.js');
+  assert.ok(!evText.includes('收割'), 'events-data.js 不应出现「收割」');
+  assert.ok(!evText.includes('至高天'), 'events-data.js 不应出现「至高天」');
+  assert.ok(!cdText.includes('收割'), 'codex-data.js 不应出现「收割」');
+  assert.ok(!cdText.includes('至高天'), 'codex-data.js 不应出现「至高天」');
+  assert.ok(cdText.includes('本世启程纪'), '纪年标题应为「本世启程纪」');
+  assert.ok(!cdText.includes('本世果生纪'));
+  events.forEach((e) => {
+    const blob = [e.name, e.text, ...(e.options || []).flatMap((o) => [o.label, o.resultText])].join('\n');
+    if (blob.includes('果子')) {
+      assert.ok((Number(e.minChapter) || 0) >= 26, `${e.id} 含「果子」但未把门在第 26 章及以后`);
+    }
+  });
+  const sword = IE.findEvent('evt_sword_ask');
+  assert.ok(sword && sword.minChapter === 26, 'evt_sword_ask 应设 minChapter 26');
+  assert.ok((sword.text || '').includes('果子'));
+  const highRealm = { realmIndex: 41 };
+  const below = fresh({ ...highRealm, lifeBestStage: 250, stage: { cur: 250, best: 250 } });
+  assert.strictEqual(IE.chapterProgress(below), 25);
+  assert.ok(!IE.eligibleEvents(below, 'idle').some((e) => e.id === 'evt_sword_ask'), '第 25 章结束前不应抽到执剑来问');
+  assert.ok(IE.drawEvent(below, 'idle', () => 0).id !== 'evt_sword_ask');
+  const atCur = fresh({ ...highRealm, lifeBestStage: 0, stage: { cur: 251, best: 250 } });
+  assert.strictEqual(IE.chapterProgress(atCur), 26);
+  assert.ok(IE.eligibleEvents(atCur, 'idle').some((e) => e.id === 'evt_sword_ask'), '进入第 26 章（第 251 关）后可抽');
+  const byLife = fresh({ ...highRealm, lifeBestStage: 251, stage: { cur: 1, best: 0 } });
+  assert.strictEqual(IE.chapterProgress(byLife), 26);
+  assert.ok(IE.eligibleEvents(byLife, 'idle').some((e) => e.id === 'evt_sword_ask'), '历史最高关达到第 26 章后可抽');
+  const midCh26 = fresh({ ...highRealm, lifeBestStage: 260, stage: { cur: 260, best: 260 } });
+  assert.ok(IE.eligibleEvents(midCh26, 'idle').some((e) => e.id === 'evt_sword_ask'));
 }
 
 // ---------- 页面接线 ----------
