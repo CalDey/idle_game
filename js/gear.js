@@ -34,6 +34,12 @@
     return !item ? ' gi-glow' : '';
   }
 
+
+  // 地品及以上专名的一句来历（只作显示）；旧存档没有专名时不输出
+  function itemFlavorHtml(item) {
+    const flavor = window.Equip && typeof window.Equip.itemFlavor === 'function' ? window.Equip.itemFlavor(item) : '';
+    return flavor ? `<div class="item-flavor">${flavor}</div>` : '';
+  }
   function cardHtml(item, title) {
     if (!item) {
       return `<div class="item-card empty"><div class="item-name">${title}</div><div class="item-sub">空</div></div>`;
@@ -54,7 +60,7 @@
         </div>
       </div>
       <div class="item-main">${window.Equip.formatMain(item)}</div>
-      <div class="item-subs">${subs}</div>
+      <div class="item-subs">${subs}</div>${itemFlavorHtml(item)}
     </div>`;
   }
 
@@ -414,7 +420,7 @@
     $('item-modal-body').innerHTML =
       iconHtml +
       (item
-        ? `${window.Equip.formatMain(item)}<br>${(item.sub || []).map((p) => window.Equip.formatSub(p)).join('<br>')}<br>分解可得 ${window.Equip.decomposeValue(item)} 灵玉`
+        ? `${window.Equip.formatMain(item)}<br>${(item.sub || []).map((p) => window.Equip.formatSub(p)).join('<br>')}<br>分解可得 ${window.Equip.decomposeValue(item)} 灵玉${itemFlavorHtml(item)}`
         : '此部位尚无装备。');
     $('item-modal').classList.add('active');
   }

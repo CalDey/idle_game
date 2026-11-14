@@ -124,7 +124,8 @@
             b.active && !b.maxed ? `（${b.nextNeed} 人：${def.tiers[b.level].desc}）` : ''
           }</span>`
           : '';
-        return `<span class="bond-chip bond-${b.id}${lvCls}"><span class="bond-chip-name">${b.name}</span><span class="bond-chip-count">${b.count}/${b.nextNeed}</span>${desc}</span>`;
+        const tip = def.loreName ? ` title="${def.loreName}${def.flavor ? `：${def.flavor}` : ''}"` : '';
+        return `<span class="bond-chip bond-${b.id}${lvCls}"${tip}><span class="bond-chip-name">${b.name}</span><span class="bond-chip-count">${b.count}/${b.nextNeed}</span>${desc}</span>`;
       })
       .join('');
   }
@@ -140,6 +141,8 @@
       return {
         id: b.id,
         name: b.name,
+        loreName: def.loreName || '',
+        flavor: def.flavor || '',
         icon: b.icon,
         active: b.active,
         level: b.level,
@@ -163,6 +166,9 @@
           `<span class="bond-row-count">${r.count}/${r.need}</span>` +
           `<span class="bond-row-desc">${r.desc}</span>` +
           `<span class="bond-row-status">${r.status}</span>` +
+          (r.loreName || r.flavor
+            ? `<span class="bond-row-lore"><b>${r.loreName}</b>${r.flavor ? ` ${r.flavor}` : ''}</span>`
+            : '') +
           '</li>'
       )
       .join('')}</ul>`;
@@ -1138,7 +1144,8 @@
     const titleEl = $('stage-chapter-title');
     const stepEl = $('stage-chapter-step');
     const dotsEl = $('stage-chapter-dots');
-    if (titleEl) titleEl.textContent = `第 ${enemy.chapter} 章 · ${enemy.region}`;
+    // 章节短名（每章不同）；顶栏还挤着秘境/镇妖塔入口，放「大地域·短名」会被省略号吃掉短名，故只显示短名，缺数据回退大地域名
+    if (titleEl) titleEl.textContent = `第 ${enemy.chapter} 章 · ${enemy.chapterName || enemy.region}`;
     const allCleared = bestStage >= 300;
     if (stepEl) stepEl.textContent = allCleared ? '10/10 · 圆满' : `${enemy.stageInChapter}/10`;
     if (dotsEl) {
@@ -1268,7 +1275,7 @@
         : `镇妖塔 第 ${enemy.towerFloor} 层 · 【${enemy.name}】`;
     } else if (enemyTitleEl) {
       if (enemy.isBoss) {
-        enemyTitleEl.textContent = `第 ${stageNum} 关 · Boss【${enemy.name}】`;
+        enemyTitleEl.textContent = `第 ${stageNum} 关 · ${enemy.stageName ? `${enemy.stageName} · ` : ''}Boss【${enemy.name}】`;
       } else {
         const mobCnt = 3 + Math.min(2, Math.floor(((enemy.stageInChapter || 1) - 1) / 3));
         enemyTitleEl.textContent = `第 ${stageNum} 关 · ${enemy.name} 等 ${mobCnt} 敌`;

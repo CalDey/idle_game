@@ -128,7 +128,7 @@
     if (qIndex >= 4) pity.tian = 0;
     else pity.tian = (pity.tian || 0) + 1;
     state.pity = pity;
-    return {
+    const item = {
       id: state.seq,
       s: slot.id,
       q: qIndex,
@@ -136,6 +136,25 @@
       m: mainStat(slot, level, qIndex),
       sub
     };
+    // 地品及以上写入专名（只作显示）。按物品序号轮取，不额外消耗随机数，掉落与数值序列不变。
+    const unique = uniquePool(q.id, slot.id);
+    if (unique.length) item.name = unique[(state.seq - 1) % unique.length].name;
+    return item;
+  }
+
+  function uniquePool(qualityId, slotId) {
+    const all = CFG().GEAR_UNIQUE_NAMES;
+    const bySlot = all && all[qualityId];
+    const list = bySlot && bySlot[slotId];
+    return Array.isArray(list) ? list : [];
+  }
+
+  // 专名对应的一句来历；旧存档或凡/灵/玄品返回空串
+  function itemFlavor(item) {
+    if (!item || !item.name) return '';
+    const q = CFG().QUALITIES[item.q];
+    const hit = q ? uniquePool(q.id, item.s).find((e) => e.name === item.name) : null;
+    return hit ? hit.flavor : '';
   }
 
   function slotDef(id) {
@@ -145,6 +164,8 @@
   function itemName(item) {
     const slot = slotDef(item.s);
     const q = CFG().QUALITIES[item.q];
+    // 专名优先；旧存档物品没有 name，回退「品阶 + 默认物品名」
+    if (item.name && typeof item.name === 'string') return `${q.name}·${item.name}`;
     return `${q.name}${slot.itemName}`;
   }
 
@@ -249,6 +270,7 @@
     subScale,
     rollItem,
     itemName,
+    itemFlavor,
     decomposeValue,
     subSum,
     attributes,

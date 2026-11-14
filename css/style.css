@@ -7252,3 +7252,36 @@ button.mijing-bless-card:active {
     animation: none;
   }
 }
+
+/* === 羁绊世界观名与来历（体验官第 3 批 P2-4）：图标列表每行下方一行小字，只作显示 === */
+.bond-row-lore {
+  grid-column: 2 / -1;
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: rgba(244, 239, 228, 0.6);
+  white-space: normal;
+}
+
+.bond-row-lore b {
+  font-weight: 700;
+  color: rgba(230, 201, 138, 0.85);
+  margin-right: 3px;
+}
+
+.bond-row.is-inactive .bond-row-lore {
+  color: rgba(244, 239, 228, 0.42);
+}
+
+/* === 法宝专名来历（体验官第 3 批 P2-5）：对比卡与详情弹窗末尾一行小字 === */
+.item-flavor {
+  margin-top: 6px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: rgba(244, 239, 228, 0.62);
+  font-style: normal;
+  white-space: normal;
+}
+
+#item-modal-body .item-flavor {
+  margin-top: 8px;
+}

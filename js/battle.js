@@ -74,11 +74,19 @@
     const name = entry && typeof entry === 'object' ? entry.name : entry;
     const img = entry && typeof entry === 'object' ? entry.img : '';
     const cp = B.BASE_CP * Math.pow(B.GROWTH, stageNum - 1) * (isBoss ? B.BOSS_MULT : 1);
+    // 章节短名 / Boss 关名：只作显示，缺数据时为空串（调用方回退大地域名）
+    const chapterDef = (B.CHAPTERS || [])[chapter - 1];
+    const chapterName = chapterDef && chapterDef.name ? chapterDef.name : '';
+    const bossStageDef = isBoss && chapterDef && chapterDef.bossStages
+      ? chapterDef.bossStages.find((x) => x.stage === stageNum)
+      : null;
     return {
       n: stageNum,
       chapter,
       stageInChapter,
       region: regionObj.name,
+      chapterName,
+      stageName: bossStageDef ? bossStageDef.name : '',
       name,
       img,
       isBoss,
