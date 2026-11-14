@@ -288,5 +288,123 @@ function oldSave(fields) {
   assert.ok(game.includes("ref.badgeEl.classList.toggle('is-locked', !unlocked)"), '洞府锁定岛标注');
 }
 
+// ---------- P2-5 新手突破保底 / 失败损耗 / 后台收益 ----------
+function breakAt(GS, roll) {
+  const st = GS.getCurrentStage();
+  GS.state.qi = st.reqQi * 100; // 远超所需，验证损耗按 reqQi 封顶
+  return GS.applyBreakthroughAttempt(roll);
+}
+{
+  const { GS } = loadRuntime(memoryStorage());
+  GS.loadGame();
+  assert.strictEqual(GS.GUARANTEED_BREAKS, 3);
+  assert.strictEqual(GS.state.breakAttempts, 0);
+  assert.strictEqual(GS.state.flags.breakFailTipShown, false);
+  for (let i = 0; i < 3; i += 1) {
+    assert.strictEqual(GS.isBreakGuaranteed(), true);
+    const r = breakAt(GS, 0.99999);
+    assert.strictEqual(r.success, true, `新档第 ${i + 1} 次突破必成`);
+    assert.strictEqual(r.guaranteed, true);
+  }
+  assert.strictEqual(GS.state.realmIndex, 3);
+  assert.strictEqual(GS.state.breakAttempts, 3);
+  assert.strictEqual(GS.isBreakGuaranteed(), false);
+  // 第 4 次按正常成功率（上限 0.98）判定
+  const st = GS.getCurrentStage();
+  const rate = GS.getBreakthroughSuccessRate();
+  assert.ok(rate <= 0.98);
+  const qiBefore = st.reqQi * 100;
+  const r4 = breakAt(GS, 0.99999);
+  assert.strictEqual(r4.success, false, '第 4 次不再保底');
+  assert.strictEqual(r4.loss, Math.floor(st.reqQi * st.failureLossRatio), '损耗按 min(qi, reqQi)×比例');
+  assert.ok(r4.loss <= st.reqQi * st.failureLossRatio);
+  assert.strictEqual(GS.state.qi, qiBefore - r4.loss);
+  assert.strictEqual(r4.firstFailTip, true, '首次失败弹说明');
+  assert.strictEqual(GS.state.flags.breakFailTipShown, true);
+  assert.ok(Math.abs(GS.state.pityBonus - 0.04) < 1e-9, '原有气运补偿 +4% 不变');
+  const r5 = breakAt(GS, 0.99999);
+  assert.strictEqual(r5.success, false);
+  assert.strictEqual(r5.firstFailTip, false, '说明只弹一次');
+  for (let i = 0; i < 20; i += 1) breakAt(GS, 0.99999);
+  assert.ok(Math.abs(GS.state.pityBonus - 0.35) < 1e-9, '补偿上限 35%');
+  assert.ok(GS.getBreakthroughSuccessRate() <= 0.98, '总上限 98%');
+  const okRoll = breakAt(GS, 0);
+  assert.strictEqual(okRoll.success, true);
+  assert.strictEqual(GS.state.pityBonus, 0);
+  // 存读档后标记保留
+  GS.saveGame();
+  const saved = JSON.parse(GS.state && JSON.stringify(GS.state));
+  assert.strictEqual(saved.flags.breakFailTipShown, true);
+  // 小于 reqQi 时按当前灵气算（防御性）
+  const st2 = GS.getCurrentStage();
+  GS.state.qi = Math.floor(st2.reqQi / 2);
+  const rLow = GS.applyBreakthroughAttempt(0.99999);
+  assert.strictEqual(rLow.loss, Math.floor(Math.floor(st2.reqQi / 2) * st2.failureLossRatio));
+}
+// 旧档迁移：洞天及以上或失败过 → 99（无保底）；否则按 realmIndex 计；坏值不报错
+[
+  [{ realmIndex: 5 }, 99, false],
+  [{ realmIndex: 3 }, 99, false],
+  [{ realmIndex: 0, failBreakthroughs: 1 }, 99, true],
+  [{ realmIndex: 2, failBreakthroughs: 2 }, 99, true],
+  [{ realmIndex: 1 }, 1, false],
+  [{ realmIndex: 0, breakAttempts: 'abc' }, 0, false],
+  [{ realmIndex: 2, breakAttempts: 2, flags: { breakFailTipShown: true } }, 2, true]
+].forEach(([fields, attempts, tip]) => {
+  const { GS } = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave(fields) }), { console: Object.assign({}, console, { warn() {} }) });
+  const res = GS.loadGame();
+  assert.strictEqual(res.isNew, false, JSON.stringify(fields));
+  assert.strictEqual(GS.state.breakAttempts, attempts, JSON.stringify(fields));
+  assert.strictEqual(GS.state.flags.breakFailTipShown, tip, JSON.stringify(fields));
+  if (attempts >= 3) {
+    assert.strictEqual(GS.isBreakGuaranteed(), false);
+    assert.strictEqual(breakAt(GS, 0.99999).success, false, '旧档无保底');
+  }
+});
+// 轮回保留两个字段
+{
+  const { GS } = loadRuntime(memoryStorage());
+  GS.loadGame();
+  GS.state.realmIndex = 27;
+  GS.state.breakAttempts = 30;
+  GS.state.flags.breakFailTipShown = true;
+  GS.performReincarnation();
+  assert.strictEqual(GS.state.realmIndex, 0);
+  assert.strictEqual(GS.state.breakAttempts, 30);
+  assert.strictEqual(GS.state.flags.breakFailTipShown, true);
+}
+// 后台切回：只结算一次
+{
+  const storage = memoryStorage();
+  const { GS } = loadRuntime(storage);
+  GS.loadGame();
+  GS.state.realmIndex = 6;
+  const now = Date.now();
+  GS.state.lastSaveTime = now - 120 * 1000;
+  const hiddenAt = GS.state.lastSaveTime;
+  const qps = GS.getQiPerSec();
+  const qi0 = GS.state.qi;
+  const idleAt0 = GS.state.stage && GS.state.stage.idleAt;
+  const rep = GS.resumeFromBackground(hiddenAt, now);
+  assert.ok(rep && rep.effectiveSeconds === 120);
+  assert.ok(Math.abs(GS.state.qi - qi0 - qps * 120) < 1e-6, '后台 120 秒灵气补发');
+  assert.ok(GS.state.lastSaveTime >= now);
+  assert.strictEqual(GS.state.stage && GS.state.stage.idleAt, idleAt0, '闯关挂机计时不重置（由领取结算）');
+  const qi1 = GS.state.qi;
+  const again = GS.resumeFromBackground(GS.state.lastSaveTime, now);
+  assert.strictEqual(again, null, '重复切回不重复发放');
+  assert.strictEqual(GS.state.qi, qi1);
+  assert.ok(JSON.parse(storage._data[SAVE_KEY]).lastSaveTime >= now, '结算后立即存档');
+}
+{
+  const game = text('js/game.js');
+  assert.ok(game.includes('GameState.applyBreakthroughAttempt(Math.random())'));
+  assert.ok(!game.includes('Math.floor(s.qi * stage.failureLossRatio)'), '旧损耗公式已移除');
+  assert.ok(/visibilitychange[\s\S]*GameState\.resumeFromBackground\(from, Date\.now\(\)\)/.test(game));
+  const html = text('index.html');
+  assert.ok(html.includes('id="break-tip-modal"'));
+  assert.ok(html.includes('突破失败会损失部分灵气；下次成功率+4%，可叠加，最高+35%。'));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');

@@ -3,6 +3,8 @@
   const SAVE_KEY = 'xiuxian_idle_save_v1';
   const SAVE_BACKUP_KEY = 'xiuxian_idle_save_v1_bak';
   const MAX_SQUAD_SIZE = 6;
+  // 新手保底：新档前 3 次突破必定成功（数值策划 P2-5）。
+  const GUARANTEED_BREAKS = 3;
 
   function isHeroUnlockedInState(heroId, s) {
     if (!heroId || typeof heroId !== 'string') return false;
@@ -102,6 +104,40 @@
     return { ...def, step: 3, done: true, gearPopup: true, gearVisited: true, legacy: true };
   }
 
+  // 旧档没有 breakAttempts：洞天及以上或失败过的不再保底（记 99），否则按已突破次数 = realmIndex 计。
+  function normalizeBreakAttempts(saved) {
+    const raw = saved && saved.breakAttempts;
+    if (typeof raw === 'number' && Number.isFinite(raw) && raw >= 0) return Math.floor(raw);
+    const realm = Math.max(0, Math.floor(Number(saved && saved.realmIndex) || 0));
+    if (realm >= 3 || (Number(saved && saved.failBreakthroughs) || 0) > 0) return 99;
+    return realm;
+  }
+
+  function isBreakGuaranteed() {
+    return (Number(state.breakAttempts) || 0) < GUARANTEED_BREAKS;
+  }
+
+  // 结算一次突破（不含灵气是否足够、渡劫门槛的前置检查）。roll 为 [0,1) 随机数。
+  function applyBreakthroughAttempt(roll) {
+    const stage = getCurrentStage();
+    const guaranteed = isBreakGuaranteed();
+    const rate = getBreakthroughSuccessRate();
+    state.breakAttempts = (Number(state.breakAttempts) || 0) + 1;
+    if (guaranteed || roll < rate) {
+      state.qi = Math.max(0, state.qi - stage.reqQi);
+      state.realmIndex += 1;
+      state.pityBonus = 0;
+      return { success: true, guaranteed, rate, loss: 0, stage, nextStage: getCurrentStage() };
+    }
+    const loss = Math.floor(Math.min(state.qi, stage.reqQi) * stage.failureLossRatio);
+    state.qi = Math.max(0, state.qi - loss);
+    state.pityBonus = Math.min(0.35, (state.pityBonus || 0) + 0.04);
+    state.failBreakthroughs = (state.failBreakthroughs || 0) + 1;
+    const firstFailTip = !state.flags.breakFailTipShown;
+    state.flags.breakFailTipShown = true;
+    return { success: false, guaranteed: false, rate, loss, stage, nextStage: stage, firstFailTip };
+  }
+
   function createDefaultState() {
     const gongfaLevels = {};
     window.GameConfig.GONGFA_LIST.forEach((g, idx) => {
@@ -149,13 +185,14 @@
       failBreakthroughs: 0,
       peachesPicked: 0,
       decomposed: 0,
-      flags: { ling: false, di: false, weapon: false, offlineCap: false },
+      flags: { ling: false, di: false, weapon: false, offlineCap: false, breakFailTipShown: false },
       login: { last: '', streak: 0 },
       dayTaps: { date: '', count: 0 },
       titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
       // 秘境劫运：每日次数（本地日期）与进行中的一局；旧存档缺省即为此值
       mijing: { date: '', used: 0, runs: 0, clears: 0, bestWave: 0, run: null },
       guide: defaultGuide(),
+      breakAttempts: 0,
       ...v2Fields
     };
   }
@@ -478,6 +515,7 @@
       login: { ...def.login, ...(saved.login || {}) },
       dayTaps: { ...def.dayTaps, ...(saved.dayTaps || {}) },
       guide: normalizeGuide(saved.guide, saved),
+      breakAttempts: normalizeBreakAttempts(saved),
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
       playTimeMs: saved.playTimeMs || 0,
       lifetimeQi: saved.lifetimeQi || 0,
@@ -493,6 +531,9 @@
     if (Array.isArray(unlockedHeroes)) {
       merged.unlockedHeroes = unlockedHeroes;
     }
+    if (!saved.flags || typeof saved.flags.breakFailTipShown !== 'boolean') {
+      merged.flags.breakFailTipShown = (saved.failBreakthroughs || 0) > 0;
+    }
     return merged;
   }
 
@@ -505,6 +546,60 @@
       console.warn('存档保存失败:', err);
       return false;
     }
+  }
+
+  // 离线/后台结算：从 fromTs 结算到 now。idleStage=true 时（读档）直接发闯关挂机奖励并重置挂机计时；
+  // 后台切回（idleStage=false）不动挂机计时，挂机奖励仍由闯关页「领取」按 idleAt 计算，避免重复。
+  function settleOffline(fromTs, now, opts) {
+    const options = opts || {};
+    const savedTime = Number(fromTs) || now;
+    const elapsedSec = Math.floor((now - savedTime) / 1000);
+    if (elapsedSec < 3) {
+      finishTreeUpgrade(now);
+      applyPeachRegen(state.tree.regenAt || now, now);
+      return null;
+    }
+    const capSec = getOfflineCapSeconds();
+    const cappedSec = Math.min(elapsedSec, capSec);
+    const qiGain = getQiPerSec() * cappedSec;
+    const stoneGain = getStonePerSec() * cappedSec;
+    state.qi += qiGain;
+    state.lifetimeQi = (state.lifetimeQi || 0) + qiGain;
+    state.playTimeMs = (state.playTimeMs || 0) + cappedSec * 1000;
+    if (elapsedSec > capSec) state.flags.offlineCap = true;
+    state.stones += stoneGain;
+    const windowEnd = savedTime + cappedSec * 1000;
+    let treeDone = false;
+    if (state.tree.upEnd && state.tree.upEnd > windowEnd) {
+      state.tree.upEnd += now - windowEnd;
+    } else {
+      treeDone = finishTreeUpgrade(windowEnd);
+    }
+    const peachGain = applyPeachRegen(savedTime, windowEnd);
+    const idle = options.idleStage ? applyIdleStageRewards(cappedSec) : { peaches: 0, lingyu: 0 };
+    state.tree.regenAt = now;
+    if (options.idleStage && state.stage) state.stage.idleAt = now;
+    state.lastSaveTime = now;
+    return {
+      rawSeconds: elapsedSec,
+      effectiveSeconds: cappedSec,
+      capped: elapsedSec > capSec,
+      qiGain,
+      stoneGain,
+      peachGain: peachGain + idle.peaches,
+      lingyuGain: idle.lingyu,
+      treeDone
+    };
+  }
+
+  // 页面从后台切回：按切走时刻（≈切走时存档的 lastSaveTime）结算一次，结算后立即存档，重复调用不会重复发放。
+  function resumeFromBackground(hiddenAt, now) {
+    const t = now || Date.now();
+    const from = Number(hiddenAt) || Number(state.lastSaveTime) || t;
+    const report = settleOffline(from, t, { idleStage: false });
+    grantPeachGift();
+    saveGame();
+    return report;
   }
 
   function loadGame() {
@@ -531,44 +626,7 @@
 
       const now = Date.now();
       const savedTime = Number(parsed.lastSaveTime) || now;
-      const elapsedSec = Math.floor((now - savedTime) / 1000);
-      let offlineReport = null;
-
-      if (elapsedSec >= 3) {
-        const cappedSec = Math.min(elapsedSec, getOfflineCapSeconds());
-        const qiGain = getQiPerSec() * cappedSec;
-        const stoneGain = getStonePerSec() * cappedSec;
-        state.qi += qiGain;
-        state.lifetimeQi = (state.lifetimeQi || 0) + qiGain;
-        state.playTimeMs = (state.playTimeMs || 0) + cappedSec * 1000;
-        if (elapsedSec > getOfflineCapSeconds()) state.flags.offlineCap = true;
-        state.stones += stoneGain;
-        const windowEnd = savedTime + cappedSec * 1000;
-        let treeDone = false;
-        if (state.tree.upEnd && state.tree.upEnd > windowEnd) {
-          state.tree.upEnd += now - windowEnd;
-        } else {
-          treeDone = finishTreeUpgrade(windowEnd);
-        }
-        const peachGain = applyPeachRegen(savedTime, windowEnd);
-        const idle = applyIdleStageRewards(cappedSec);
-        state.tree.regenAt = now;
-        if (state.stage) state.stage.idleAt = now;
-        state.lastSaveTime = now;
-        offlineReport = {
-          rawSeconds: elapsedSec,
-          effectiveSeconds: cappedSec,
-          capped: elapsedSec > getOfflineCapSeconds(),
-          qiGain,
-          stoneGain,
-          peachGain: peachGain + idle.peaches,
-          lingyuGain: idle.lingyu,
-          treeDone
-        };
-      } else {
-        finishTreeUpgrade(now);
-        applyPeachRegen(state.tree.regenAt || now, now);
-      }
+      const offlineReport = settleOffline(savedTime, now, { idleStage: true });
       grantPeachGift();
 
       return { isNew: false, offlineReport };
@@ -673,6 +731,7 @@
     fresh.login = { ...(state.login || {}) };
     fresh.dayTaps = { ...(state.dayTaps || {}) };
     fresh.guide = normalizeGuide(state.guide, state);
+    fresh.breakAttempts = normalizeBreakAttempts(state);
     fresh.titles = {
       owned: [...((state.titles && state.titles.owned) || ['churu'])],
       worn: (state.titles && state.titles.worn) || 'churu',
@@ -796,6 +855,12 @@
     applyIdleStageRewards,
     defaultGuide,
     normalizeGuide,
+    GUARANTEED_BREAKS,
+    normalizeBreakAttempts,
+    isBreakGuaranteed,
+    applyBreakthroughAttempt,
+    settleOffline,
+    resumeFromBackground,
     isProgressedSave
   };
 })();

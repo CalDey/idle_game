@@ -118,7 +118,7 @@
           <div class="breakthrough-row">
             <div class="breakthrough-info">
               <div>破境成功率：<strong id="breakthrough-rate">92.0%</strong></div>
-              <div id="breakthrough-penalty">失败损耗 25% 当前灵气</div>
+              <div id="breakthrough-penalty">失败损耗 25% 所需灵气</div>
             </div>
             <button id="btn-breakthrough" class="btn btn-primary" disabled>突破境界</button>
           </div>
@@ -519,6 +519,19 @@
       <div class="modal-actions">
         <button id="btn-unlock-later" class="btn" type="button" data-modal-close>稍后</button>
         <button id="btn-unlock-go" class="btn btn-primary" type="button">去摘桃</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 首次突破失败说明（只弹一次） -->
+  <div id="break-tip-modal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <h2 class="modal-title">破境未成</h2>
+      <div class="modal-body">
+        <div id="break-tip-message">突破失败会损失部分灵气；下次成功率+4%，可叠加，最高+35%。</div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-close-break-tip" class="btn btn-primary" type="button" data-modal-close>知道了</button>
       </div>
     </div>
   </div>

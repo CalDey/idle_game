@@ -306,20 +306,19 @@
       return;
     }
 
-    const rate = GameState.getBreakthroughSuccessRate();
-    const roll = Math.random();
     const actionName = stage.isMajorTribulation ? '渡劫破境' : '突破境界';
+    const result = GameState.applyBreakthroughAttempt(Math.random());
 
-    if (roll < rate) {
-      // 突破成功：扣除所需灵气，晋升下一层
-      s.qi = Math.max(0, s.qi - stage.reqQi);
-      s.realmIndex += 1;
-      s.pityBonus = 0;
-      const nextStage = GameState.getCurrentStage();
+    if (result.success) {
+      const nextStage = result.nextStage;
       if (stage.isMajorTribulation) {
         addLog(`天降祥瑞，雷劫散尽！恭喜道友渡劫成功，正式踏入【${nextStage.fullName}】！`, 'gold');
       } else {
         addLog(`气海翻腾，水到渠成！成功突破至【${nextStage.fullName}】！`, 'success');
+      }
+      if (result.guaranteed) {
+        const left = GameState.GUARANTEED_BREAKS - (s.breakAttempts || 0);
+        addLog(left > 0 ? `新手保底：之后 ${left} 次突破仍必定成功。` : '新手保底已用完，之后突破按成功率判定。', 'info');
       }
       if (s.realmIndex === (window.GameConfig.BATTLE && window.GameConfig.BATTLE.UNLOCK_REALM)) {
         addLog('闯关已开，黑风寨主在第 3 章等你。', 'gold');
@@ -332,22 +331,33 @@
       if (window.Titles) Titles.sync(s);
       if (window.TitlesUI) TitlesUI.flushToasts();
     } else {
-      // 突破失败：损失部分当前灵气，并增加气运补偿
-      const loss = Math.floor(s.qi * stage.failureLossRatio);
-      s.qi = Math.max(0, s.qi - loss);
-      s.pityBonus = Math.min(0.35, (s.pityBonus || 0) + 0.04);
-      s.failBreakthroughs = (s.failBreakthroughs || 0) + 1;
+      // 突破失败：按所需灵气比例损失（不超过 reqQi×比例），并增加气运补偿
       addLog(
-        `${actionName}受挫，心神震荡，散去 ${formatNumber(loss)} 灵气（下次破境成功率 +4%）。`,
+        `${actionName}受挫，心神震荡，散去 ${formatNumber(result.loss)} 灵气（下次破境成功率 +4%）。`,
         'warn'
       );
       GameState.saveGame();
       triggerRealmFx('fail');
       if (window.Titles) Titles.sync(s);
       if (window.TitlesUI) TitlesUI.flushToasts();
+      if (result.firstFailTip) showBreakFailTip();
     }
 
     updateHeaderAndMeditationUI();
+  }
+
+  const BREAK_FAIL_TIP = '突破失败会损失部分灵气；下次成功率+4%，可叠加，最高+35%。';
+
+  // 首次突破失败的一次性说明（state.flags.breakFailTipShown 记录，只弹一次）
+  function showBreakFailTip() {
+    const modal = document.getElementById('break-tip-modal');
+    if (!modal) {
+      addLog(BREAK_FAIL_TIP, 'info');
+      return;
+    }
+    const msg = document.getElementById('break-tip-message');
+    if (msg) msg.textContent = BREAK_FAIL_TIP;
+    modal.classList.add('active');
   }
 
   // 境界门槛「还差X重」，复用设置里「境界体系 · 共42重」的说明。
@@ -1081,10 +1091,13 @@
     els.qiProgressPercent.textContent = `${pct}%`;
     els.qiProgressBar.style.width = `${pct}%`;
 
-    const successRatePct = (GameState.getBreakthroughSuccessRate() * 100).toFixed(1);
+    const guaranteed = GameState.isBreakGuaranteed && GameState.isBreakGuaranteed();
+    const successRatePct = guaranteed ? '100' : (GameState.getBreakthroughSuccessRate() * 100).toFixed(1);
     const lossPct = Math.round(stage.failureLossRatio * 100);
     els.breakthroughRate.textContent = `${successRatePct}%`;
-    els.breakthroughPenalty.textContent = `失败损耗 ${lossPct}% 当前灵气`;
+    els.breakthroughPenalty.textContent = guaranteed
+      ? `新手保底 · 还剩 ${GameState.GUARANTEED_BREAKS - (s.breakAttempts || 0)} 次必成`
+      : `失败损耗 ${lossPct}% 所需灵气`;
 
     const gate = window.Equip && window.Equip.tribulationLock(s);
     const hasQi = !stage.isMaxStage && s.qi >= stage.reqQi;
@@ -1675,10 +1688,28 @@
       GameState.saveGame();
     });
 
+    // 后台标签页 rAF 停摆：切走时存档并记下时刻，切回时按离线规则补一次收益（只结算一次）。
+    let hiddenAt = 0;
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         GameState.saveGame();
+        hiddenAt = GameState.state.lastSaveTime || Date.now();
+        return;
       }
+      if (!hiddenAt) return;
+      const from = hiddenAt;
+      hiddenAt = 0;
+      const report = GameState.resumeFromBackground(from, Date.now());
+      lastTickTime = performance.now();
+      if (!report) return;
+      if (report.effectiveSeconds >= 60) {
+        showOfflineModal(report);
+      } else {
+        addLog(`后台修炼 ${formatDuration(report.effectiveSeconds)}，获 ${formatNumber(report.qiGain)} 灵气。`, 'info');
+      }
+      renderUpgradeLists();
+      updateHeaderAndMeditationUI();
+      if (window.GearUI) GearUI.render();
     });
 
     if (window.TitlesUI) TitlesUI.init();
