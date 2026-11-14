@@ -1790,10 +1790,10 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .title-toast {
   position: fixed;
-  top: 108px;
+  top: max(8px, env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%) translateY(-12px);
-  z-index: 120;
+  z-index: 121;
   padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid rgba(245, 199, 106, 0.8);
@@ -7148,16 +7148,18 @@ button.mijing-bless-card:active {
   height: 100%;
   object-fit: contain;
   object-position: 50% 100%;
-  filter: brightness(0) drop-shadow(0 0 8px rgba(230, 60, 60, 0.7));
   opacity: 0;
 }
 
 .story-boss.has-img {
-  background: radial-gradient(ellipse at 50% 60%, rgba(200, 40, 40, 0.32), transparent 70%);
+  background: radial-gradient(ellipse at 50% 70%, rgba(80, 16, 18, 0.28), transparent 72%);
 }
 
 .story-boss.has-img img {
   opacity: 1;
+  filter: brightness(0.42) saturate(0.4) contrast(1.12);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 62%, #000 40%, rgba(0, 0, 0, 0.55) 70%, transparent 100%);
+  mask-image: radial-gradient(ellipse at 50% 62%, #000 40%, rgba(0, 0, 0, 0.55) 70%, transparent 100%);
 }
 
 .story-modal[data-who="boss"] .story-hero,
@@ -7658,6 +7660,12 @@ button.mijing-bless-card:active {
   width: 100%;
 }
 
+.trib-success[hidden],
+.trib-caption[hidden],
+.tribulation-cinematic[hidden] {
+  display: none;
+}
+
 .trib-success-main {
   font-size: 15px;
   letter-spacing: 0.1em;
@@ -7777,10 +7785,16 @@ button.mijing-bless-card:active {
 
 .path-entry.is-locked,
 .path-entry:disabled {
-  opacity: 0.65;
+  opacity: 0.55;
   cursor: default;
   color: var(--text-muted);
   box-shadow: none;
+}
+
+.path-entry.is-locked img,
+.path-entry:disabled img {
+  filter: grayscale(1);
+  opacity: 0.55;
 }
 
 .path-entry .home-upgrade-badge {

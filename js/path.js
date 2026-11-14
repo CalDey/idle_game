@@ -22,7 +22,7 @@
   // 每层效果值 per；kind: 'mod' 进战斗 mods（mult 类为增量），'income' 进收益倍率
   const PATHS = [
     {
-      id: 'jian', name: '剑道', icon: 'slot_weapon', motto: '一剑破万法，偏暴击与绝技。',
+      id: 'jian', name: '剑道', icon: 'assets/ui/path/path_jian', motto: '一剑破万法，偏暴击与绝技。',
       nodes: [
         { id: 'fengmang', name: '剑心锋芒', kind: 'mod', key: 'critAdd', per: 0.03, fmt: (v) => `全队暴击率 +${Math.round(v * 100)}%` },
         { id: 'jianyi', name: '剑意通玄', kind: 'mod', key: 'ultDmgMult', per: 0.07, fmt: (v) => `全队绝技伤害 +${Math.round(v * 100)}%` },
@@ -30,7 +30,7 @@
       ]
     },
     {
-      id: 'ti', name: '体道', icon: 'slot_robe', motto: '金身不坏，偏生命与防御。',
+      id: 'ti', name: '体道', icon: 'assets/ui/path/path_ti', motto: '金身不坏，偏生命与防御。',
       nodes: [
         { id: 'liangu', name: '炼骨易筋', kind: 'mod', key: 'hpMult', per: 0.03, fmt: (v) => `全队生命 +${Math.round(v * 100)}%` },
         { id: 'tiebi', name: '铁壁铜墙', kind: 'mod', key: 'defMult', per: 0.04, fmt: (v) => `全队防御 +${Math.round(v * 100)}%` },
@@ -38,7 +38,7 @@
       ]
     },
     {
-      id: 'fu', name: '符道', icon: 'slot_charm', motto: '符箓通神，偏吐纳与聚财。',
+      id: 'fu', name: '符道', icon: 'assets/ui/path/path_fu', motto: '符箓通神，偏吐纳与聚财。',
       nodes: [
         { id: 'julingfu', name: '聚灵符', kind: 'income', key: 'qi', per: 0.05, fmt: (v) => `灵气获取 +${Math.round(v * 100)}%` },
         { id: 'zhaocaifu', name: '招财符', kind: 'income', key: 'stone', per: 0.08, fmt: (v) => `灵石产出 +${Math.round(v * 100)}%` },
@@ -252,6 +252,12 @@
   if (typeof document === 'undefined' || !document.getElementById) return;
 
   const fmtN = (n) => (root.GameConfig && root.GameConfig.formatNumber ? root.GameConfig.formatNumber(n) : String(Math.round(n)));
+  const ICON_V = 124;
+  function pathIconHtml(path, cls) {
+    if (!path || !path.icon) return '';
+    const c = cls ? ` ${cls}` : '';
+    return `<img class="gi path-icon${c}" src="${path.icon}@64.webp?v=${ICON_V}" srcset="${path.icon}@64.webp?v=${ICON_V} 64w, ${path.icon}.webp?v=${ICON_V} 128w" sizes="18px" alt="" aria-hidden="true">`;
+  }
   let els = null;
   let view = 'main'; // main | choose | respec
   let flash = '';
@@ -305,7 +311,7 @@
     const lines = path.nodes.map((n, i) => `<li><span class="path-node-name">${n.name}</span>${n.fmt(nodeValue(n, RULES.MAX_LV))}<span class="path-node-gate">${realmName(RULES.TIER_REALMS[i])}</span></li>`).join('');
     return `
       <div class="path-card path-${path.id}${o.current ? ' is-current' : ''}">
-        <div class="path-card-head"><img class="gi" src="assets/icons/${path.icon}@64.webp?v=18" alt="" aria-hidden="true"><span class="path-card-name">${path.name}</span>${o.current ? '<span class="path-card-tag">当前</span>' : ''}</div>
+        <div class="path-card-head">${pathIconHtml(path)}<span class="path-card-name">${path.name}</span>${o.current ? '<span class="path-card-tag">当前</span>' : ''}</div>
         <div class="path-card-motto">${path.motto}</div>
         <ul class="path-card-nodes">${lines}</ul>
         ${o.button || ''}
@@ -349,7 +355,7 @@
       actions = '<button type="button" class="btn" data-path-back="1">返回</button>';
     } else {
       const path = PATH_MAP[p.id];
-      html += `<div class="path-card path-${path.id} is-current"><div class="path-card-head"><img class="gi" src="assets/icons/${path.icon}@64.webp?v=18" alt="" aria-hidden="true"><span class="path-card-name">${path.name}</span><span class="path-card-tag">本命</span></div><div class="path-card-motto">${path.motto}</div></div>`;
+      html += `<div class="path-card path-${path.id} is-current"><div class="path-card-head">${pathIconHtml(path)}<span class="path-card-name">${path.name}</span><span class="path-card-tag">本命</span></div><div class="path-card-motto">${path.motto}</div></div>`;
       path.nodes.forEach((n, i) => {
         const lv = p.lv[i];
         const open = tierOpen(s, i);
@@ -378,6 +384,16 @@
     if (view !== 'main' || !p.id) html += `<div class="path-note">${t('combatNote')}</div>`;
     els.body.innerHTML = html;
     els.actions.innerHTML = actions;
+    if (els.titleIcon) {
+      const cur = p.id && view === 'main' ? PATH_MAP[p.id] : null;
+      if (cur) {
+        els.titleIcon.src = `${cur.icon}@64.webp?v=${ICON_V}`;
+        els.titleIcon.srcset = `${cur.icon}@64.webp?v=${ICON_V} 64w, ${cur.icon}.webp?v=${ICON_V} 128w`;
+      } else {
+        els.titleIcon.src = `assets/icons/gf_taiqingjue@64.webp?v=18`;
+        els.titleIcon.removeAttribute('srcset');
+      }
+    }
   }
 
   function isOpen() {
@@ -472,7 +488,8 @@
       modal: document.getElementById('path-modal'),
       body: document.getElementById('path-modal-body'),
       actions: document.getElementById('path-modal-actions'),
-      close: document.getElementById('btn-path-close')
+      close: document.getElementById('btn-path-close'),
+      titleIcon: document.getElementById('path-modal-title-icon')
     };
     if (!els.entry || !els.modal || !els.body || !els.actions || !root.GameState) {
       els = null;

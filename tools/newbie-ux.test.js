@@ -1082,13 +1082,25 @@ if (require.main === module)
   assert.strictEqual(NB.enemyExceedsTeam(100, 115), false);
   assert.strictEqual(NB.enemyExceedsTeam(100, 116), true);
   assert.strictEqual(NB.enemyExceedsTeam(0, 100), false);
+  assert.strictEqual(NB.recGapExceeds(100, 115), false, '相对推荐战力 15/115≈13%，不超过 15%');
+  assert.strictEqual(NB.recGapExceeds(100, 118), true, '18/118≈15.3%，应出跳转按钮');
+  assert.strictEqual(NB.recGapExceeds(562, 871), true, '与标题「还差约 35%」同一口径应出按钮');
+  assert.strictEqual(NB.recGapExceeds(100, 100), false);
   assert.strictEqual(NB.powerJumpTab({ realmIndex: 0, qi: 1e15 }), 'tab-cultivate');
   assert.strictEqual(NB.powerJumpTab({ realmIndex: 0, qi: 0 }), 'tab-upgrades');
 
   const html = text('index.html');
   assert.ok(html.includes('id="btn-goto-power"') && html.includes('先回洞府/突破'));
   const ui = text('js/stage-ui.js');
-  assert.ok(ui.includes('enemyExceedsTeam') && ui.includes('btn-goto-power') && ui.includes('powerJumpTab'));
+  assert.ok(ui.includes('recGapExceeds') && ui.includes('btn-goto-power') && ui.includes('powerJumpTab'));
+  assert.ok(!/btn-goto-power[\s\S]{0,400}enemyExceedsTeam/.test(ui), '跳转按钮不再按敌方战力口径');
+  const css = text('css/style.css');
+  const bossCss = css.slice(css.indexOf('.story-boss img'), css.indexOf('.story-modal[data-who="boss"]'));
+  assert.ok(!bossCss.includes('brightness(0)'), '剧情剪影不得再用 brightness(0) 把不透明立绘涂成黑块');
+  assert.ok(/mask-image:\s*radial-gradient/.test(bossCss), '剪影改用径向 mask 渐隐');
+  const toast = css.slice(css.indexOf('.title-toast {'), css.indexOf('.title-toast.show'));
+  assert.ok(/top:\s*max\(8px/.test(toast), '称号吐司挪到顶部，避免挡住目标条');
+  assert.ok(text('js/titles.js').includes('modalOpen'), '有弹窗打开时延后显示称号吐司');
 }
 
 console.log('newbie-ux.test.js ok');

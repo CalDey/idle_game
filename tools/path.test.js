@@ -63,7 +63,8 @@ check('规则常量：化灵初开放，三节点依次 化灵初/尊者初/天�
   assert.strictEqual(P.PATHS.length, 3);
   P.PATHS.forEach((p) => {
     assert.strictEqual(p.nodes.length, 3);
-    assert.ok(fs.existsSync(path.join(root, `assets/icons/${p.icon}@64.webp`)), p.icon);
+    assert.ok(fs.existsSync(path.join(root, `${p.icon}.webp`)), `${p.icon}.webp`);
+    assert.ok(fs.existsSync(path.join(root, `${p.icon}@64.webp`)), `${p.icon}@64.webp`);
   });
   assert.deepStrictEqual(Array.from(P.PATHS, (p) => p.name), ['剑道', '体道', '符道']);
 });
@@ -448,6 +449,13 @@ check('index.html 引用 path.js 且有入口/弹窗节点；样式存在', () =
   const hero = css.slice(css.indexOf('/* Hero stage */'));
   assert.ok(/min-height:\s*168px/.test(hero.slice(0, 400)), 'hero-stage 高度保持不变');
   assert.ok(fs.existsSync(path.join(root, 'assets/icons/gf_taiqingjue@64.webp')));
+  ['path_jian', 'path_ti', 'path_fu'].forEach((id) => {
+    assert.ok(fs.existsSync(path.join(root, `assets/ui/path/${id}.webp`)), id);
+    assert.ok(fs.existsSync(path.join(root, `assets/ui/path/${id}@64.webp`)), `${id}@64`);
+  });
+  assert.ok(text('js/path.js').includes('assets/ui/path/path_jian'));
+  assert.ok(css.includes('grayscale(1)'), '锁定入口用 CSS grayscale，不另出图');
+  assert.ok(index.includes('id="path-modal-title-icon"'));
 });
 
 check('平衡抽样：灵石去处（分钟数）与收益加成保持温和', () => {

@@ -1120,9 +1120,9 @@
 
     const shownGains = renderFailGainActions(actionsEl);
     const jumpBtn = $('btn-goto-power');
-    const exceed = window.Newbie && typeof window.Newbie.enemyExceedsTeam === 'function'
-      ? window.Newbie.enemyExceedsTeam(player && player.cp, enemy && enemy.cp)
-      : (Number(enemy && enemy.cp) > Number(player && player.cp) * 1.15 && Number(player && player.cp) > 0);
+    const exceed = window.Newbie && typeof window.Newbie.recGapExceeds === 'function'
+      ? window.Newbie.recGapExceeds(player && player.cp, recCp)
+      : (recCp > 0 && gapCp / recCp > 0.15);
     if (jumpBtn) jumpBtn.hidden = !exceed;
     if (exceed) actionsEl.hidden = false;
     const shown = shownGains || (exceed ? 1 : 0);
@@ -2805,7 +2805,7 @@
       const got = w <= done;
       rows += `<li class="${got ? 'is-cleared' : 'is-missed'}"><span class="mijing-wave-idx">第 ${w} 波·${kind}${got ? '' : '（未过）'}</span><span class="mijing-wave-rw">${rewardLineHtml(rw)}</span></li>`;
     }
-    return `<div class="mijing-cleared">已通 ${done}/${M.WAVES}</div><div class="mijing-wave-rewards-wrap"><ul class="mijing-wave-rewards">${rows}</ul></div>`;
+    return `<div class="mijing-wave-rewards-wrap"><ul class="mijing-wave-rewards">${rows}</ul></div>`;
   }
 
 

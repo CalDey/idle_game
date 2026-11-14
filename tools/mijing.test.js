@@ -664,7 +664,8 @@ check('v1 波次强度与推荐战力隔离在 estimateWaveStrength / recommende
 check('开局展示推荐战力与每波预估，结算列出逐波奖励和已通 X/8；不做失败补偿', () => {
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('mijingIntroProbeHtml') && ui.includes('推荐战力'));
-  assert.ok(ui.includes('mijingResultWavesHtml') && ui.includes('已通 ${done}/${M.WAVES}'));
+  assert.ok(ui.includes('mijingResultWavesHtml') && ui.includes('已过 ${r.cleared}/${M.WAVES} 波'));
+  assert.ok(!ui.includes('已通 ${done}/${M.WAVES}'), '结算只保留一句已过波次，去掉重复的已通');
   assert.ok(ui.includes('warmupStrength(s, ref, () => {'));
   assert.ok(!ui.includes('返还半次') && !ui.includes('failureRefund') && !/补偿次数/.test(ui), '本批不做失败补偿');
   const css = text('css/style.css');

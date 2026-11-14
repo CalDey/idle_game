@@ -22,6 +22,8 @@
   let phase = '';
   let lastPreset = -1;
   let bound = false;
+  let skipGestureId = null;
+  let skipIgnoreUntil = 0;
 
   function data() {
     return root.TribulationData || (typeof window !== 'undefined' && window.TribulationData) || null;
@@ -61,11 +63,25 @@
       bound = true;
       const skip = (e) => {
         if (!playing) return;
+        const now = Date.now();
+        if (now < skipIgnoreUntil) return;
+        if (e && e.pointerId != null && e.pointerId === skipGestureId) return;
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        const fromSuccess = phase === 'success';
         skipOrClose();
+        // 刚跳到成功页时忽略同一次手势（pointerup/残留 click），成功页像 Esc 一样停留约 1.6 秒
+        if (!fromSuccess && phase === 'success') {
+          skipIgnoreUntil = now + 450;
+          if (e && e.pointerId != null) skipGestureId = e.pointerId;
+        }
+      };
+      const clearGesture = (e) => {
+        if (e && e.pointerId != null && e.pointerId === skipGestureId) skipGestureId = null;
       };
       // 只绑一种指针事件：pointerdown 已覆盖鼠标/触摸，再绑 click 会触发两次跳过
       rootEl.addEventListener('pointerdown', skip);
+      rootEl.addEventListener('pointerup', clearGesture);
+      rootEl.addEventListener('pointercancel', clearGesture);
       rootEl.addEventListener('keydown', (e) => {
         if (!playing) return;
         if (e && (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ')) {
@@ -123,6 +139,8 @@
   function hideRoot() {
     playing = false;
     phase = '';
+    skipGestureId = null;
+    skipIgnoreUntil = 0;
     clearTimers();
     if (!rootEl) return;
     rootEl.classList.remove('is-on', 'is-dim', 'is-strike', 'is-flash', 'is-shake', 'is-gold', 'is-success', 'is-reduced');
@@ -191,6 +209,8 @@
     clearTimers();
     playing = true;
     phase = 'dim';
+    skipGestureId = null;
+    skipIgnoreUntil = 0;
     fillSuccess(options);
     if (successEl) successEl.hidden = true;
     setCaption('');

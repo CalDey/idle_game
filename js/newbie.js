@@ -294,7 +294,7 @@
     return ok(cfg().GONGFA_LIST, api.getGongfaCost) || ok(cfg().DONGFU_LIST, api.getDongfuCost);
   }
 
-  // 敌方战力高出我方 15% 以上时，战败页给出「先回洞府/突破」。
+  // 敌方战力高出我方 15% 以上（旧口径，供其他调用）。
   function enemyExceedsTeam(playerCp, enemyCp, ratio) {
     const p = Number(playerCp);
     const e = Number(enemyCp);
@@ -302,6 +302,16 @@
     const lim = Number.isFinite(r) && r > 0 ? r : 1.15;
     if (!Number.isFinite(p) || !Number.isFinite(e) || p <= 0) return false;
     return (e - p) * 100 > p * Math.round((lim - 1) * 100);
+  }
+
+  // 战败标题与「先回洞府/突破」同一口径：相对推荐战力的缺口超过 15%。
+  function recGapExceeds(playerCp, recCp, ratio) {
+    const p = Number(playerCp);
+    const rec = Number(recCp);
+    const lim = Number.isFinite(Number(ratio)) && Number(ratio) > 0 ? Number(ratio) : 0.15;
+    if (!Number.isFinite(p) || !Number.isFinite(rec) || rec <= 0) return false;
+    const gap = Math.max(0, Math.round(rec) - Math.round(p));
+    return gap / rec > lim;
   }
 
   function powerJumpTab(s) {
@@ -899,6 +909,7 @@
     nextLockedBuilding,
     buildingUnlockHint,
     enemyExceedsTeam,
+    recGapExceeds,
     powerJumpTab,
     blockingBoss,
     focusBlockingBoss,

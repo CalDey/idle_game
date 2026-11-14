@@ -263,9 +263,22 @@
     if (badge) badge.classList.toggle('visible', window.Titles.unseen(s));
   }
 
+  function modalOpen() {
+    if (typeof document === 'undefined') return false;
+    if (document.querySelector('.modal-backdrop.active')) return true;
+    const trib = document.getElementById('tribulation-cinematic');
+    if (trib && trib.classList.contains('is-on') && !trib.hidden) return true;
+    return false;
+  }
+
   function showToast(title) {
     const el = $('title-toast');
     if (!el) return;
+    if (modalOpen()) {
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => showToast(title), 600);
+      return;
+    }
     el.textContent = `获得称号「${title.name}」`;
     el.classList.remove('show');
     void el.offsetWidth;
