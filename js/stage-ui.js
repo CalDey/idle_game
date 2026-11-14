@@ -219,6 +219,19 @@
     return String(str == null ? '' : str).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
   }
 
+  const ICON_V = 125;
+  const ICON_ID_RE = /^[a-z0-9_]+$/;
+
+  function skillIconHtml(skillId, className, size) {
+    if (!skillId || !ICON_ID_RE.test(skillId)) return '';
+    const src64 = `assets/icons/sk_${skillId}@64.webp?v=${ICON_V}`;
+    const src128 = `assets/icons/sk_${skillId}.webp?v=${ICON_V}`;
+    const cls = className || 'squad-skill-icon';
+    const px = size || 24;
+    return `<img class="${cls}" src="${src64}" srcset="${src64} 64w, ${src128} 128w" sizes="${px}px" width="${px}" height="${px}" alt="" decoding="async" aria-hidden="true" onerror="this.remove()">`;
+  }
+
+
   function resolveEnemyImgUrl(enemy) {
     if (!enemy) return '';
     let raw = enemy.img || '';
@@ -897,7 +910,8 @@
     }
     if (skillTagEl) {
       const skillName = (ultEv && ultEv.skillName) || '破妄神通';
-      skillTagEl.textContent = `绝技 · ${skillName}`;
+      const skillId = ultEv && ultEv.skillId;
+      skillTagEl.innerHTML = `${skillIconHtml(skillId, 'ult-skill-icon', 28)}<span>绝技 · ${escHtml(skillName)}</span>`;
     }
     if (!overlay || !isPlaying) {
       onComplete();
@@ -2198,6 +2212,7 @@
         const isSelected = selIdx !== -1;
         const av = h.avatar || h.img || '';
         const skillName = (h.skill && h.skill.name) || '破妄神通';
+        const skillIcon = skillIconHtml(h.skill && h.skill.id);
 
         if (!isUnlockedHero) {
           listHtml += `
@@ -2210,7 +2225,7 @@
                   <span class="squad-hero-name">${h.name || '未解锁角色'}</span>
                   ${bondTagsHtml(h.id)}
                 </div>
-                <div class="squad-hero-skill">绝技 · ${skillName}</div>
+                <div class="squad-hero-skill">${skillIcon}<span>绝技 · ${skillName}</span></div>
                 ${skillDescHtml(h.id)}
                 <div class="squad-hero-status is-locked">未解锁</div>
               </div>
@@ -2249,7 +2264,7 @@
                   <span class="squad-hero-name">${h.name}</span>
                   ${bondTagsHtml(h.id)}
                 </div>
-                <div class="squad-hero-skill">绝技 · ${skillName}</div>
+                <div class="squad-hero-skill">${skillIcon}<span>绝技 · ${skillName}</span></div>
                 ${skillDescHtml(h.id)}
                 <div class="squad-hero-status">${statusText}</div>
                 ${growHtml}

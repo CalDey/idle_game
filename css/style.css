@@ -1788,6 +1788,33 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   margin-top: 2px;
 }
 
+.title-row-icon-wrap {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 42%, rgba(56, 48, 88, 0.85) 0%, rgba(22, 18, 42, 0.95) 100%);
+  border: 1px solid rgba(212, 175, 95, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-row-icon {
+  width: 44px;
+  height: 44px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.title-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
 .title-toast {
   position: fixed;
   top: max(8px, env(safe-area-inset-top, 0px));
@@ -2837,11 +2864,26 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .ult-skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 3px;
   color: #7ee7ff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(103, 232, 249, 0.65);
+}
+
+.ult-skill-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85));
 }
 
 .battle-result-overlay {
@@ -3646,6 +3688,14 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
   z-index: 0;
+}
+
+.home-scene.bg-tier-xuan::before {
+  background-image: url("../assets/home/scene_xuan.webp?v=125");
+}
+
+.home-scene.bg-tier-xian::before {
+  background-image: url("../assets/home/scene_xian.webp?v=125");
 }
 
 .home-stage {
@@ -4593,11 +4643,30 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .squad-hero-skill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   color: var(--text-muted);
-  white-space: nowrap;
+  min-width: 0;
+}
+
+.squad-hero-skill .squad-skill-icon {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.squad-hero-skill > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .squad-hero-status {

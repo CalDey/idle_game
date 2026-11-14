@@ -64,6 +64,7 @@
     els.homeCard = document.querySelector('#tab-upgrades .home-card');
     els.homeScene = document.getElementById('home-scene');
     els.homeStage = document.getElementById('home-stage');
+    els.homeBg = document.getElementById('home-bg');
     els.homeGlow = document.getElementById('home-glow');
     els.homeLayer = document.getElementById('home-layer');
     els.homeTitle = document.getElementById('home-title');
@@ -686,6 +687,22 @@
     }
 
     const bgDisplayTier = GameState.getHomeBgDisplayTier();
+    const HOME_BG_SRC = [
+      'assets/home/scene_base.webp?v=125',
+      'assets/home/scene_xuan.webp?v=125',
+      'assets/home/scene_xian.webp?v=125'
+    ];
+    if (!els.homeBg) els.homeBg = document.getElementById('home-bg');
+    if (els.homeBg) {
+      const nextBg = HOME_BG_SRC[bgDisplayTier] || HOME_BG_SRC[0];
+      if (els.homeBg.getAttribute('src') !== nextBg) {
+        els.homeBg.setAttribute('src', nextBg);
+      }
+    }
+    if (els.homeScene) {
+      els.homeScene.classList.toggle('bg-tier-xuan', bgDisplayTier === 1);
+      els.homeScene.classList.toggle('bg-tier-xian', bgDisplayTier === 2);
+    }
     if (els.homeGlow) {
       els.homeGlow.dataset.tier = String(bgDisplayTier);
     }

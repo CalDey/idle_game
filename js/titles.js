@@ -296,6 +296,16 @@
     if ($('title-modal') && $('title-modal').classList.contains('active')) renderList();
   }
 
+  const TITLE_ICON_V = 125;
+  const TITLE_ICON_ID_RE = /^[a-z0-9_]+$/;
+
+  function titleIconHtml(titleId) {
+    if (!titleId || !TITLE_ICON_ID_RE.test(titleId)) return '';
+    const src64 = `assets/icons/tt_${titleId}@64.webp?v=${TITLE_ICON_V}`;
+    const src128 = `assets/icons/tt_${titleId}.webp?v=${TITLE_ICON_V}`;
+    return `<span class="title-row-icon-wrap"><img class="title-row-icon" src="${src128}" srcset="${src64} 64w, ${src128} 128w" sizes="44px" width="44" height="44" alt="" decoding="async" aria-hidden="true" onerror="this.onerror=null;var w=this.parentNode;if(w&&w.classList&&w.classList.contains('title-row-icon-wrap'))w.remove();else this.remove();"></span>`;
+  }
+
   function renderList() {
     const s = window.GameState.state;
     window.Titles.ensure(s);
@@ -320,7 +330,8 @@
             const worn = s.titles.worn === title.id;
             const prog = have ? '已获得' : window.Titles.progressText(s, title);
             return `<div class="title-row${have ? '' : ' locked'}${worn ? ' worn' : ''}">
-              <div>
+              ${titleIconHtml(title.id)}
+              <div class="title-row-main">
                 <div class="title-row-name" style="color:${tierColor(title.tier)}">${title.name}${worn ? ' · 佩戴中' : ''}</div>
                 <div class="title-row-meta">${title.bonus} · ${title.cond} · ${prog}</div>
               </div>
