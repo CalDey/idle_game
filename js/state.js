@@ -568,15 +568,94 @@
   }
 
   /**
-   * v1 回本秒数（数值策划稍后可整函数替换，勿改 UI）。
-   * 公式：升级花费 ÷ 本级带来的每秒增量产出（洞府用灵石、功法用灵气，v1 不做跨资源折算）。
-   * 不可计算时返回 null。
+   * v2 回本秒数（数值策划 2026-11-15 公式，只显示不改数值）。
+   * payback = cost / ((s1 - s0) + s0 * (q1 - q0) / q0)
+   * q0/s0 为当前灵气、灵石每秒产出，q1/s1 为该项升 1 级后的值；灵气增量折算成等效灵石。
+   * 若花费是灵气而非灵石，先按 cost_in_lingshi = cost_qi * s0 / q0 折算（当前功法/洞府花费均为灵石）。
+   * 分母 <= 0 或非有限时返回 null。
+   * costUnit 为 'qi' 时走灵气折算，其余（默认 'lingshi'）视为灵石花费。
    */
-  function paybackSeconds(cost, incrementalPerSec) {
+  function paybackSeconds(cost, q0, s0, q1, s1, costUnit) {
     const c = Number(cost);
-    const inc = Number(incrementalPerSec);
-    if (!Number.isFinite(c) || !Number.isFinite(inc) || c < 0 || inc <= 0) return null;
-    return c / inc;
+    const Q0 = Number(q0);
+    const S0 = Number(s0);
+    const Q1 = Number(q1);
+    const S1 = Number(s1);
+    if (![c, Q0, S0, Q1, S1].every(Number.isFinite) || c < 0) return null;
+    let costLingshi = c;
+    // 灵气花费折算为等效灵石：cost_qi * s0 / q0。q0<=0 时无法折算。
+    if (costUnit === 'qi') {
+      if (Q0 <= 0) return null;
+      costLingshi = c * S0 / Q0;
+      if (!Number.isFinite(costLingshi) || costLingshi < 0) return null;
+    }
+    let denom;
+    if (Q0 === 0) {
+      // 无灵气产出时无法把灵气增量折成灵石；若灵气也不变，分母只剩灵石增量。
+      denom = Q1 === Q0 ? S1 - S0 : NaN;
+    } else {
+      denom = (S1 - S0) + S0 * (Q1 - Q0) / Q0;
+    }
+    if (!Number.isFinite(denom) || denom <= 0) return null;
+    return costLingshi / denom;
+  }
+
+  // 距下次突破的秒数 tNext = (reqQi - qi) / q0；已达或超过门槛时为 0。q0 不可用时也视为 0，回退到固定 300/1800 阈值。
+  function timeToNextBreakthrough(q0, qi, reqQi) {
+    const need = Number(reqQi) - Number(qi);
+    if (!Number.isFinite(need) || need <= 0) return 0;
+    const q = Number(q0);
+    if (!Number.isFinite(q) || q <= 0) return 0;
+    return need / q;
+  }
+
+  /**
+   * 回本标签颜色：green / yellow / grey。
+   * payback <= max(300, tNext) 绿；<= max(1800, 4*tNext) 黄；其余灰；超过 43200 秒一律灰。
+   */
+  function paybackTone(seconds, tNext) {
+    const p = Number(seconds);
+    if (!Number.isFinite(p) || p < 0) return '';
+    if (p > 43200) return 'grey';
+    let t = Number(tNext);
+    if (!Number.isFinite(t) || t < 0) t = 0;
+    if (p <= Math.max(300, t)) return 'green';
+    if (p <= Math.max(1800, 4 * t)) return 'yellow';
+    return 'grey';
+  }
+
+  // 浅拷 gongfa/dongfu 后把等级 +1，复用 getQiPerSec / getStonePerSec 得到 q1/s1，算完立刻恢复真实 state。
+  function ratesAfterUpgrade(kind, item) {
+    if (!item || !item.id) return null;
+    const bag = kind === 'gongfa' ? 'gongfa' : kind === 'dongfu' ? 'dongfu' : null;
+    if (!bag) return null;
+    const next = Object.assign({}, state);
+    next[bag] = Object.assign({}, state[bag] || {});
+    next[bag][item.id] = (next[bag][item.id] || 0) + 1;
+    const prev = state;
+    state = next;
+    try {
+      return { q: getQiPerSec(), s: getStonePerSec() };
+    } finally {
+      state = prev;
+    }
+  }
+
+  // 为某一功法/洞府升 1 级计算回本展示（秒数、文案、色档）。不改真实存档。
+  function paybackForUpgrade(kind, item) {
+    const empty = { seconds: null, text: '', tone: '' };
+    if (!item) return empty;
+    const cost = kind === 'gongfa' ? getGongfaCost(item) : kind === 'dongfu' ? getDongfuCost(item) : null;
+    if (cost == null) return empty;
+    const q0 = getQiPerSec();
+    const s0 = getStonePerSec();
+    const rates = ratesAfterUpgrade(kind, item);
+    if (!rates) return empty;
+    const seconds = paybackSeconds(cost, q0, s0, rates.q, rates.s, 'lingshi');
+    const stage = getCurrentStage();
+    const tNext = timeToNextBreakthrough(q0, state.qi, stage && stage.reqQi);
+    const tone = paybackTone(seconds, tNext);
+    return { seconds, text: formatPayback(seconds), tone };
   }
 
   // 展示用：回本 Xs / 回本 X分 / 回本 X时；不可计算时返回空串，由 UI 隐藏。
@@ -1221,6 +1300,10 @@
     gongfaIncrementalQiPerSec,
     dongfuIncrementalStonePerSec,
     paybackSeconds,
+    timeToNextBreakthrough,
+    paybackTone,
+    ratesAfterUpgrade,
+    paybackForUpgrade,
     formatPayback,
     getHomeDisplayTier,
     getHomeBgDisplayTier,

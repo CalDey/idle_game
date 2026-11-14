@@ -7940,6 +7940,18 @@ button.mijing-bless-card:active {
   white-space: nowrap;
 }
 
+.payback-label.payback-green {
+  color: #6ecf9a;
+}
+
+.payback-label.payback-yellow {
+  color: #d4bc7a;
+}
+
+.payback-label.payback-grey {
+  color: var(--text-dim);
+}
+
 .payback-label[hidden],
 .payback-label:empty {
   display: none;
