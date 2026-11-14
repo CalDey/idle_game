@@ -202,6 +202,35 @@ function oldSave(fields) {
   assert.strictEqual(NB.stageLabel(31), '4-1');
 }
 
+// ---------- 赠桃目标：摘满 30 与树已摘空文案分开，完成判定不变，展示先停 1.2 秒 ----------
+{
+  const { GS, NB } = loadRuntime();
+  GS.loadGame();
+  const s = GS.state;
+  s.realmIndex = 1;
+  s.peachesPicked = 29;
+  s.tree.peaches = 1;
+  s.equip.weapon = null;
+  s.pending = null;
+  assert.strictEqual(NB.peachGoalDone(s), false);
+  assert.strictEqual(NB.peachGoalText(s), '去法宝页摘桃（29/30）');
+  s.peachesPicked = 30;
+  s.tree.peaches = 0;
+  assert.strictEqual(NB.peachGoalDone(s), true, '摘满 30 的完成判定不变');
+  assert.strictEqual(NB.peachGoalText(s), '去法宝页摘桃（30/30）');
+  assert.ok(NB.currentGoal(s).id !== 'peach', '判定上立即进入下一目标');
+  assert.ok(NB.PEACH_HOLD_MS >= 1000 && NB.PEACH_HOLD_MS <= 1500, '停顿约 1–1.5 秒');
+  s.peachesPicked = 8;
+  s.tree.peaches = 0;
+  s.pending = null;
+  s.equip.weapon = { id: 1, s: 'weapon', q: 0, lv: 1, m: 8, sub: [] };
+  assert.strictEqual(NB.peachGoalDone(s), true, '树已摘空且有装备的兜底判定不变');
+  assert.strictEqual(NB.peachGoalText(s), '树已摘空，已有法宝');
+  assert.ok(!NB.peachGoalText(s).includes('30/30'), '兜底文案与摘满 30 分开');
+  const src = text('js/newbie.js');
+  assert.ok(src.includes('peachHoldUntil') && src.includes('PEACH_HOLD_MS'), '目标条展示会停顿再切走');
+}
+
 // ---------- P1-2 红点 ----------
 {
   const { GS, NB, Battle } = loadRuntime();

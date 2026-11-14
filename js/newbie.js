@@ -110,6 +110,20 @@
     return picked >= 1 && left < 1 && !st.pending && hasAnyEquip(st);
   }
 
+  // 完成判定仍走 peachGoalDone；文案把「摘满 30」和「树已摘空/已有装备」分开。
+  const PEACH_HOLD_MS = 1200;
+  function peachPickedFull(s) {
+    return Math.floor(Number((s && s.peachesPicked) || 0)) >= giftPeachTarget();
+  }
+  function peachGoalText(s) {
+    const st = s || {};
+    const target = giftPeachTarget();
+    const picked = Math.floor(Number(st.peachesPicked) || 0);
+    if (peachPickedFull(st)) return `去法宝页摘桃（${target}/${target}）`;
+    if (peachGoalDone(st) && bestStage(st) < 1) return '树已摘空，已有法宝';
+    return picked > 0 ? `去法宝页摘桃（${Math.min(picked, target)}/${target}）` : '去法宝页摘桃';
+  }
+
   function realmGoal(id, target, suffix) {
     return {
       id,
@@ -125,10 +139,7 @@
     {
       id: 'peach',
       tab: 'tab-gear',
-      text: (s) => {
-        const picked = Math.floor((s && s.peachesPicked) || 0);
-        return picked > 0 ? `去法宝页摘桃（${Math.min(picked, giftPeachTarget())}/${giftPeachTarget()}）` : '去法宝页摘桃';
-      },
+      text: (s) => peachGoalText(s),
       done: (s) => peachGoalDone(s)
     },
     realmGoal('realm2', 2, '（开启闯关）'),
@@ -819,10 +830,31 @@
     return hideBubble();
   }
 
+  let peachHoldUntil = 0;
+  let peachHoldGoal = null;
+
   function renderGoal(s) {
     if (!els.goal) return;
     const goal = currentGoal(s);
     const stage = window.GameState.getCurrentStage();
+    const now = Date.now();
+    // 摘满 30 或树已摘空时，先把完成文案停 1.2 秒再切下一目标。
+    if (!peachHoldUntil && lastGoal && lastGoal.id === 'peach' && goal.id !== 'peach' && peachGoalDone(s)) {
+      peachHoldUntil = now + PEACH_HOLD_MS;
+      peachHoldGoal = { id: 'peach', text: peachGoalText(s), tab: 'tab-gear' };
+    }
+    if (peachHoldUntil && now < peachHoldUntil && peachHoldGoal) {
+      els.goal.hidden = false;
+      els.goal.dataset.goal = 'peach';
+      els.goal.dataset.tab = 'tab-gear';
+      if (els.goalText && els.goalText.textContent !== peachHoldGoal.text) els.goalText.textContent = peachHoldGoal.text;
+      if (els.goalProgress && els.goalProgress.textContent) els.goalProgress.textContent = '';
+      return;
+    }
+    if (peachHoldUntil && now >= peachHoldUntil) {
+      peachHoldUntil = 0;
+      peachHoldGoal = null;
+    }
     if (lastGoal && goal.id !== lastGoal.id && isGoalDone(lastGoal, s)) {
       els.goal.classList.remove('is-done');
       void els.goal.offsetWidth;
@@ -1262,6 +1294,8 @@
     guideTarget,
     currentGoal,
     peachGoalDone,
+    peachGoalText,
+    PEACH_HOLD_MS,
     giftPeachTarget,
     nextLockedBuilding,
     buildingUnlockHint,

@@ -566,6 +566,146 @@ check('UI 冒烟：洞府「派遣」按钮、弹窗榜单、选人派遣、倒�
   assert.ok(!UI.isOpen());
 });
 
+function splitDispatchHtml(html) {
+  const boardAt = html.indexOf('今日悬赏');
+  const activeAt = html.indexOf('派遣中');
+  return {
+    active: activeAt >= 0 ? html.slice(activeAt, boardAt >= 0 ? boardAt : html.length) : '',
+    board: boardAt >= 0 ? html.slice(boardAt) : ''
+  };
+}
+
+check('在途看板用 claimReward 显示，领取后写实发数；轮回封顶后两段 HTML 数字=实发并标已封顶', () => {
+  const { els, document } = fakeDom();
+  const clock = makeClock(T0);
+  const sandbox = {
+    window: {}, console, document, localStorage: memoryStorage(), navigator: { userAgent: 'node' }, Date: clock.Date,
+    setTimeout() { return 0; }, clearTimeout() {}, setInterval() { return 0; }, clearInterval() {},
+    requestAnimationFrame() { return 0; }, Image: function () {}, ResizeObserver: undefined,
+    getComputedStyle() { return { getPropertyValue: () => '' }; }
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.window.addEventListener = () => {};
+  ['config', 'equip', 'state', 'titles', 'battle', 'bonds', 'dispatch'].forEach((f) => {
+    vm.runInNewContext(text(`js/${f}.js`), sandbox, { filename: `${f}.js` });
+  });
+  const GS = sandbox.GameState;
+  const D = sandbox.Dispatch;
+  GS.loadGame();
+  const s = GS.state;
+  s.stage.best = 200;
+  s.stage.cur = 201;
+  s.realmIndex = (sandbox.GameConfig.REINCARNATION_MIN_STAGE || 27) + 2;
+  s.squad = SQUAD.slice();
+  s.unlockedHeroes = ALL.slice();
+  s.createdAt = 888;
+  D.ensureState(s, clock.now);
+  const m = s.dispatch.board.find((b) => D.TPL_MAP[b.tpl].kinds.includes('stone')) || s.dispatch.board[0];
+  const huge = 1e6;
+  const res = D.start(s, m.slot, pickFor(s, m), { now: clock.now, stonePerSec: huge });
+  assert.ok(res.ok);
+  const snapStone = res.mission.reward.stone || 0;
+  assert.ok(snapStone > 0);
+  assert.ok(GS.performReincarnation().ok);
+  const s2 = GS.state;
+  // 轮回后关卡进度归零，UI 会因未解锁而不渲染；本用例只测结算展示，补回开启条件。
+  s2.stage.best = 200;
+  s2.stage.cur = 201;
+  const small = 2;
+  const expected = D.claimReward(s2, s2.dispatch.active[0], { stonePerSec: small });
+  assert.ok(expected.stone < snapStone, '轮回后应封顶');
+
+  const UI = D.ui;
+  // getQiPerSec/stonePerSec 在 render 里可能走 GameState；claimReward 展示时 env 为空，要用真实产出。
+  // 直接构造显示：先把 getStonePerSec 打成今生低产出。
+  const origSps = GS.getStonePerSec;
+  GS.getStonePerSec = () => small;
+  clock.now = T0 + 9 * H;
+  UI.tick();
+  UI.open();
+  const parts = splitDispatchHtml(els['dispatch-modal-body'].innerHTML);
+  const fmtRes = (n) => (sandbox.GameConfig.formatNumber ? sandbox.GameConfig.formatNumber(n) : String(Math.round(n)));
+  const capBit = fmtRes(expected.stone);
+  const snapBit = fmtRes(snapStone);
+  assert.ok(parts.active, '应有派遣中一段');
+  assert.ok(parts.board, '应有今日悬赏一段');
+  assert.ok(parts.active.includes(capBit), `派遣中应显示封顶实发 ${capBit}，实际：${parts.active}`);
+  assert.ok(parts.board.includes(capBit), `今日悬赏已派出应显示封顶实发 ${capBit}`);
+  assert.ok(!parts.board.includes(snapBit) || capBit === snapBit, '今日悬赏不应再单独展示未封顶快照');
+  assert.ok(parts.board.includes('已派出') && parts.board.includes('已封顶'));
+
+  const got = D.claim(s2, s2.dispatch.active[0].id, { now: clock.now, stonePerSec: small });
+  assert.ok(got.ok);
+  assert.strictEqual(got.reward.stone, expected.stone);
+  const slot = s2.dispatch.board.find((b) => b.slot === m.slot);
+  assert.strictEqual(slot.claimed, true);
+  assert.strictEqual(slot.reward.stone, expected.stone, '领取后看板写入实发数');
+  assert.ok(slot.capped);
+  UI.tick();
+  const after = splitDispatchHtml(els['dispatch-modal-body'].innerHTML);
+  assert.ok(!after.active, '领取后派遣中应空');
+  assert.ok(after.board.includes('已领取') && after.board.includes('已封顶'));
+  assert.ok(after.board.includes(capBit), '已领取条目展示实发数');
+  GS.getStonePerSec = origSps;
+});
+
+check('旧存档在途无 board.reward、已领取无 claimed 字段时 UI 兜底不报错且显示合理', () => {
+  const { els, document } = fakeDom();
+  const clock = makeClock(T0);
+  const sandbox = {
+    window: {}, console, document, localStorage: memoryStorage(), navigator: { userAgent: 'node' }, Date: clock.Date,
+    setTimeout() { return 0; }, clearTimeout() {}, setInterval() { return 0; }, clearInterval() {},
+    requestAnimationFrame() { return 0; }, Image: function () {}, ResizeObserver: undefined,
+    getComputedStyle() { return { getPropertyValue: () => '' }; }
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.window.addEventListener = () => {};
+  ['config', 'equip', 'state', 'titles', 'battle', 'bonds', 'dispatch'].forEach((f) => {
+    vm.runInNewContext(text(`js/${f}.js`), sandbox, { filename: `${f}.js` });
+  });
+  const GS = sandbox.GameState;
+  const D = sandbox.Dispatch;
+  GS.loadGame();
+  const s = GS.state;
+  s.stage.best = 30;
+  s.squad = SQUAD.slice();
+  s.unlockedHeroes = ALL.slice();
+  s.createdAt = 999;
+  D.ensureState(s, clock.now);
+  const m = s.dispatch.board[0];
+  assert.ok(D.start(s, m.slot, pickFor(s, m), { now: clock.now, stonePerSec: 5 }).ok);
+  delete s.dispatch.board[0].reward;
+  const mid = D.ensureState(s, clock.now);
+  assert.ok(!mid.board[0].reward, '在途旧档看板无 reward 字段');
+  const UI = D.ui;
+  UI.tick();
+  UI.open();
+  const html1 = els['dispatch-modal-body'].innerHTML;
+  assert.ok(html1.includes('已派出'), '无 board.reward 时仍显示已派出');
+  assert.ok(!html1.includes('undefined') && !html1.includes('NaN'));
+  const act = s.dispatch.active[0];
+  const bits = ['stone', 'jade', 'peach'].filter((k) => act.reward[k] > 0);
+  bits.forEach((k) => {
+    const label = D.RES_NAMES[k];
+    assert.ok(html1.includes(label), `应从在途快照兜底显示 ${label}`);
+  });
+
+  // 已领取但缺 claimed 字段：taken 且不在 active
+  const locked = Object.assign({}, act.reward);
+  s.dispatch.active = [];
+  s.dispatch.board[0].taken = true;
+  delete s.dispatch.board[0].claimed;
+  s.dispatch.board[0].reward = locked;
+  D.ensureState(s, clock.now);
+  UI.tick();
+  const html2 = els['dispatch-modal-body'].innerHTML;
+  assert.ok(html2.includes('已领取'), '无 claimed 字段时应按 taken 且不在途视为已领取');
+  assert.ok(!html2.includes('undefined') && !html2.includes('NaN'));
+  assert.ok(!html2.includes('data-dispatch-pick="' + m.slot + '"'), '已领取条目不可再派');
+});
+
 check('index.html 引用 dispatch.js 且有入口/弹窗节点；样式与图标存在', () => {
   const index = text('index.html');
   assert.match(index, /<script src="js\/dispatch\.js\?v=\d+"><\/script>/);

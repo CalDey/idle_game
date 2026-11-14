@@ -142,6 +142,13 @@
     if (!b) return;
     const snap = copyReward(reward);
     if (Object.keys(snap).length) b.reward = snap;
+    else delete b.reward;
+  }
+
+  function rewardIsCapped(shown, locked) {
+    const a = shown || {};
+    const b = locked || {};
+    return ['stone', 'jade', 'peach'].some((k) => (Number(a[k]) || 0) < (Number(b[k]) || 0));
   }
 
   function normalize(raw) {
@@ -156,6 +163,7 @@
         if (m && out.board.length < RULES.BOARD_SIZE) {
           const row = Object.assign({ slot: Number.isInteger(b.slot) ? b.slot : i, tpl: b.tpl }, m, { taken: Boolean(b.taken) });
           if (b.claimed) row.claimed = true;
+          if (b.capped) row.capped = true;
           pinBoardSnapshot(row, b.reward);
           out.board.push(row);
         }
@@ -439,7 +447,9 @@
       if (b) {
         b.taken = true;
         b.claimed = true;
-        pinBoardSnapshot(b, a.reward);
+        pinBoardSnapshot(b, r);
+        if (rewardIsCapped(r, a.reward)) b.capped = true;
+        else delete b.capped;
       }
     }
     return { ok: true, mission: a, reward: r };
@@ -476,6 +486,7 @@
         b.taken = false;
         delete b.claimed;
         delete b.reward;
+        delete b.capped;
       }
     }
     return { ok: true, mission: a };
@@ -634,9 +645,14 @@
       let rewardHtml;
       let actionHtml;
       if (taken) {
-        const snap = (active && active.reward) || b.reward;
+        // 在途与「派遣中」一致，用 claimReward（轮回后按今生产出封顶）；已领展示实发数。
+        const locked = (active && active.reward) || null;
+        const shown = active
+          ? claimReward(s, active, {})
+          : (b.reward || null);
+        const capped = active ? rewardIsCapped(shown, locked) : Boolean(b.capped);
         const status = claimed ? '已领取' : '已派出';
-        rewardHtml = `${snap ? resLine(snap) : ''}`;
+        rewardHtml = `${shown ? resLine(shown) : ''}${capped ? '<span class="dispatch-capped">已封顶</span>' : ''}`;
         actionHtml = `<span class="dispatch-taken">${status}</span>`;
       } else {
         const preview = quote(s, b, [], {});
