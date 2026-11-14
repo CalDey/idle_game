@@ -1076,13 +1076,19 @@ assert.match(css, /\.role-card\.role-q-xian:not\(\.is-active\) \{[^}]*#f4a3a3, #
 assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[^{]*\{[^}]*animation\s*:/.test(css));
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=88'));
-assert.ok(index.includes('js/config.js?v=75'));
-assert.ok(index.includes('js/state.js?v=34'));
-assert.ok(index.includes('js/battle.js?v=36'));
-assert.ok(index.includes('js/mijing.js?v=1'));
-assert.ok(index.includes('js/stage-ui.js?v=50'));
-assert.ok(index.includes('js/game.js?v=48'));
+// 缓存版本号只要求不低于各自基线（多分支并行时各自递增，避免精确值互相冲突）。
+function assertAssetVersionAtLeast(file, min) {
+  const m = index.match(new RegExp(file.replace(/[.]/g, '\\.') + '\\?v=(\\d+)'));
+  assert.ok(m, `index.html 缺少 ${file}`);
+  assert.ok(Number(m[1]) >= min, `${file} 版本号应 ≥ ${min}，实际 ${m[1]}`);
+}
+assertAssetVersionAtLeast('css/style.css', 88);
+assertAssetVersionAtLeast('js/config.js', 75);
+assertAssetVersionAtLeast('js/state.js', 34);
+assertAssetVersionAtLeast('js/battle.js', 36);
+assertAssetVersionAtLeast('js/mijing.js', 1);
+assertAssetVersionAtLeast('js/stage-ui.js', 50);
+assertAssetVersionAtLeast('js/game.js', 48);
 // 秘境劫运给战斗内核加了可选 mods 参数（缺省时逐事件一致，见 tools/mijing.test.js），故只检查此前区间
 const battleDiff = git(['diff', '-U0', MAIN, PRE_MIJING, '--', 'js/battle.js']);
 const battleBody = battleDiff.split('\n').filter((line) => (

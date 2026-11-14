@@ -5172,3 +5172,245 @@ button.mijing-bless-card:active {
 #btn-replace.is-recommended {
   animation: guideRing 1.2s ease-out infinite;
 }
+
+/* === 图鉴（只读）=== */
+.codex-dialog {
+  max-width: 380px;
+  max-height: calc(100dvh - 32px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.codex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.codex-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+  padding-bottom: 2px;
+}
+
+.codex-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.codex-tab {
+  flex: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(10, 8, 24, 0.5);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.codex-tab.is-active {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold-bright);
+  background: rgba(64, 52, 104, 0.6);
+}
+
+.codex-tab-count {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.codex-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.codex-entry,
+.codex-boss,
+.codex-mob {
+  background: rgba(10, 8, 24, 0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.codex-entry summary,
+.codex-boss summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.codex-boss summary {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.codex-entry summary::-webkit-details-marker,
+.codex-boss summary::-webkit-details-marker {
+  display: none;
+}
+
+.codex-entry-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.codex-entry-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.codex-entry-body {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-main);
+}
+
+.codex-entry.is-locked .codex-entry-title,
+.codex-boss.is-locked .codex-entry-title,
+.codex-mob.is-locked .codex-mob-name {
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+.codex-entry-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.codex-section-title {
+  font-size: 12px;
+  color: var(--accent-gold);
+  letter-spacing: 3px;
+  margin: 4px 0 0;
+}
+
+.codex-boss.is-locked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.codex-boss-thumb {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 175, 95, 0.35);
+  background: rgba(22, 18, 42, 0.95);
+}
+
+.codex-boss-thumb.is-locked {
+  border-color: var(--border-subtle);
+}
+
+.codex-boss-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.codex-boss-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.codex-boss-tag.is-done {
+  color: var(--accent-jade);
+}
+
+.codex-boss-quote {
+  font-size: 12px;
+  color: #f0a07a;
+  line-height: 1.4;
+}
+
+.codex-mob {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+}
+
+.codex-mob-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.codex-mob-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.codex-mob-region {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* Boss 开场台词横幅（非阻塞） */
+.boss-quote-banner {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 30px;
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, transparent, rgba(12, 6, 18, 0.82) 18%, rgba(12, 6, 18, 0.82) 82%, transparent);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.boss-quote-banner.is-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.boss-quote-name {
+  font-size: 11px;
+  color: #f07167;
+  letter-spacing: 2px;
+}
+
+.boss-quote-text {
+  font-size: 13px;
+  color: var(--accent-gold-bright);
+  text-align: center;
+  line-height: 1.4;
+}

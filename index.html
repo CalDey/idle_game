@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=88" />
+  <link rel="stylesheet" href="css/style.css?v=89" />
 </head>
 
 <body>
@@ -404,6 +404,14 @@
 
           <div class="setting-row">
             <div>
+              <div class="setting-label">图鉴</div>
+              <div class="setting-sub">境界、地域、势力、纪元、角色与妖魔，随修行进度逐条解锁</div>
+            </div>
+            <button id="btn-open-codex" class="btn btn-primary" type="button">打开图鉴</button>
+          </div>
+
+          <div class="setting-row">
+            <div>
               <div class="setting-label">手动铭刻玉简</div>
               <div class="setting-sub">系统每 4 秒自动保存至本地，亦可手动立即存档</div>
             </div>
@@ -586,6 +594,17 @@
     </div>
   </div>
 
+  <div id="codex-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog codex-dialog" role="dialog" aria-modal="true" aria-labelledby="codex-modal-title">
+      <div class="card-header codex-header">
+        <span id="codex-modal-title" class="card-title">图鉴</span>
+        <button id="btn-close-codex" class="home-modal-close" type="button" aria-label="关闭">✕</button>
+      </div>
+      <div id="codex-tabs" class="codex-tabs" role="tablist" aria-label="图鉴分类"></div>
+      <div id="codex-list" class="codex-list"></div>
+    </div>
+  </div>
+
   <div id="idle-event-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog idle-event-dialog" role="dialog" aria-modal="true" aria-labelledby="idle-event-title">
       <div class="idle-event-kicker">机缘</div>
@@ -635,11 +654,13 @@
   <script src="js/battle.js?v=36"></script>
   <script src="js/mijing.js?v=1"></script>
   <script src="js/gear.js?v=32"></script>
-  <script src="js/stage-ui.js?v=50"></script>
+  <script src="js/stage-ui.js?v=51"></script>
   <script src="js/newbie.js?v=1"></script>
   <script src="js/game.js?v=48"></script>
   <script src="js/events-data.js?v=1"></script>
   <script src="js/idle-events.js?v=1"></script>
+  <script src="js/codex-data.js?v=1"></script>
+  <script src="js/codex.js?v=1"></script>
 </body>
 
 </html>

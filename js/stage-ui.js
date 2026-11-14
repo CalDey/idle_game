@@ -1291,6 +1291,9 @@
         ? `秘境第 ${mjRun.wave} 波 · 迎战【${enemy.name}】`
         : `第 1 回合 · 迎战【${enemy.name}】`;
     }
+    if (!mjRun && enemy.isBoss && window.Codex && typeof window.Codex.showBossQuote === 'function') {
+      window.Codex.showBossQuote(enemy);
+    }
     render();
 
     playTimer = setTimeout(stepPlayback, getMoveDelay());
