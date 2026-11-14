@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=117" />
+  <link rel="stylesheet" href="css/style.css?v=118" />
 </head>
 
 <body>
@@ -125,6 +125,7 @@
             </div>
             <button id="btn-breakthrough" class="btn btn-primary" disabled>突破境界</button>
           </div>
+          <button id="btn-path-open" class="path-entry" type="button" hidden><img class="gi gi-14" src="assets/icons/gf_taiqingjue@64.webp?v=18" alt="" aria-hidden="true"><span id="path-entry-text">本命道途</span><span id="badge-path" class="home-upgrade-badge" aria-hidden="true"></span></button>
         </div>
       </section>
 
@@ -708,6 +709,17 @@
     </div>
   </div>
 
+  <div id="path-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog path-dialog" role="dialog" aria-modal="true" aria-labelledby="path-modal-title">
+      <div class="card-header squad-modal-header">
+        <span id="path-modal-title" class="card-title"><img class="gi" src="assets/icons/gf_taiqingjue@64.webp?v=18" alt="" aria-hidden="true">本命道途</span>
+        <button id="btn-path-close" data-modal-close class="home-modal-close" type="button" aria-label="关闭">✕</button>
+      </div>
+      <div id="path-modal-body" class="path-modal-body"></div>
+      <div id="path-modal-actions" class="modal-actions path-modal-actions"></div>
+    </div>
+  </div>
+
   <div id="dispatch-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog dispatch-dialog" role="dialog" aria-modal="true" aria-labelledby="dispatch-modal-title">
       <div class="card-header squad-modal-header">
@@ -878,15 +890,15 @@
   <script src="js/beasts.js?v=2"></script>
   <script src="js/ui-text.js?v=3"></script>
   <script src="js/equip.js?v=23"></script>
-  <script src="js/state.js?v=115"></script>
+  <script src="js/state.js?v=118"></script>
   <script src="js/titles.js?v=23"></script>
   <script src="js/grow.js?v=1"></script>
   <script src="js/battle.js?v=42"></script>
-  <script src="js/bonds.js?v=5"></script>
+  <script src="js/bonds.js?v=118"></script>
   <script src="js/mijing.js?v=5"></script>
   <script src="js/tower.js?v=1"></script>
   <script src="js/gear.js?v=36"></script>
-  <script src="js/stage-ui.js?v=72"></script>
+  <script src="js/stage-ui.js?v=118"></script>
   <script src="js/story-data.js?v=115"></script>
   <script src="js/story.js?v=2"></script>
   <script src="js/audio.js?v=2"></script>
@@ -904,6 +916,7 @@
   <script src="js/hero-voice.js?v=1"></script>
   <script src="js/skill-text-data.js?v=1"></script>
   <script src="js/dispatch.js?v=1"></script>
+  <script src="js/path.js?v=118"></script>
   <script src="js/beasts-ui.js?v=2"></script>
 </body>
 

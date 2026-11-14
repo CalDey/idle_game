@@ -298,7 +298,8 @@
       (1 + qiPct) *
       (1 + 0.02 * chapters) *
       titleFactor *
-      (1 + 0.01 * Math.floor(julingshiLv / 10))
+      (1 + 0.01 * Math.floor(julingshiLv / 10)) *
+      (window.Path ? window.Path.qiFactor(state) : 1)
     );
   }
 
@@ -319,7 +320,8 @@
       getDaoGuoStoneMultiplier() *
       (1 + stonePct) *
       (1 + 0.02 * chapters) *
-      (window.Titles ? window.Titles.factor(state, 'stone') : 1)
+      (window.Titles ? window.Titles.factor(state, 'stone') : 1) *
+      (window.Path ? window.Path.stoneFactor(state) : 1)
     );
   }
 
@@ -1009,6 +1011,10 @@
     // 轮回不重置秘境当日次数，进行中的一局按开局快照继续（避免轮回刷次数）
     if (state.mijing && typeof state.mijing === 'object') {
       fresh.mijing = JSON.parse(JSON.stringify(state.mijing));
+    }
+    // 本命道途：轮回保留所选道途，参悟层数清零（灵石投入随轮回重修），赠 1 次免费重定
+    if (state.path && typeof state.path === 'object') {
+      fresh.path = window.Path ? window.Path.onReincarnate(state.path) : JSON.parse(JSON.stringify(state.path));
     }
     // 仙姬派遣：轮回不清空进行中的派遣与当日悬赏（避免轮回刷新悬赏榜；灵石奖励领取时按当时产出封顶）
     if (state.dispatch && typeof state.dispatch === 'object') {

@@ -190,13 +190,17 @@
     }
   }
 
-  // 羁绊 + 灵兽伴生（js/beasts.js，可缺省）合并后的 mods；两者都没有时返回 null
+  // 羁绊 + 灵兽伴生（js/beasts.js）+ 本命道途（js/path.js，均可缺省）合并后的 mods；都没有时返回 null
   function modsForState(state) {
     const ids = squadIdsOf(state);
     const base = buildMods(ids);
     const Bs = root.Beasts;
     const beast = Bs && typeof Bs.modsForState === 'function' ? Bs.modsForState(state, ids) : null;
-    return beast ? mergeMods(base, beast) : base;
+    const merged = beast ? mergeMods(base, beast) : base;
+    // 本命道途（js/path.js，可缺省）：玩家所选道途的全队常驻加成；未选或未参悟时为 null
+    const P = root.Path;
+    const path = P && typeof P.battleMods === 'function' ? P.battleMods(state) : null;
+    return path ? mergeMods(merged, path) : merged;
   }
 
   // 合并两份 mods（如秘境劫运 + 羁绊）：倍率按增量相加，其余数值相加，heroMods 逐角色合并

@@ -336,11 +336,13 @@
     return `${id}:${Math.round(playerCp)}:${state && state.heroId}:${squadStr}:${formStr}:${beastKey(state)}`;
   }
 
-  // 灵兽伴生（js/beasts.js）会改变战斗 mods：当前伴生与等级并入胜率缓存键
+  // 灵兽伴生（js/beasts.js）与本命道途（js/path.js）会改变战斗 mods：两者状态并入胜率缓存键
   function beastKey(state) {
     const Bs = window.Beasts;
     const b = Bs && state ? Bs.activeBeast(state) : null;
-    return b ? `${b.id}${Bs.levelOf(state, b.id)}` : '';
+    const P = window.Path;
+    const pathSig = P && state && typeof P.signature === 'function' ? P.signature(state) : '';
+    return `${b ? `${b.id}${Bs.levelOf(state, b.id)}` : ''}${pathSig ? `|${pathSig}` : ''}`;
   }
 
   function getCachedWinRate(state, stageNum, playerCp) {

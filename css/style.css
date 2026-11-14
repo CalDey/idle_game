@@ -7712,3 +7712,207 @@ button.mijing-bless-card:active {
     transform: translate(-50%, -50%);
   }
 }
+
+/* === 本命道途 === */
+.path-entry {
+  position: relative;
+  margin-top: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(15, 13, 30, 0.6);
+  color: var(--accent-gold);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.path-entry[hidden] {
+  display: none;
+}
+
+.path-entry.has-action {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold-bright);
+  box-shadow: 0 0 8px rgba(230, 201, 138, 0.25);
+}
+
+.path-entry .home-upgrade-badge {
+  top: 4px;
+  right: 10px;
+}
+
+.path-dialog {
+  max-width: 366px;
+  max-height: calc(100dvh - 24px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.path-dialog .card-title .gi,
+.path-card-head .gi {
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  vertical-align: -3px;
+}
+
+.path-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.path-modal-body::-webkit-scrollbar {
+  display: none;
+}
+
+.path-modal-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.path-modal-actions .btn {
+  flex: 1 1 0;
+}
+
+.path-intro,
+.path-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.path-flash {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--accent-gold-bright);
+  background: rgba(230, 201, 138, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.path-card,
+.path-node {
+  background: rgba(8, 6, 20, 0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.path-card.is-current {
+  border-color: var(--accent-gold);
+}
+
+.path-card-head,
+.path-node-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.path-card-name,
+.path-node-head .path-node-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.path-card-tag {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--accent-jade);
+}
+
+.path-card-motto {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.path-card-nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.path-card-nodes li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.path-card-nodes .path-node-name {
+  color: var(--text-main);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.path-node-gate {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.path-card .btn {
+  align-self: flex-end;
+}
+
+.path-node-lv {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent-jade);
+}
+
+.path-node.is-locked {
+  opacity: 0.6;
+}
+
+.path-node.is-maxed {
+  border-color: rgba(184, 230, 206, 0.6);
+}
+
+.path-node-cur {
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.path-node-next {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.path-node-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.path-node-lock {
+  font-size: 11px;
+  color: var(--text-dim);
+}
