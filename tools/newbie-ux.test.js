@@ -725,5 +725,40 @@ function breakAt(GS, roll) {
   assert.ok(game.includes('${roleCardQualityTag(hero)}') && game.includes('${roleCardIntro(hero)}'));
 }
 
+// ---------- batch3 P2-4 羁绊说明图标列表 + 一次性「试试凑羁绊」 ----------
+{
+  const { GS, sandbox } = loadRuntime(memoryStorage());
+  vm.runInNewContext(text('js/bonds.js'), sandbox, { filename: 'js/bonds.js' });
+  vm.runInNewContext(text('js/stage-ui.js'), sandbox, { filename: 'js/stage-ui.js' });
+  const rows = sandbox.window.StageUI._bondListRows(['lanyi', 'qinglan', 'shuanghua']);
+  const Bd = sandbox.window.Bonds;
+  assert.strictEqual(rows.length, Bd.BONDS.length, '每个标签一行');
+  const jian = rows.find((r) => r.id === 'jian');
+  const bing = rows.find((r) => r.id === 'bing');
+  const yan = rows.find((r) => r.id === 'yan');
+  const zuo = rows.find((r) => r.id === 'zuo');
+  assert.strictEqual(jian.active, true);
+  assert.strictEqual(jian.status, '已激活 · 3 人进阶');
+  assert.strictEqual(bing.active, true);
+  assert.strictEqual(bing.status, '已满阶', '冰霜 3 人满阶');
+  assert.strictEqual(yan.active, false);
+  assert.strictEqual(yan.status, '差 2 人');
+  const ming1 = sandbox.window.StageUI._bondListRows(['cloak']).find((r) => r.id === 'ming');
+  assert.strictEqual(ming1.status, '差 1 人');
+  assert.strictEqual(zuo.lack, 2);
+  rows.forEach((r) => assert.ok(r.icon && r.desc, r.id));
+  GS.loadGame();
+  assert.strictEqual(GS.state.flags.bondHintShown, false, '新档默认未提示');
+  const old = loadRuntime(memoryStorage({ [SAVE_KEY]: oldSave({ realmIndex: 5, flags: { ling: true } }) }));
+  old.GS.loadGame();
+  assert.strictEqual(old.GS.state.flags.bondHintShown, false, '旧档缺字段时安全默认');
+  const ui = text('js/stage-ui.js');
+  assert.ok(ui.includes('bondPanel.innerHTML = bondListHtml(draftSquad)'));
+  assert.ok(/if \(s\.flags\.bondHintShown\) return false;\s*s\.flags\.bondHintShown = true;/.test(ui), '只提示一次');
+  assert.ok(/function onShow\(\) \{[\s\S]{0,160}maybeShowBondHint\(\);/.test(ui), '进闯关页时检查');
+  assert.ok(text('index.html').includes('id="bond-hint"'));
+  assert.ok(text('index.html').includes('试试凑羁绊'));
+}
+
 module.exports = { loadRuntime, memoryStorage, text };
 if (require.main === module) console.log('newbie-ux.test.js ok');

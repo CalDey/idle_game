@@ -129,6 +129,63 @@
       .join('');
   }
 
+  // 羁绊说明（batch3 P2-4）：每个标签一行，已激活高亮，未激活置灰并写「差 N 人」
+  function bondListRows(heroIds) {
+    const Bd = BD();
+    if (!Bd) return [];
+    return Bd.evaluate(heroIds).map((b) => {
+      const def = Bd.BOND_MAP[b.id];
+      const first = def.tiers[0];
+      const lack = b.active ? 0 : Math.max(0, first.need - b.count);
+      return {
+        id: b.id,
+        name: b.name,
+        icon: b.icon,
+        active: b.active,
+        level: b.level,
+        count: b.count,
+        need: b.active ? b.nextNeed : first.need,
+        lack,
+        status: b.active ? (b.maxed ? '已满阶' : `已激活 · ${b.nextNeed} 人进阶`) : `差 ${lack} 人`,
+        desc: b.active ? b.tier.desc : first.desc
+      };
+    });
+  }
+
+  function bondListHtml(heroIds) {
+    const rows = bondListRows(heroIds);
+    if (!rows.length) return '';
+    return `<ul class="bond-list">${rows
+      .map(
+        (r) => `<li class="bond-row bond-${r.id}${r.active ? ` is-active lv-${r.level}` : ' is-inactive'}">` +
+          `<img class="gi bond-row-icon" src="assets/icons/${r.icon}@64.webp?v=18" alt="" aria-hidden="true">` +
+          `<span class="bond-row-name">${r.name}</span>` +
+          `<span class="bond-row-count">${r.count}/${r.need}</span>` +
+          `<span class="bond-row-desc">${r.desc}</span>` +
+          `<span class="bond-row-status">${r.status}</span>` +
+          '</li>'
+      )
+      .join('')}</ul>`;
+  }
+
+  // 第一次进闯关页提示一次「试试凑羁绊」（state.flags.bondHintShown）
+  let bondHintTimer = 0;
+  function maybeShowBondHint() {
+    const s = window.GameState && window.GameState.state;
+    const el = $('bond-hint');
+    if (!s || !el || !unlocked() || !BD()) return false;
+    if (!s.flags) s.flags = {};
+    if (s.flags.bondHintShown) return false;
+    s.flags.bondHintShown = true;
+    window.GameState.saveGame();
+    el.hidden = false;
+    clearTimeout(bondHintTimer);
+    bondHintTimer = setTimeout(() => {
+      el.hidden = true;
+    }, 6000);
+    return true;
+  }
+
   function renderStageBondRow(squadIds) {
     const row = $('stage-bond-row');
     if (!row) return;
@@ -2048,8 +2105,7 @@
 
     const bondPanel = $('squad-bond-panel');
     if (bondPanel) {
-      const chips = bondChipsHtml(draftSquad, true);
-      bondPanel.innerHTML = chips || '<span class="bond-row-empty">仙缘：同标签角色上阵 2 人激活羁绊，3 人进阶</span>';
+      bondPanel.innerHTML = bondListHtml(draftSquad) || '<span class="bond-row-empty">仙缘：同标签角色上阵 2 人激活羁绊，3 人进阶</span>';
     }
 
     const listEl = $('squad-hero-list');
@@ -2924,6 +2980,7 @@
     previewBoardKey = '';
     render();
     requestAnimationFrame(layoutBoard);
+    maybeShowBondHint();
   }
 
   function onHide() {
@@ -3017,6 +3074,13 @@
       btnChallenge.addEventListener('click', () => startBattle(true));
     }
     initMijingUI();
+    const bondHint = $('bond-hint');
+    if (bondHint) {
+      bondHint.addEventListener('click', () => {
+        bondHint.hidden = true;
+        openSquadModal();
+      });
+    }
     const bondRow = $('stage-bond-row');
     if (bondRow) {
       bondRow.addEventListener('click', () => {
@@ -3094,6 +3158,7 @@
   window.StageUI = {
     _formation: { computeDisplayCells, lungeVector },
     _bossRetryDecision: bossRetryDecision,
+    _bondListRows: bondListRows,
     challengeReadiness,
     challengeNow,
     init,
