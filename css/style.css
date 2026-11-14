@@ -5760,3 +5760,43 @@ button.mijing-bless-card:active {
   color: var(--text-muted);
   opacity: 0.85;
 }
+
+/* ===== 绝技说明（skill-text-data.js）：卡片内两行摘要 + 弹窗底部完整说明 ===== */
+.squad-hero-skill-desc {
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  opacity: 0.85;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.squad-skill-detail {
+  margin-top: 6px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(230, 201, 138, 0.22);
+  background: rgba(18, 15, 36, 0.7);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+.squad-skill-detail[hidden] {
+  display: none;
+}
+
+.squad-skill-detail-name {
+  display: block;
+  color: var(--accent-gold-bright, #f0d58a);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.battle-voice.is-ult {
+  color: #ffe9b0;
+  border-color: rgba(240, 200, 110, 0.75);
+  font-weight: 700;
+}

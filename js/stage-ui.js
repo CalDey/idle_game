@@ -14,6 +14,7 @@
   const MANUAL_ULT_TIMEOUT_MS = 3000;
 
   let isPlaying = false;
+  let squadSkillFocus = ''; // 队伍弹窗里最近点过的角色，用于显示其绝技完整说明
   let playTimer = 0;
   let autoNextTimer = 0;
   let ultAutoCastTimer = 0;
@@ -639,6 +640,44 @@
     }, 2400);
   }
 
+  // 队伍弹窗底部：最近点过的角色（否则队首）的绝技完整说明
+  function renderSquadSkillDetail() {
+    const el = $('squad-skill-detail');
+    if (!el) return;
+    const heroes = getAllHeroesList();
+    const id = squadSkillFocus || draftSquad[0] || '';
+    const h = heroes.find((x) => x && x.id === id);
+    const ST = window.SkillTextData;
+    const desc = h && ST && typeof ST.desc === 'function' ? ST.desc(h.id) : '';
+    if (!h || !desc) {
+      el.hidden = true;
+      el.innerHTML = '';
+      return;
+    }
+    const skillName = (h.skill && h.skill.name) || '破妄神通';
+    el.hidden = false;
+    el.innerHTML =
+      `<span class="squad-skill-detail-name">${escHtml(h.name)} · 绝技「${escHtml(skillName)}」</span>` +
+      `<span class="squad-skill-detail-desc">${escHtml(desc)}</span>`;
+  }
+
+  // 绝技说明（js/skill-text-data.js）；无数据时不渲染
+  function skillDescHtml(heroId) {
+    const ST = window.SkillTextData;
+    const desc = ST && typeof ST.desc === 'function' ? ST.desc(heroId) : '';
+    return desc ? `<div class="squad-hero-skill-desc">${escHtml(desc)}</div>` : '';
+  }
+
+  // 我方绝技落下时，在施法者头顶短暂飘出施放台词（每次绝技一句，不限频，不阻塞）
+  function ultCastLine(ultEv) {
+    if (!ultEv || !currentSession) return;
+    const caster = currentSession.unitMap[ultEv.casterId];
+    if (!caster || caster.side !== 'player' || !caster.heroId) return;
+    const ST = window.SkillTextData;
+    const line = ST && typeof ST.castLine === 'function' ? ST.castLine(caster.heroId) : '';
+    if (line) spawnVoiceFloat(caster, line, 'ult');
+  }
+
   function heroVoiceLine(kind, unit) {
     if (!unit || unit.side !== 'player' || !unit.heroId) return;
     const HV = window.HeroVoice;
@@ -809,6 +848,7 @@
   function applyUltDamageVisuals(ultEv) {
     if (!ultEv) return;
     const isEnemyUlt = Boolean(ultEv.isEnemyUlt || ultEv.who === 'b');
+    if (!isEnemyUlt) ultCastLine(ultEv);
     const casterDom = unitDomMap[ultEv.casterId];
     if (casterDom) {
       casterDom.el.classList.remove('is-ult-ready', 'is-ult-casting');
@@ -1909,6 +1949,7 @@
                   ${bondTagsHtml(h.id)}
                 </div>
                 <div class="squad-hero-skill">绝技 · ${skillName}</div>
+                ${skillDescHtml(h.id)}
                 <div class="squad-hero-status is-locked">未解锁</div>
               </div>
             </button>
@@ -1938,6 +1979,7 @@
                   ${bondTagsHtml(h.id)}
                 </div>
                 <div class="squad-hero-skill">绝技 · ${skillName}</div>
+                ${skillDescHtml(h.id)}
                 <div class="squad-hero-status">${statusText}</div>
               </div>
             </button>
@@ -1946,6 +1988,7 @@
       }
       listEl.innerHTML = listHtml;
     }
+    renderSquadSkillDetail();
 
     const btnSave = $('btn-squad-save');
     if (btnSave) {
@@ -1993,6 +2036,7 @@
 
     const s = window.GameState.state;
     draftSquad = [...window.Battle.getSquadIds(s)];
+    squadSkillFocus = '';
     squadModalOpen = true;
     renderSquadModal();
     if (isPlaying) {
@@ -2673,7 +2717,9 @@
         const card = e.target.closest('[data-squad-hero-id]');
         if (!card) return;
         const heroId = card.getAttribute('data-squad-hero-id');
+        if (heroId) squadSkillFocus = heroId;
         if (heroId) toggleDraftHero(heroId);
+        renderSquadSkillDetail();
       });
     }
     if (squadActiveSlots) {
