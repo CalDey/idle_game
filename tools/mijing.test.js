@@ -336,14 +336,17 @@ check('平衡抽样：前 3 波高胜率，全通率处于挑战区间', () => {
     const st = Object.assign(simState(W, 8, 1), { stage: { best: wall }, lingyu: 0, tree: {} });
     M.startRun(st, Date.now(), i * 101);
     if (i === 1) {
-      assert.ok(Math.abs(st.mijing.run.anchor - Math.round(M.anchorCp(wall, p.baseCp))) <= 1, '锚点取满编战力');
+      const anchor = st.mijing.run.anchor;
+      assert.ok(anchor >= Math.floor(M.stageBaseCp(wall)) && anchor <= Math.ceil(M.stageBaseCp(wall) * 2), '锚点夹在关卡区间内');
+      assert.ok(anchor >= Math.floor(p.baseCp * 0.85), '锚点不低于满编战力的 85%');
+      const again = Object.assign(simState(W, 8, 1), { stage: { best: wall } });
+      M.startRun(again, Date.now(), 777);
+      assert.strictEqual(again.mijing.run.anchor, anchor, '实测锚点确定性（与局种子无关）');
       const weak = Object.assign(simState(W, 8, 1), { stage: { best: wall }, squad: [SQUAD[0]] });
       M.startRun(weak, Date.now(), 1);
-      assert.strictEqual(weak.mijing.run.anchor, st.mijing.run.anchor, '少带人开局不能压低难度');
-      const strong = { stage: { best: wall } };
-      assert.strictEqual(M.anchorCp(wall, 1e12), Math.round(M.refCp(wall) * 1e6) / 1e6 === M.refCp(wall) ? M.refCp(wall) : M.refCp(wall));
+      assert.ok(weak.mijing.run.anchor >= anchor * 0.7, `少带人开局不能明显压低难度: ${weak.mijing.run.anchor} vs ${anchor}`);
+      assert.strictEqual(M.anchorCp(wall, 1e12), M.stageBaseCp(wall) * 2);
       assert.strictEqual(M.anchorCp(wall, 1), M.stageBaseCp(wall));
-      assert.ok(strong);
     }
     for (;;) {
       const run = st.mijing.run;

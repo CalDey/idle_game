@@ -2105,7 +2105,7 @@
       const full = M.rewardsFor(ref, M.WAVES);
       body =
         '<ul class="mijing-rules">' +
-        `<li>连战 <b>${M.WAVES}</b> 波，第 4 波精英、第 8 波 Boss；敌人强度按你的最高通关关卡（第 ${best} 关）折算。</li>` +
+        `<li>连战 <b>${M.WAVES}</b> 波，第 4 波精英、第 8 波 Boss；敌人强度以最高通关关卡（第 ${best} 关）为基准，按当前队伍实力微调。</li>` +
         '<li>每过 2 波可从 3 个<b>劫运</b>中择一，可叠层，仅本局生效，结束即散。</li>' +
         '<li>沿用当前队伍与布阵；每波开战满血，失败即结束，按已过波次结算。</li>' +
         `<li>每日 <b>${M.DAILY_ATTEMPTS}</b> 次（按本地日期零点重置），开启即消耗。</li>` +
@@ -2199,7 +2199,10 @@
 
   function startMijingRun() {
     const M = MJ();
-    if (!M || isPlaying) return false;
+    if (!M) return false;
+    // 普通推关战斗进行中时先瞬时结算，避免秘境次数已扣却进不去
+    if (isPlaying) skipBattle();
+    if (isPlaying) return false;
     const s = window.GameState.state;
     s.seq = (s.seq || 0) + 1;
     const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x85ebca6b)) >>> 0;
@@ -2209,7 +2212,7 @@
       return false;
     }
     window.GameState.saveGame();
-    log(`开启秘境劫运（敌人强度按第 ${res.run.ref} 关），今日剩余 ${M.attemptsLeft(s, Date.now())} 次。`, 'success');
+    log(`开启秘境劫运（敌人强度以第 ${res.run.ref} 关为基准），今日剩余 ${M.attemptsLeft(s, Date.now())} 次。`, 'success');
     mijingModalOpen = false;
     mijingModalMode = '';
     const modal = $('mijing-modal');

@@ -147,6 +147,7 @@ const ALL_13_IDS = PREVIOUS_IDS.concat(['yueshi', 'ziling', 'honglian', 'molan',
 const ALL_15_IDS = ALL_13_IDS.concat(['fenxiao', 'shuangchen']);
 const ALL_16_IDS = ALL_15_IDS.concat(['youming']);
 const MAIN = '6c873b5cbed5270ffde62175d059a16521d2bd24';
+const PRE_MIJING = 'af272573dde829abb51a525debb80b6733754e69';
 const MERGED = '926d09b2171352fe91be532a21b0b737b86678d9';
 const YOUMING_BASE = '5251f0d17f609a05b0de8ae71398ae453f46159c';
 const AVATAR_UNIFY_BASE = 'b92d7c4c0b1a5742aca529446e8336dafd178db0';
@@ -1033,7 +1034,8 @@ assert.match(css, /\.ult-hero-media\s*\{[^}]*object-fit:\s*cover;[^}]*object-pos
 assert.match(css, /\.role-card-img\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center top;/);
 assert.ok(css.includes('MaShanZheng-Role.woff2?v=13'));
 ['js/stage-ui.js', 'js/gear.js', 'js/equip.js', 'js/titles.js', 'js/no-zoom.js'].forEach((rel) => {
-  assert.strictEqual(git(['diff', '--stat', BASE, '--', rel]).trim(), '', `${rel} 不应改动`);
+  // 秘境劫运（PRE_MIJING 之后）有意改动 stage-ui.js，此处只守护那之前的历史区间
+  assert.strictEqual(git(['diff', '--stat', BASE, PRE_MIJING, '--', rel]).trim(), '', `${rel} 不应改动`);
 });
 // game.js 自幽冥基线起只允许洞府升级列表图标（home-up-*）改动。
 git(['diff', '-U0', YOUMING_BASE, '--', 'js/game.js'])
@@ -1045,7 +1047,7 @@ git(['diff', '-U0', YOUMING_BASE, '--', 'js/game.js'])
 const ROLE_BORDER_BASE = 'ab9cd8d2f0891e788aa5bda263cf73f5283b14d2';
 const roleTouched = git(['diff', '--name-only', ROLE_BORDER_BASE, YOUMING_BASE]).trim().split('\n').filter(Boolean).sort();
 assert.deepStrictEqual(roleTouched, ['css/style.css', 'index.html', 'js/game.js', 'tools/hero-roster.test.js']);
-const roleCssDiff = git(['diff', '-U0', ROLE_BORDER_BASE, '--', 'css/style.css']);
+const roleCssDiff = git(['diff', '-U0', ROLE_BORDER_BASE, PRE_MIJING, '--', 'css/style.css']);
 assert.ok(roleCssDiff.includes('.role-card.role-q-xian'));
 assert.ok(roleCssDiff.includes('.role-card.role-q-tian'));
 assert.ok(roleCssDiff.includes('.role-card.role-q-di'));
@@ -1062,12 +1064,15 @@ assert.match(css, /\.role-card\.role-q-xian:not\(\.is-active\) \{[^}]*#f4a3a3, #
 assert.ok(!css.includes('.role-card.role-q-xian') || !/\.role-card\.role-q-xian[^{]*\{[^}]*animation\s*:/.test(css));
 
 const index = text('index.html');
-assert.ok(index.includes('css/style.css?v=85'));
+assert.ok(index.includes('css/style.css?v=86'));
 assert.ok(index.includes('js/config.js?v=75'));
-assert.ok(index.includes('js/state.js?v=32'));
-assert.ok(index.includes('js/battle.js?v=35'));
+assert.ok(index.includes('js/state.js?v=33'));
+assert.ok(index.includes('js/battle.js?v=36'));
+assert.ok(index.includes('js/mijing.js?v=1'));
+assert.ok(index.includes('js/stage-ui.js?v=50'));
 assert.ok(index.includes('js/game.js?v=46'));
-const battleDiff = git(['diff', '-U0', MAIN, '--', 'js/battle.js']);
+// 秘境劫运给战斗内核加了可选 mods 参数（缺省时逐事件一致，见 tools/mijing.test.js），故只检查此前区间
+const battleDiff = git(['diff', '-U0', MAIN, PRE_MIJING, '--', 'js/battle.js']);
 const battleBody = battleDiff.split('\n').filter((line) => (
   (line.startsWith('+') || line.startsWith('-')) && !line.startsWith('+++') && !line.startsWith('---')
 ));

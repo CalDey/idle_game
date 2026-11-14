@@ -12,14 +12,14 @@
 
   // 敌方战力 = 开局时最高通关关卡敌人战力 × 倍率；精英/Boss 波使用 Boss 阵型（1 主 2 从）
   const WAVE_PLAN = [
-    { wave: 1, kind: 'mob', mult: 0.72 },
-    { wave: 2, kind: 'mob', mult: 0.76 },
-    { wave: 3, kind: 'mob', mult: 0.8 },
-    { wave: 4, kind: 'elite', mult: 0.84 },
-    { wave: 5, kind: 'mob', mult: 0.87 },
-    { wave: 6, kind: 'mob', mult: 0.9 },
-    { wave: 7, kind: 'mob', mult: 0.93 },
-    { wave: 8, kind: 'boss', mult: 0.97 }
+    { wave: 1, kind: 'mob', mult: 0.8 },
+    { wave: 2, kind: 'mob', mult: 0.845 },
+    { wave: 3, kind: 'mob', mult: 0.89 },
+    { wave: 4, kind: 'elite', mult: 0.93 },
+    { wave: 5, kind: 'mob', mult: 0.95 },
+    { wave: 6, kind: 'mob', mult: 0.98 },
+    { wave: 7, kind: 'mob', mult: 1.01 },
+    { wave: 8, kind: 'boss', mult: 1.05 }
   ];
 
   const RARITIES = {
@@ -182,7 +182,7 @@
     mj.run = {
       seed: (seed == null ? (Date.now() ^ 0x5f3759df) : seed) >>> 0,
       ref,
-      anchor: Math.round(anchorCp(ref, fullSquadCp(state))),
+      anchor: Math.round(computeAnchor(state, ref)),
       wave: 1,
       cleared: 0,
       blessings: {},
@@ -197,9 +197,9 @@
     return WAVE_PLAN[Math.max(1, Math.min(WAVES, int(wave, 1))) - 1];
   }
 
-  // 锚定战力：以最高通关关卡为准。该关基础战力（不含 Boss 倍率）记为 base，
-  // 锚点 = 开局时满编（6 人）战力夹在 [base, base × Boss 倍率] 之间。
-  // 这样同一关卡进度、强弱不同的玩家难度相近；少带人开局也无法压低难度（用的是满编战力且有下限）。
+  // 锚定战力：以最高通关关卡为准。该关基础战力（不含 Boss 倍率）记为 base。
+  // 开局时用固定种子实测「当前队伍对标准波约五五开」的敌方战力，夹在 [base, base × 2] 之间作为锚点；
+  // 同时不低于满编战力折算值的 85%，少带人开局无法压低难度。波次倍率相对该锚点（1.0 ≈ 五五开）。
   function stageBaseCp(ref) {
     const B = cfg().BATTLE;
     return B.BASE_CP * Math.pow(B.GROWTH, Math.max(1, ref) - 1);
@@ -209,12 +209,57 @@
     return stageBaseCp(ref) * cfg().BATTLE.BOSS_MULT;
   }
 
+  const ANCHOR_HI_MULT = 2;
+
   function anchorCp(ref, fullCp) {
     const lo = stageBaseCp(ref);
-    const hi = refCp(ref);
+    const hi = stageBaseCp(ref) * ANCHOR_HI_MULT;
     const cp = Number(fullCp);
-    if (!Number.isFinite(cp) || cp <= 0) return hi;
+    if (!Number.isFinite(cp) || cp <= 0) return refCp(ref);
     return Math.max(lo, Math.min(hi, cp));
+  }
+
+  // 标准波：4 只小怪阵型（与第 3~5 波相同）
+  function probeEnemy(ref, cp) {
+    const B = cfg().BATTLE;
+    const base = battle().enemyFor(Math.max(1, ref));
+    const n = (base.chapter - 1) * 10 + 5;
+    return {
+      n, chapter: base.chapter, stageInChapter: 5, region: base.region, name: base.name, img: base.img,
+      isBoss: false, cp, atk: cp * B.SPLIT.atk, hp: cp * B.SPLIT.hp, def: cp * B.SPLIT.def,
+      spd: 100 + 0.5 * ref, crit: 0.05, critDmg: 1.5, cd: 1.5
+    };
+  }
+
+  const PROBE_SIMS = 12;
+  const PROBE_ITERS = 7;
+
+  // 二分查找当前队伍对标准波胜率约 50% 的敌方战力（确定性种子，刷新不变）
+  function measureStrength(state, ref) {
+    const B = battle();
+    if (!B || !B.canStartBattle(state).ok) return 0;
+    const guess = fullSquadCp(state) || refCp(ref);
+    let lo = Math.log(guess * 0.3);
+    let hi = Math.log(guess * 3);
+    const rate = (cp) => {
+      let w = 0;
+      for (let i = 0; i < PROBE_SIMS; i++) {
+        if (B.createSession(state, probeEnemy(ref, cp), 0x51ed27 + i * 7919, null).runToEnd(true).win) w += 1;
+      }
+      return w / PROBE_SIMS;
+    };
+    for (let i = 0; i < PROBE_ITERS; i++) {
+      const mid = (lo + hi) / 2;
+      if (rate(Math.exp(mid)) >= 0.5) lo = mid;
+      else hi = mid;
+    }
+    return Math.exp((lo + hi) / 2);
+  }
+
+  function computeAnchor(state, ref) {
+    const measured = measureStrength(state, ref);
+    const floorByCp = fullSquadCp(state) * 0.85;
+    return anchorCp(ref, Math.max(measured, floorByCp));
   }
 
   function fullSquadCp(state) {
@@ -496,6 +541,8 @@
     refCp,
     stageBaseCp,
     anchorCp,
+    measureStrength,
+    computeAnchor,
     waveEnemy,
     waveSeed,
     buildMods,
