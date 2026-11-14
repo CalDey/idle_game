@@ -233,38 +233,46 @@
     phase = 'dim';
     skipGestureId = null;
     skipIgnoreUntil = 0;
-    fillSuccess(options);
-    if (successEl) successEl.hidden = true;
-    setHeroVisible(false);
-    setCaption('');
-    if (boltEl) boltEl.setAttribute('points', '');
-    rootEl.hidden = false;
-    rootEl.setAttribute('aria-hidden', 'false');
-    rootEl.classList.remove('is-out', 'is-strike', 'is-flash', 'is-shake', 'is-gold', 'is-success', 'is-reduced');
-    void rootEl.offsetWidth;
-    rootEl.classList.add('is-on', 'is-dim');
-    if (typeof rootEl.focus === 'function') {
-      try { rootEl.focus(); } catch (err) { /* ignore */ }
-    }
+    let started = false;
+    try {
+      fillSuccess(options);
+      if (successEl) successEl.hidden = true;
+      setHeroVisible(false);
+      setCaption('');
+      if (boltEl) boltEl.setAttribute('points', '');
+      rootEl.hidden = false;
+      rootEl.setAttribute('aria-hidden', 'false');
+      rootEl.classList.remove('is-out', 'is-strike', 'is-flash', 'is-shake', 'is-gold', 'is-success', 'is-reduced');
+      void rootEl.offsetWidth;
+      rootEl.classList.add('is-on', 'is-dim');
+      if (typeof rootEl.focus === 'function') {
+        try { rootEl.focus(); } catch (err) { /* ignore */ }
+      }
 
-    const D = data();
-    const captions = D ? D.strikeCaptions(options.majorName) : ['', '', ''];
+      const D = data();
+      const captions = D ? D.strikeCaptions(options.majorName) : ['', '', ''];
 
-    // 减弱动态：仍展示压暗、一道天雷和金光立绘，只取消闪/震/旋转，避免被看成「只有文字弹窗」。
-    if (prefersReducedMotion()) {
-      rootEl.classList.add('is-reduced');
-      later(() => playStrike(0, captions), 200);
-      later(showSuccess, 800);
-      later(close, 2400);
+      // 减弱动态：仍展示压暗、一道天雷和金光立绘，只取消闪/震/旋转，避免被看成「只有文字弹窗」。
+      if (prefersReducedMotion()) {
+        rootEl.classList.add('is-reduced');
+        later(() => playStrike(0, captions), 200);
+        later(showSuccess, 800);
+        later(close, 2400);
+        started = true;
+        return true;
+      }
+
+      later(() => playStrike(0, captions), FIRST_STRIKE_MS);
+      later(() => playStrike(1, captions), FIRST_STRIKE_MS + STRIKE_GAP_MS);
+      later(() => playStrike(2, captions), FIRST_STRIKE_MS + STRIKE_GAP_MS * 2);
+      later(showSuccess, FIRST_STRIKE_MS + STRIKE_GAP_MS * 2 + GOLD_AFTER_LAST_MS);
+      later(close, TOTAL_MS);
+      started = true;
       return true;
+    } finally {
+      // 中途抛错也要收尾：去掉 is-on，重置 isPlaying，避免机缘卡一直等下去。
+      if (!started) hideRoot();
     }
-
-    later(() => playStrike(0, captions), FIRST_STRIKE_MS);
-    later(() => playStrike(1, captions), FIRST_STRIKE_MS + STRIKE_GAP_MS);
-    later(() => playStrike(2, captions), FIRST_STRIKE_MS + STRIKE_GAP_MS * 2);
-    later(showSuccess, FIRST_STRIKE_MS + STRIKE_GAP_MS * 2 + GOLD_AFTER_LAST_MS);
-    later(close, TOTAL_MS);
-    return true;
   }
 
   function isPlaying() {

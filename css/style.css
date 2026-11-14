@@ -1306,7 +1306,8 @@ body {
   display: none;
 }
 
-.nav-badge.visible {
+.nav-badge.visible,
+.nav-badge.is-dispatch-claim {
   display: block;
 }
 
@@ -1864,22 +1865,6 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   .breakthrough-row .btn {
     min-width: 96px;
     padding: 6px 8px;
-  }
-
-  .path-entry {
-    max-width: none;
-    font-size: 12px;
-    padding: 3px 5px;
-    white-space: normal;
-    overflow: visible;
-    line-height: 1.2;
-    height: auto;
-  }
-
-  .path-entry #path-entry-text {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
   }
 }
 
@@ -3721,7 +3706,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=130") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=131") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3729,11 +3714,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=130");
+  background-image: url("../assets/home/scene_xuan.webp?v=131");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=130");
+  background-image: url("../assets/home/scene_xian.webp?v=131");
 }
 
 .home-stage {
@@ -6341,6 +6326,14 @@ button.mijing-bless-card:active {
   color: var(--text-muted);
 }
 
+.dispatch-settle-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+
 .dispatch-mission-heroes {
   display: flex;
   flex-wrap: wrap;
@@ -7568,6 +7561,86 @@ button.mijing-bless-card:active {
   font-size: 11px;
 }
 
+.codex-tier {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  height: auto;
+  min-height: 20px;
+  padding: 2px 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: normal;
+  max-width: 100%;
+  text-align: left;
+}
+
+.codex-tier-n {
+  flex: none;
+  font-weight: 700;
+}
+
+.codex-tier-reward {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.codex-dialog {
+  position: relative;
+}
+
+.codex-claim-toast {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 6;
+  max-width: calc(100% - 24px);
+  padding: 4px 8px;
+  pointer-events: none;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  color: #ffe9ad;
+  text-shadow:
+    0 0 6px rgba(126, 231, 255, 0.95),
+    0 0 16px rgba(255, 206, 110, 0.95),
+    0 2px 4px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  transform: translate(-50%, 0);
+}
+
+.codex-claim-toast.is-show {
+  animation: floatUp 1.2s ease-out forwards;
+}
+
+.cultivate-codex-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: -2px 0 8px;
+  min-width: 0;
+}
+
+.codex-entry-btn {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--accent-gold-bright);
+  background: rgba(20, 16, 32, 0.55);
+  border: 1px solid rgba(230, 201, 138, 0.4);
+  border-radius: 4px;
+}
+
+.codex-entry-btn.has-claim {
+  box-shadow: 0 0 8px rgba(230, 201, 138, 0.45);
+}
+
 /* 开篇五屏（世界观 batch5）：无名凡人视角，不显示立绘与 Boss 剪影，文字框居中稍大 */
 .story-modal.is-opening .story-portraits {
   display: none;
@@ -7977,6 +8050,14 @@ button.mijing-bless-card:active {
     white-space: normal;
     overflow: visible;
     text-overflow: unset;
+  }
+}
+
+@media (max-width: 400px) {
+  .codex-entry-btn {
+    font-size: 12px;
+    min-height: 32px;
+    padding: 4px 12px;
   }
 }
 

@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=130',
-    'assets/home/scene_xuan.webp?v=130',
-    'assets/home/scene_xian.webp?v=130'
+    'assets/home/scene_base.webp?v=131',
+    'assets/home/scene_xuan.webp?v=131',
+    'assets/home/scene_xian.webp?v=131'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -1060,6 +1060,9 @@
     });
 
     const anyAffordable = anyGongfaAffordable || anyDongfuAffordable;
+    const dispatchClaim = window.Dispatch && typeof window.Dispatch.hasClaimable === 'function'
+      ? window.Dispatch.hasClaimable(s)
+      : false;
 
     const unlockDot = window.Newbie && typeof window.Newbie.unlockTabDot === 'function'
       ? window.Newbie.unlockTabDot
@@ -1067,7 +1070,7 @@
     const gongfaNew = unlockDot ? unlockDot(s, 'gongfa') : false;
     const dongfuNew = unlockDot ? unlockDot(s, 'dongfu') : false;
     if (els.badgeUpgrade) {
-      els.badgeUpgrade.classList.toggle('visible', anyAffordable || gongfaNew || dongfuNew);
+      els.badgeUpgrade.classList.toggle('visible', anyAffordable || gongfaNew || dongfuNew || dispatchClaim);
     }
     if (els.badgeHomeUpgrade) {
       els.badgeHomeUpgrade.classList.toggle('visible', anyAffordable || gongfaNew || dongfuNew);

@@ -1794,7 +1794,8 @@
     if (window.Codex && typeof window.Codex.hideBossQuote === 'function') {
       window.Codex.hideBossQuote();
     }
-    if (!mjRun && enemy.isBoss && window.Codex && typeof window.Codex.showBossQuote === 'function') {
+    // 与 render() 的 keepQuote 一致：主线 Boss 才显示台词，镇妖塔/秘境不显示，避免先出后藏闪一下。
+    if (!mjRun && !twFloor && enemy && enemy.isBoss && window.Codex && typeof window.Codex.showBossQuote === 'function') {
       window.Codex.showBossQuote(enemy);
     }
     render();

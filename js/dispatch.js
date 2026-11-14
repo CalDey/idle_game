@@ -442,11 +442,18 @@
     };
   }
 
+  // 奖励在派出时写入任务快照；领取时灵石/灵玉再按当时产出封顶（防轮回后领前世高额），不重算整笔奖励。
+  const SETTLEMENT_HINT = '按派出时锁定，领取时按当时产出封顶';
+
+  function hasClaimable(s, now) {
+    return summary(s, now).done > 0;
+  }
+
   const core = {
-    RULES, TEMPLATES, TPL_MAP, RES_NAMES, Q_NAMES,
+    RULES, TEMPLATES, TPL_MAP, RES_NAMES, Q_NAMES, SETTLEMENT_HINT,
     todayKey, buildBoard, normalize, ensureState, isUnlocked,
     availableHeroes, busyIds, busyMission, isBusy, meetsQuality, countMatched,
-    quote, checkHeroes, start, claim, claimAll, recall, isDone, remainingMs, summary, claimReward
+    quote, checkHeroes, start, claim, claimAll, recall, isDone, remainingMs, summary, claimReward, hasClaimable
   };
   root.Dispatch = core;
   if (typeof module !== 'undefined' && module.exports) module.exports = core;
@@ -526,6 +533,8 @@
       els.openBtn.setAttribute('aria-label', label);
       els.openBtn.classList.toggle('has-ready', sm.done > 0);
       if (els.badge) els.badge.classList.toggle('visible', sm.done > 0);
+      const tabBadge = document.getElementById('badge-upgrade');
+      if (tabBadge) tabBadge.classList.toggle('is-dispatch-claim', sm.done > 0);
     }
   }
 
@@ -557,6 +566,7 @@
             <div class="dispatch-mission-head"><span class="dispatch-mission-name">${tpl.name}</span><span class="dispatch-mission-time">${done ? '已完成' : `剩余 ${fmtLeft(remainingMs(a, now))}`}</span></div>
             <div class="dispatch-mission-heroes">${a.heroes.map(heroChip).join('')}</div>
             <div class="evt-option-line evt-reward">${resLine(r)}${a.matched ? `<span class="dispatch-bonus">仙缘 +${Math.round(a.matched * RULES.TAG_BONUS * 100)}%</span>` : ''}</div>
+            <div class="dispatch-settle-hint">${SETTLEMENT_HINT}</div>
             <div class="dispatch-mission-actions">${done
               ? `<button type="button" class="btn btn-primary btn-sm" data-dispatch-claim="${a.id}">领取</button>`
               : `<button type="button" class="btn btn-sm" data-dispatch-recall="${a.id}">召回</button>`}</div>

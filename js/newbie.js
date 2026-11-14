@@ -6,6 +6,7 @@
   const TOTAL_REALMS = 42;
   const GUIDE_TAPS = 3;
   const GEAR_POPUP_DELAY_MS = 1400;
+  const UNLOCK_WAIT_CAP_MS = 30000;
 
   function cfg() {
     return window.GameConfig || {};
@@ -1110,6 +1111,7 @@
   function maybeUnlockCard(s) {
     if (unlockTimer || (els.unlockModal && els.unlockModal.classList.contains('active'))) return;
     if (!pendingUnlock(s)) return;
+    const waitStart = Date.now();
     unlockTimer = setTimeout(function tryShow() {
       const st = S();
       const u = st && pendingUnlock(st);
@@ -1117,7 +1119,14 @@
         unlockTimer = 0;
         return;
       }
-      if (anyModalOpen()) {
+      // 渡劫演出会挡住机缘卡；约 30 秒仍未结束则不再等，避免 play() 异常时永远不弹。
+      const waited = Date.now() - waitStart;
+      const tribOpen = (window.Tribulation && typeof window.Tribulation.isPlaying === 'function' && window.Tribulation.isPlaying())
+        || (() => {
+          const cine = document.getElementById('tribulation-cinematic');
+          return !!(cine && cine.classList && cine.classList.contains('is-on'));
+        })();
+      if (anyModalOpen() && !(tribOpen && waited >= UNLOCK_WAIT_CAP_MS)) {
         unlockTimer = setTimeout(tryShow, 1000);
         return;
       }
@@ -1243,6 +1252,7 @@
     REALM_CHAIN_TEXT,
     TOTAL_REALMS,
     GUIDE_TAPS,
+    UNLOCK_WAIT_CAP_MS,
     realmName,
     realmGap,
     realmGapText,

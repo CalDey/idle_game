@@ -439,6 +439,7 @@ check('UI 冒烟：洞府「派遣」按钮、弹窗榜单、选人派遣、倒�
   assert.strictEqual(UI._state().view, 'board');
   assert.strictEqual(st.dispatch.active.length, 1);
   assert.ok(body.innerHTML.includes('已派出'));
+  assert.ok(body.innerHTML.includes(sandbox.Dispatch.SETTLEMENT_HINT), '已派出任务应标明按派出时锁定、领取时封顶');
   assert.ok(body.innerHTML.includes(`剩余 ${b0.h}时00分`));
   assert.ok(body.innerHTML.includes('今日已接'));
   assert.ok(sandbox.localStorage._data.xiuxian_idle_save_v1.includes('"dispatch"'), '派遣后已存档');
@@ -464,12 +465,17 @@ check('UI 冒烟：洞府「派遣」按钮、弹窗榜单、选人派遣、倒�
   UI.tick();
   assert.strictEqual(els['dispatch-summary'].textContent, '可领 1');
   assert.ok(els['badge-dispatch'].classList.contains('visible'));
+  assert.ok(sandbox.Dispatch.hasClaimable(st, clock.now), '完成后可领取');
+  assert.ok(els['badge-upgrade'].classList.contains('is-dispatch-claim'), '洞府页签应亮红点催领取');
   assert.ok(body.innerHTML.includes('已完成'));
   const lingyu = st.lingyu;
   const stones = st.stones;
   const peaches = st.tree.peaches;
   clickData(actions, 'dispatch-claimall', '1');
   assert.strictEqual(st.dispatch.active.length, 0);
+  UI.tick();
+  assert.ok(!sandbox.Dispatch.hasClaimable(st, clock.now));
+  assert.ok(!els['badge-upgrade'].classList.contains('is-dispatch-claim'), '领完后洞府页签红点应灭');
   assert.ok(st.lingyu > lingyu || st.stones > stones || st.tree.peaches > peaches);
   assert.ok(body.innerHTML.includes('归来，获得'));
 

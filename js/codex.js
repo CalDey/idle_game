@@ -284,6 +284,32 @@
     return reward;
   }
 
+  const RES_LABELS = { qi: '灵气', stone: '灵石', jade: '灵玉', peach: '仙桃' };
+
+  function formatReward(reward) {
+    const r = reward || {};
+    const fmt = (n) => {
+      const f = (typeof window !== 'undefined' && window.GameConfig && typeof window.GameConfig.formatNumber === 'function')
+        ? window.GameConfig.formatNumber
+        : null;
+      return f ? f(n) : String(Math.round(Number(n) || 0));
+    };
+    return ['qi', 'stone', 'jade', 'peach']
+      .filter((k) => Number(r[k]) > 0)
+      .map((k) => `${RES_LABELS[k]} +${fmt(r[k])}`)
+      .join(' · ');
+  }
+
+  function sumRewards(list) {
+    const out = { qi: 0, stone: 0, jade: 0, peach: 0 };
+    (list || []).forEach((r) => {
+      ['qi', 'stone', 'jade', 'peach'].forEach((k) => {
+        out[k] += Number((r || {})[k]) || 0;
+      });
+    });
+    return out;
+  }
+
   function grantReward(s, reward) {
     const rw = reward || {};
     if (rw.qi) {
@@ -461,7 +487,7 @@
     return c;
   }
 
-  const core = { ensureState, normalize, progress, isUnlocked, hintText, heroOwned, bossList, mobList, bossLore, bossImgUrl, registerTab, tabs, entriesFor, syncMaxRealm, catalog: cachedCatalog, entryById, resolveId, noteSeen, noteKills, noteBattle, bonusRate, decoratePlayerStats, claimNext, claimAll, claimableCount, claimableTiersFor, collectionProgress, scaleTierReward, reachedTiers, nextTier, totalReachedTiers, TIERS, BONUS_PER_TIER, BONUS_CAP, TIER_REWARDS, PEACH_CAP, QI_STONE_CAP_MINUTES, JADE_CAP_MIN, CODEX_VERSION };
+  const core = { ensureState, normalize, progress, isUnlocked, hintText, heroOwned, bossList, mobList, bossLore, bossImgUrl, registerTab, tabs, entriesFor, syncMaxRealm, catalog: cachedCatalog, entryById, resolveId, noteSeen, noteKills, noteBattle, bonusRate, decoratePlayerStats, claimNext, claimAll, claimableCount, claimableTiersFor, collectionProgress, scaleTierReward, formatReward, sumRewards, reachedTiers, nextTier, totalReachedTiers, TIERS, BONUS_PER_TIER, BONUS_CAP, TIER_REWARDS, PEACH_CAP, QI_STONE_CAP_MINUTES, JADE_CAP_MIN, CODEX_VERSION };
   window.Codex = core;
 
   // ===================== 界面 =====================
@@ -503,13 +529,24 @@
     const pct = (col.bonus * 100).toFixed(2).replace(/\.?0+$/, '');
     const head = `<div class="codex-bestiary-head"><div class="codex-bestiary-progress">收集 ${col.seen}/${col.total} · 精通 ${col.tiers}/${col.maxTiers} · 属性 +${pct}%</div><button type="button" class="btn btn-primary codex-claim-all" data-codex-claim-all ${col.claimable ? '' : 'disabled'}>${col.claimable ? `领取 ${col.claimable} 项` : '暂无可领'}</button></div>`;
 
+    function currentEnv() {
+      const GS = window.GameState;
+      return {
+        qiPerSec: GS && typeof GS.getQiPerSec === 'function' ? GS.getQiPerSec() : 0,
+        stonePerSec: GS && typeof GS.getStonePerSec === 'function' ? GS.getStonePerSec() : 0
+      };
+    }
+
     function tierMarks(id, kills) {
       const claimed = Number(c.claimed[id]) || 0;
+      const env = currentEnv();
       return TIERS.map((tier) => {
         let cls = 'codex-tier';
         if (kills >= tier && claimed >= tier) cls += ' is-claimed';
         else if (kills >= tier) cls += ' is-ready';
-        return `<span class="${cls}" title="${tier}击">${tier}</span>`;
+        const hint = formatReward(scaleTierReward(s, tier, env));
+        const title = hint ? `${tier}击 · ${hint}` : `${tier}击`;
+        return `<span class="${cls}" title="${esc(title)}"><span class="codex-tier-n">${tier}</span>${hint ? `<span class="codex-tier-reward">${esc(hint)}</span>` : ''}</span>`;
       }).join('');
     }
 
@@ -544,13 +581,31 @@
     return `${head}<div class="codex-section-title">首领</div>${bosses}<div class="codex-section-title">妖物</div>${mobs}`;
   }
 
+  let claimToastTimer = 0;
+  function showClaimToast(reward) {
+    const text = formatReward(reward);
+    if (!text) return;
+    const el = document.getElementById('codex-claim-toast');
+    if (!el) return;
+    el.textContent = `获得 ${text}`;
+    el.classList.remove('is-show');
+    void el.offsetWidth;
+    el.classList.add('is-show');
+    clearTimeout(claimToastTimer);
+    claimToastTimer = setTimeout(() => el.classList.remove('is-show'), 1600);
+  }
+
   function renderBadge() {
     const badge = document.getElementById('badge-codex');
+    const cultivateBadge = document.getElementById('badge-cultivate-codex');
     const btn = els && els.btn;
+    const cultivateBtn = els && els.cultivateBtn;
     const GS = window.GameState;
     const on = !!(GS && GS.state && claimableCount(GS.state) > 0);
     if (badge) badge.classList.toggle('visible', on);
+    if (cultivateBadge) cultivateBadge.classList.toggle('visible', on);
     if (btn) btn.classList.toggle('has-claim', on);
+    if (cultivateBtn) cultivateBtn.classList.toggle('has-claim', on);
   }
 
   function syncTabsFade() {
@@ -634,6 +689,7 @@
   function init() {
     els = {
       btn: document.getElementById('btn-open-codex'),
+      cultivateBtn: document.getElementById('btn-cultivate-codex'),
       modal: document.getElementById('codex-modal'),
       tabsWrap: document.getElementById('codex-tabs-wrap'),
       tabs: document.getElementById('codex-tabs'),
@@ -644,11 +700,16 @@
       els = null;
       return;
     }
-    els.btn.addEventListener('click', () => {
-      const settings = document.getElementById('settings-modal');
-      if (settings) settings.classList.remove('active');
-      open();
-    });
+    const openFrom = (btn) => {
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const settings = document.getElementById('settings-modal');
+        if (settings) settings.classList.remove('active');
+        open();
+      });
+    };
+    openFrom(els.btn);
+    openFrom(els.cultivateBtn);
     els.close.addEventListener('click', close);
     els.modal.addEventListener('click', (e) => {
       if (e.target === els.modal) close();
@@ -678,10 +739,17 @@
         stonePerSec: typeof GS.getStonePerSec === 'function' ? GS.getStonePerSec() : 0,
         now: Date.now()
       };
-      if (all && !all.disabled) claimAll(GS.state, env);
-      else if (one) claimNext(GS.state, one.getAttribute('data-codex-claim'), env);
+      let got = null;
+      if (all && !all.disabled) {
+        const res = claimAll(GS.state, env);
+        if (res && res.ok) got = sumRewards((res.claims || []).map((c) => c.reward));
+      } else if (one) {
+        const res = claimNext(GS.state, one.getAttribute('data-codex-claim'), env);
+        if (res && res.ok) got = res.reward;
+      }
       GS.saveGame();
       render();
+      if (got) showClaimToast(got);
     });
     syncMaxRealm();
     renderBadge();
