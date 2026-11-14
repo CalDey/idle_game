@@ -57,6 +57,7 @@
   // 秘境劫运：mijingView 为当前闯关页是否显示秘境；battleMode 标记正在播放的战斗归属
   let mijingView = false;
   let battleMode = 'stage';
+  let towerBattle = false;
   let mijingModalOpen = false;
   let mijingModalMode = '';
   let mijingResult = null;
@@ -1164,12 +1165,16 @@
     const activeSquadIds = window.Battle.getSquadIds(s);
     const maxSquad = window.Battle.MAX_SQUAD_SIZE || 6;
 
+    const inTower = battleMode === 'tower' || Boolean(enemy && enemy.towerFloor);
     if (mjRun) {
       renderMijingBar(mjRun);
+    } else if (inTower) {
+      renderTowerBar(enemy);
     } else {
       renderChapterBar(enemy, st.best || 0);
     }
     renderMijingEntry();
+    if (window.TowerUI && typeof window.TowerUI.renderEntry === 'function') window.TowerUI.renderEntry();
     renderStageBondRow(activeSquadIds);
 
     const stageBox = $('battle-stage');
@@ -1192,6 +1197,10 @@
         const mobCnt = 3 + Math.min(2, Math.floor(((enemy.stageInChapter || 1) - 1) / 3));
         enemyTitleEl.textContent = `秘境 ${w}/${total} 波 · ${enemy.name} 等 ${mobCnt} 敌`;
       }
+    } else if (enemyTitleEl && enemy.towerFloor) {
+      enemyTitleEl.textContent = enemy.isBoss
+        ? `镇妖塔 第 ${enemy.towerFloor} 层 · Boss【${enemy.name}】`
+        : `镇妖塔 第 ${enemy.towerFloor} 层 · 【${enemy.name}】`;
     } else if (enemyTitleEl) {
       if (enemy.isBoss) {
         enemyTitleEl.textContent = `第 ${stageNum} 关 · Boss【${enemy.name}】`;
@@ -1222,13 +1231,17 @@
     const winrateEl = $('stage-winrate');
     if (cpPlayerEl) cpPlayerEl.textContent = fmt(Math.round(player.cp));
     if (winrateEl) {
-      const rate = mjRun ? getMijingWinRate(s, mjRun, player.cp) : getCachedWinRate(s, stageNum, player.cp);
+      const rate = mjRun
+        ? getMijingWinRate(s, mjRun, player.cp)
+        : enemy.towerFloor
+          ? getTowerWinRate(s, enemy, player.cp)
+          : getCachedWinRate(s, stageNum, player.cp);
       const label = window.Battle.winRateLabel(rate);
       winrateEl.textContent = label;
       winrateEl.dataset.level = rate >= 0.6 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
     }
     if (cpEnemyEl) {
-      const rec = getRecommendedCp(s, mjRun ? enemy : stageNum, player.cp);
+      const rec = getRecommendedCp(s, mjRun || enemy.towerFloor ? enemy : stageNum, player.cp);
       cpEnemyEl.textContent = fmt(Math.round(rec));
     }
 
@@ -1288,6 +1301,11 @@
     isPlaying = false;
     currentSession = null;
     previewBoardKey = '';
+
+    if (battleMode === 'tower') {
+      finishTowerFloor(sim, enemy);
+      return;
+    }
 
     if (battleMode === 'mijing') {
       battleMode = 'stage';
@@ -1560,13 +1578,18 @@
 
     const stageNum = st.cur;
     const player = window.Battle.playerStats(s);
-    const mjRun = inMijing() ? mijingRun() : null;
+    const twFloor = towerBattle && window.Tower ? window.Tower.currentFloor(s) : 0;
+    const mjRun = !twFloor && inMijing() ? mijingRun() : null;
     if (mjRun && Array.isArray(mjRun.choices) && mjRun.choices.length > 0) {
       openMijingModal('pick');
       render();
       return false;
     }
-    const enemy = mjRun ? MJ().waveEnemy(mjRun, mjRun.wave) : window.Battle.enemyFor(stageNum);
+    const enemy = twFloor
+      ? window.Tower.floorEnemy(twFloor)
+      : mjRun
+        ? MJ().waveEnemy(mjRun, mjRun.wave)
+        : window.Battle.enemyFor(stageNum);
 
     let session;
     if (mjRun) {
@@ -1587,7 +1610,7 @@
     }
 
     isPlaying = true;
-    battleMode = mjRun ? 'mijing' : 'stage';
+    battleMode = twFloor ? 'tower' : mjRun ? 'mijing' : 'stage';
     currentSession = session;
     currentEnemy = enemy;
     currentPlayer = player;
@@ -1598,9 +1621,11 @@
 
     const logLine = $('battle-log-line');
     if (logLine) {
-      logLine.textContent = mjRun
-        ? `秘境第 ${mjRun.wave} 波 · 迎战【${enemy.name}】`
-        : `第 1 回合 · 迎战【${enemy.name}】`;
+      logLine.textContent = twFloor
+        ? `镇妖塔 第 ${twFloor} 层 · 迎战【${enemy.name}】`
+        : mjRun
+          ? `秘境第 ${mjRun.wave} 波 · 迎战【${enemy.name}】`
+          : `第 1 回合 · 迎战【${enemy.name}】`;
     }
     if (!mjRun && enemy.isBoss && window.Codex && typeof window.Codex.showBossQuote === 'function') {
       window.Codex.showBossQuote(enemy);
@@ -2116,6 +2141,7 @@
     const s = window.GameState.state;
     const st = ensureStageState();
     if (!unlocked() || isPlaying || squadModalOpen || document.hidden) return false;
+    if (towerBattle || battleMode === 'tower') return false;
     if (mijingView) return scheduleMijingNext();
     if (!st.auto || haltedByLoss || (st.best || 0) >= 300) return false;
     if (!window.Battle.canStartBattle(s).ok) return false;
@@ -2301,6 +2327,108 @@
     onChange();
     render();
     return res;
+  }
+
+
+  let towerWinRateKey = '';
+  let towerWinRateVal = 0;
+  let towerRecommendedCp = 0;
+
+  function getTowerWinRate(state, enemy, playerCp) {
+    const formStr = serializeFormation(state && state.formation);
+    const squadStr = window.Battle.getSquadIds(state).join(',');
+    const floor = (enemy && enemy.towerFloor) || 0;
+    const key = `tw:${floor}:${Math.round(playerCp)}:${squadStr}:${formStr}`;
+    if (key !== towerWinRateKey) {
+      towerWinRateKey = key;
+      towerWinRateVal = window.Battle.winRate(state, enemy, 16);
+      towerRecommendedCp = window.Battle.recommendedCp(state, enemy, { runs: 16 });
+    }
+    return towerWinRateVal;
+  }
+
+  function renderTowerBar(enemy) {
+    const titleEl = $('stage-chapter-title');
+    const stepEl = $('stage-chapter-step');
+    const T = window.Tower;
+    const floor = (enemy && enemy.towerFloor) || (T && T.currentFloor(window.GameState.state)) || 1;
+    const best = (window.GameState.state.tower && window.GameState.state.tower.best) || 0;
+    if (titleEl) titleEl.textContent = `镇妖塔 · 第 ${floor} 层`;
+    if (stepEl) stepEl.textContent = best > 0 ? `最高 ${best}` : '新挑战';
+  }
+
+  function startTowerBattle() {
+    const T = window.Tower;
+    const s = window.GameState.state;
+    if (!T || !s) return false;
+    const chk = T.canChallenge(s, Date.now());
+    if (!chk.ok) {
+      if (chk.reason === 'locked') log(`首通第 ${T.UNLOCK_BEST} 关后开启镇妖塔。`, 'warn');
+      else if (chk.reason === 'no_attempts') log('今日镇妖塔失败次数已用尽，明日再来。', 'warn');
+      else if (chk.message) log(chk.message, 'warn');
+      return false;
+    }
+    if (mijingView || mijingRun()) {
+      log('请先结束当前秘境，再挑战镇妖塔。', 'warn');
+      return false;
+    }
+    if (isPlaying) skipBattle();
+    if (isPlaying) return false;
+    towerBattle = true;
+    const ok = startBattle(true);
+    if (!ok) towerBattle = false;
+    return ok;
+  }
+
+  function finishTowerFloor(sim, enemy) {
+    const T = window.Tower;
+    const s = window.GameState.state;
+    const floor = (enemy && enemy.towerFloor) || (T && T.currentFloor(s));
+    towerBattle = false;
+    battleMode = 'stage';
+    const logLine = $('battle-log-line');
+    let toast = '';
+    if (sim && sim.win) {
+      hideResultOverlay();
+      haltedByLoss = false;
+      const res = T
+        ? T.settleWin(s, floor, {
+            qiPerSec: window.GameState.getQiPerSec && window.GameState.getQiPerSec(),
+            stonePerSec: window.GameState.getStonePerSec && window.GameState.getStonePerSec()
+          }, Date.now())
+        : { ok: false };
+      const rw = (res && res.reward) || {};
+      const parts = [];
+      if (rw.jade) parts.push(`灵玉 +${fmt(rw.jade)}`);
+      if (rw.peach) parts.push(`仙桃 +${fmt(rw.peach)}`);
+      if (rw.qi) parts.push(`灵气 +${fmt(rw.qi)}`);
+      if (rw.stone) parts.push(`灵石 +${fmt(rw.stone)}`);
+      const rewardText = res && res.first && parts.length ? parts.join(' · ') : '已领取过首通';
+      toast = res && res.ok ? `镇妖塔第 ${floor} 层告捷。${res.first ? '首通 ' + parts.join(' · ') : '已通此层'}` : `镇妖塔第 ${floor} 层告捷`;
+      if (logLine) logLine.textContent = `镇妖塔第 ${floor} 层告捷！${res && res.first ? rewardText : ''}`;
+      log(toast, 'gold');
+    } else {
+      const res = T ? T.settleLoss(s, floor, Date.now()) : { left: 0 };
+      haltedByLoss = true;
+      const left = res && res.left != null ? res.left : 0;
+      toast = `镇妖塔第 ${floor} 层受挫，今日剩余失败次数 ${left}/${T ? T.DAILY_FAILS : 3}`;
+      if (logLine) {
+        logLine.textContent = sim && sim.timeout
+          ? `镇妖塔第 ${floor} 层久战不下`
+          : `镇妖塔第 ${floor} 层不敌 ${enemy && enemy.name ? enemy.name : '守军'}`;
+      }
+      showFailOverlay(enemy, currentPlayer, Boolean(sim && sim.timeout), 0);
+      log(toast, 'warn');
+    }
+    window.GameState.saveGame();
+    if (window.Titles) window.Titles.sync(s);
+    if (window.TitlesUI) window.TitlesUI.flushToasts();
+    onChange();
+    render();
+    if (window.TowerUI && typeof window.TowerUI.showToast === 'function') window.TowerUI.showToast(toast);
+    if (sim && sim.win && window.TowerUI && typeof window.TowerUI.open === 'function') {
+      window.TowerUI.open();
+    }
   }
 
   // ===== 秘境劫运 UI =====
@@ -2987,6 +3115,7 @@
     closeMijingModal,
     pickMijingBlessing,
     startMijingRun,
-    quitMijingRun
+    quitMijingRun,
+    startTowerBattle
   };
 })();

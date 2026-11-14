@@ -526,7 +526,7 @@ check('闯关页秘境 UI 冒烟：开启、播放/跳过、择运、结算、�
 // 10. 页面引用
 check('index.html 引用 mijing.js 且有入口/面板/弹窗节点', () => {
   const index = text('index.html');
-  assert.match(index, /<script src="js\/battle\.js\?v=\d+"><\/script>\s*(?:<script src="js\/bonds\.js\?v=\d+"><\/script>\s*)?<script src="js\/mijing\.js\?v=\d+"><\/script>\s*<script src="js\/gear\.js/);
+  assert.match(index, /<script src="js\/battle\.js\?v=\d+"><\/script>\s*(?:<script src="js\/bonds\.js\?v=\d+"><\/script>\s*)?<script src="js\/mijing\.js\?v=\d+"><\/script>\s*(?:<script src="js\/tower\.js\?v=\d+"><\/script>\s*)?<script src="js\/gear\.js/);
   ['btn-mijing-entry', 'mijing-run-card', 'mijing-modal', 'mijing-modal-body', 'mijing-modal-actions', 'btn-mijing-detail'].forEach((id) => {
     assert.ok(index.includes(`id="${id}"`), id);
   });

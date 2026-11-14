@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=16" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=101" />
+  <link rel="stylesheet" href="css/style.css?v=102" />
 </head>
 
 <body>
@@ -206,7 +206,10 @@
           <div class="stage-chapter-bar">
             <div class="chapter-top-row">
               <span id="stage-chapter-title" class="chapter-title">第 1 章 · 凡尘野地</span>
-              <button id="btn-mijing-entry" class="mijing-entry-pill" type="button" data-state="locked" aria-label="秘境劫运">秘境·未开</button>
+              <div class="stage-trial-pills">
+                <button id="btn-mijing-entry" class="mijing-entry-pill" type="button" data-state="locked" aria-label="秘境劫运">秘境·未开</button>
+                <button id="btn-tower-entry" class="mijing-entry-pill tower-entry-pill" type="button" data-state="locked" aria-label="镇妖塔" hidden><span id="tower-entry-label">镇妖塔</span><span id="badge-tower" class="icon-btn-badge" aria-hidden="true"></span></button>
+              </div>
               <span id="stage-chapter-step" class="chapter-step">1/10</span>
             </div>
             <div class="chapter-dots-row">
@@ -666,7 +669,27 @@
     </div>
   </div>
 
-    <div id="grow-modal" class="modal-backdrop" aria-hidden="true">
+      <div id="tower-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog tower-dialog" role="dialog" aria-modal="true" aria-labelledby="tower-modal-title">
+      <div class="card-header tower-header">
+        <span id="tower-modal-title" class="card-title">镇妖塔</span>
+        <button id="btn-close-tower" class="home-modal-close" type="button" data-modal-close aria-label="关闭">✕</button>
+      </div>
+      <div class="tower-body">
+        <div id="tower-best" class="tower-best">尚未通关</div>
+        <div id="tower-floor" class="tower-floor"></div>
+        <p id="tower-enemy" class="tower-enemy"></p>
+        <p id="tower-tries" class="tower-tries"></p>
+        <p id="tower-reward" class="tower-reward"></p>
+        <p id="tower-rate" class="tower-rate"></p>
+        <p id="tower-hint" class="tower-hint"></p>
+        <p id="tower-toast" class="tower-toast" hidden></p>
+        <button id="btn-tower-challenge" class="btn btn-primary tower-challenge-btn" type="button">挑战</button>
+      </div>
+    </div>
+  </div>
+
+<div id="grow-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog grow-dialog" role="dialog" aria-modal="true" aria-labelledby="grow-modal-title">
       <div class="card-header grow-header">
         <span id="grow-modal-title" class="card-title">仙姬培元</span>
@@ -748,14 +771,15 @@
   <script src="js/config.js?v=78"></script>
   <script src="js/ui-text.js?v=3"></script>
   <script src="js/equip.js?v=22"></script>
-  <script src="js/state.js?v=40"></script>
+  <script src="js/state.js?v=41"></script>
   <script src="js/titles.js?v=23"></script>
   <script src="js/grow.js?v=1"></script>
   <script src="js/battle.js?v=39"></script>
   <script src="js/bonds.js?v=1"></script>
   <script src="js/mijing.js?v=2"></script>
+  <script src="js/tower.js?v=1"></script>
   <script src="js/gear.js?v=34"></script>
-  <script src="js/stage-ui.js?v=61"></script>
+  <script src="js/stage-ui.js?v=62"></script>
   <script src="js/newbie.js?v=6"></script>
   <script src="js/game.js?v=53"></script>
   <script src="js/events-data.js?v=3"></script>

@@ -6582,3 +6582,97 @@ button.mijing-bless-card:active {
 .mijing-start-confirm {
   margin-top: 6px;
 }
+
+/* === 镇妖塔 === */
+.stage-trial-pills {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: 0;
+}
+
+.stage-trial-pills .mijing-entry-pill {
+  margin: 0 4px;
+}
+
+.tower-entry-pill {
+  position: relative;
+  padding-right: 10px;
+}
+
+.tower-entry-pill .icon-btn-badge {
+  top: -2px;
+  right: -2px;
+}
+
+.tower-entry-pill.has-claim,
+.tower-entry-pill[data-state="ready"].has-claim {
+  border-color: var(--accent-gold-bright);
+  box-shadow: 0 0 8px rgba(230, 201, 138, 0.4);
+}
+
+.tower-dialog {
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(80vh, 560px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tower-header {
+  padding: 12px 14px 8px;
+}
+
+.tower-body {
+  padding: 0 14px 14px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: none;
+}
+
+.tower-body::-webkit-scrollbar,
+.tower-body::-webkit-scrollbar-button,
+.tower-body::-webkit-scrollbar-track,
+.tower-body::-webkit-scrollbar-thumb {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.tower-best {
+  font-size: 13px;
+  color: var(--accent-gold-bright);
+}
+
+.tower-floor {
+  font-size: 16px;
+  color: #f3ead4;
+}
+
+.tower-enemy,
+.tower-tries,
+.tower-reward,
+.tower-rate,
+.tower-hint,
+.tower-toast {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim, #cbbd9a);
+}
+
+.tower-reward,
+.tower-toast {
+  color: var(--accent-gold-bright);
+}
+
+.tower-challenge-btn {
+  width: 100%;
+  margin-top: 4px;
+}

@@ -679,7 +679,12 @@
         ? window.Grow.normalize(saved.grow)
         : saved.grow && typeof saved.grow === 'object' && !Array.isArray(saved.grow)
           ? saved.grow
-          : { v: 1, lv: {} }
+          : { v: 1, lv: {} },
+      tower: window.Tower
+        ? window.Tower.normalize(saved.tower)
+        : saved.tower && typeof saved.tower === 'object' && !Array.isArray(saved.tower)
+          ? saved.tower
+          : { v: 1, best: 0, claimed: 0, date: '', fails: 0 }
     };
     if (Array.isArray(unlockedHeroes)) {
       merged.unlockedHeroes = unlockedHeroes;
@@ -753,6 +758,7 @@
     grantPeachGift();
     if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, t);
     if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
+    if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
     saveGame();
     return report;
   }
@@ -765,6 +771,7 @@
         state = createDefaultState();
         if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, Date.now());
         if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
+        if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
@@ -790,6 +797,7 @@
       grantPeachGift();
       if (window.Daily && typeof window.Daily.ensure === 'function') window.Daily.ensure(state, now);
       if (window.Grow && typeof window.Grow.ensure === 'function') window.Grow.ensure(state);
+      if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
       return { isNew: false, offlineReport };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
@@ -908,6 +916,11 @@
     fresh.grow = window.Grow
       ? window.Grow.normalize(state.grow)
       : (state.grow && typeof state.grow === 'object' ? { ...state.grow, lv: { ...((state.grow && state.grow.lv) || {}) } } : state.grow);
+    // 镇妖塔：轮回深拷贝保留最高层与当日失败次数（不能靠轮回刷新次数）
+    if (state.tower && typeof state.tower === 'object') {
+      const copied = JSON.parse(JSON.stringify(state.tower));
+      fresh.tower = window.Tower ? window.Tower.normalize(copied) : copied;
+    }
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);
     fresh.unlockSeen = normalizeUnlockSeen(state.unlockSeen) || {};
