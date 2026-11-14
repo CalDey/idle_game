@@ -368,7 +368,7 @@
       `;
       els.options.appendChild(btn);
     });
-    els.close.textContent = '稍后再说';
+    els.close.textContent = '暂且记下';
     els.modal.classList.add('active');
     els.modal.setAttribute('aria-hidden', 'false');
   }
