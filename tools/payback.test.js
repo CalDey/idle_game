@@ -183,6 +183,6 @@ const html = text('index.html');
 assert.ok(!/payback.*\.(png|jpg|webp)/.test(html));
 assert.ok(html.includes('css/style.css?v=122'));
 assert.ok(html.includes('js/state.js?v=122'));
-assert.ok(html.includes('js/game.js?v=122'));
+assert.ok(Number((html.match(/js\/game\.js\?v=(\d+)/) || [])[1]) >= 122, 'game.js 版本号不低于 122（后续提交可继续递增）');
 
 console.log('payback.test.js ok');

@@ -345,11 +345,17 @@
     return `${b ? `${b.id}${Bs.levelOf(state, b.id)}` : ''}${pathSig ? `|${pathSig}` : ''}`;
   }
 
+  // 闯关胜率预测：64 场、种子 0x51ed27 + i*7919（数值策划 ★1：比 40 场固定种子 1..40 抽样偏差小）
+  const STAGE_FORECAST_RUNS = 64;
+  function stageForecastSeed(i) {
+    return (0x51ed27 + i * 7919) >>> 0;
+  }
+
   function getCachedWinRate(state, stageNum, playerCp) {
     const key = forecastKey(state, stageNum, playerCp);
     if (key !== cachedWinRateKey) {
       cachedWinRateKey = key;
-      cachedWinRateVal = window.Battle.winRate(state, stageNum, 40, bondModsFor(state));
+      cachedWinRateVal = window.Battle.winRate(state, stageNum, STAGE_FORECAST_RUNS, bondModsFor(state), stageForecastSeed);
       cachedRecommendedCp = window.Battle.recommendedCp(state, stageNum, { mods: bondModsFor(state) });
     }
     return cachedWinRateVal;
@@ -1320,7 +1326,7 @@
           : getCachedWinRate(s, stageNum, player.cp);
       const label = window.Battle.winRateLabel(rate);
       winrateEl.textContent = label;
-      winrateEl.dataset.level = rate >= 0.6 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
+      winrateEl.dataset.level = rate >= 0.8 ? 'high' : rate >= 0.4 ? 'mid' : 'low';
     }
     if (cpEnemyEl) {
       const rec = getRecommendedCp(s, mjRun || enemy.towerFloor ? enemy : stageNum, player.cp);

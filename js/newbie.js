@@ -93,6 +93,22 @@
     return (s && s.stage && Number(s.stage.best)) || 0;
   }
 
+  // P0 新档必输：赠桃 30 枚。旧版摘 1 枚就算完成目标，新手只拿 1 件装备（战力约 600）就被引去打 1-1，
+  // 而 1-1 的真实六成线约 760~880，实战 0%。现在要把赠桃摘完（或手头已无桃）才进入「开启闯关 / 通关1-1」。
+  function giftPeachTarget() {
+    const g = cfg().PEACH && Number(cfg().PEACH.GIFT);
+    return g > 0 ? Math.floor(g) : 30;
+  }
+
+  function peachGoalDone(s) {
+    const st = s || {};
+    if (bestStage(st) >= 1) return true; // 已通过 1-1（含旧档）不再回头引导摘桃
+    const picked = Math.floor(Number(st.peachesPicked) || 0);
+    if (picked >= giftPeachTarget()) return true;
+    const left = Math.floor((st.tree && Number(st.tree.peaches)) || 0);
+    return picked >= 1 && left < 1 && !st.pending && hasAnyEquip(st);
+  }
+
   function realmGoal(id, target, suffix) {
     return {
       id,
@@ -108,8 +124,11 @@
     {
       id: 'peach',
       tab: 'tab-gear',
-      text: () => '去法宝页摘桃',
-      done: (s) => (s.peachesPicked || 0) >= 1 || hasAnyEquip(s)
+      text: (s) => {
+        const picked = Math.floor((s && s.peachesPicked) || 0);
+        return picked > 0 ? `去法宝页摘桃（${Math.min(picked, giftPeachTarget())}/${giftPeachTarget()}）` : '去法宝页摘桃';
+      },
+      done: (s) => peachGoalDone(s)
     },
     realmGoal('realm2', 2, '（开启闯关）'),
     { id: 'stage1', tab: 'tab-stage', text: () => '通关1-1', done: (s) => bestStage(s) >= 1 },
@@ -260,6 +279,8 @@
     if (!s || (s.realmIndex || 0) < stageUnlockRealm()) return false;
     const st = s.stage || {};
     const best = Number(st.best) || 0;
+    // 赠桃没摘完、还没换上法宝时不点闯关红点（先引导去法宝页）
+    if (best < 1 && !peachGoalDone(s)) return false;
     if (best > 0 && st.idleAt && (now || Date.now()) - st.idleAt >= 3600 * 1000) return true;
     if (best >= 300 || !api || typeof api.playerStats !== 'function' || typeof api.enemyFor !== 'function') return false;
     const cur = Math.max(1, Math.min(300, Number(st.cur) || best + 1));
@@ -879,6 +900,8 @@
     advanceGuide,
     guideTarget,
     currentGoal,
+    peachGoalDone,
+    giftPeachTarget,
     nextLockedBuilding,
     buildingUnlockHint,
     enemyExceedsTeam,

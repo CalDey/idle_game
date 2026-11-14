@@ -146,7 +146,20 @@ function oldSave(fields) {
   assert.strictEqual(goal().text, '去法宝页摘桃');
   assert.strictEqual(goal().tab, 'tab-gear');
   assert.strictEqual(NB.isGoalDone({ id: 'realm1', realm: 1 }, s), true);
+  // P0：摘 1 枚不再算完成（旧版只拿 1 件装备就被引去打 1-1，实战 0%）；赠桃摘完或桃已摘空且有装备才算
   s.peachesPicked = 1;
+  assert.strictEqual(goal().id, 'peach');
+  assert.strictEqual(goal().text, '去法宝页摘桃（1/30）');
+  s.realmIndex = 2;
+  assert.strictEqual(goal().id, 'peach', '已到搬血后但赠桃未摘完：仍先摘桃，不引去通关1-1');
+  s.tree.peaches = 0;
+  s.equip.weapon = { id: 1, s: 'weapon', q: 0, lv: 1, m: 8, sub: [] };
+  s.pending = null;
+  assert.strictEqual(NB.peachGoalDone(s), true, '桃已摘空且有装备');
+  s.equip.weapon = null;
+  s.tree.peaches = 29;
+  s.realmIndex = 1;
+  s.peachesPicked = 30;
   assert.strictEqual(goal().id, 'realm2');
   s.realmIndex = 2;
   assert.strictEqual(goal().text, '通关1-1');
@@ -214,6 +227,10 @@ function oldSave(fields) {
   s.realmIndex = 2;
   s.stage.best = 0;
   s.stage.cur = 1;
+  s.peachesPicked = 0;
+  s.tree.peaches = 30;
+  assert.strictEqual(NB.stageDot(s, { playerStats: () => ({ cp: 1000 }), enemyFor: () => ({ cp: 600 }) }, now), false, 'P0：赠桃未摘完不点闯关红点');
+  s.peachesPicked = 30;
   const strong = { playerStats: () => ({ cp: 1000 }), enemyFor: () => ({ cp: 600 }) };
   const weak = { playerStats: () => ({ cp: 100 }), enemyFor: () => ({ cp: 600 }) };
   assert.strictEqual(NB.stageDot(s, strong, now), true, '战力够推荐战力时可挑战');
@@ -1024,7 +1041,7 @@ if (require.main === module)
   const { GS, NB } = loadRuntime();
   GS.loadGame();
   const s = GS.state;
-  s.peachesPicked = 1;
+  s.peachesPicked = 30;
   s.gongfa[Object.keys(s.gongfa)[0]] = 2;
   s.realmIndex = 3;
   s.stage.best = 10;

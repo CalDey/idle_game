@@ -346,6 +346,9 @@
       }
       if (s.realmIndex === (window.GameConfig.BATTLE && window.GameConfig.BATTLE.UNLOCK_REALM)) {
         addLog('闯关已开，黑风寨主在第 3 章等你。', 'gold');
+        if (window.Newbie && typeof window.Newbie.peachGoalDone === 'function' && !window.Newbie.peachGoalDone(s)) {
+          addLog('仙桃树赠的桃还没摘完：先去法宝页摘桃、换上法宝再闯关。', 'info');
+        }
       }
       renderUpgradeLists();
       renderReincarnationUI();

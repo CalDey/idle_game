@@ -1907,15 +1907,18 @@
     return session.runToEnd(true);
   }
 
-  function winRate(state, n, runs = 50, mods) {
+  // seedOf(i) 可选：第 i 场（0 起）的种子；缺省沿用 i + 1（其它调用方与历史测试不变）
+  function winRate(state, n, runs = 50, mods, seedOf) {
     const check = canStartBattle(state);
     if (!check.ok) return 0;
     const total = Math.max(1, Math.floor(runs || 50));
     const p = playerStats(state);
     const e = typeof n === 'object' && n !== null ? n : enemyFor(n);
+    const seedFn = typeof seedOf === 'function' ? seedOf : null;
     let wins = 0;
     for (let i = 0; i < total; i++) {
-      if (simulate(p, e, i + 1, mods).win) wins += 1;
+      const seed = seedFn ? seedFn(i) >>> 0 : i + 1;
+      if (simulate(p, e, seed, mods).win) wins += 1;
     }
     return wins / total;
   }
@@ -1934,7 +1937,8 @@
   function winRateLabel(rate) {
     const pct = rate <= 1 ? rate * 100 : rate;
     if (pct >= 95) return '必胜';
-    if (pct >= 60) return '大概率胜';
+    if (pct >= 80) return '大概率胜';
+    if (pct >= 60) return '稍占上风';
     if (pct >= 40) return '五五开';
     if (pct >= 10) return '凶险';
     return '不敌';

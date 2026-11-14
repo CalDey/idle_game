@@ -105,7 +105,7 @@ check('D3 打坐与闯关目标同源；通关 1-1 后目标切到参悟，战�
   W.GameState.loadGame();
   const s = W.GameState.state;
   s.realmIndex = 2;
-  s.peachesPicked = 1;
+  s.peachesPicked = 30; // P0：赠桃摘完才进入「通关1-1」
   s.stage.best = 0;
   assert.strictEqual(W.Newbie.currentGoal(s).text, '通关1-1');
   s.stage.best = 1;
