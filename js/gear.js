@@ -218,17 +218,20 @@
     }
     $('lingyu-val').textContent = fmt(s.lingyu || 0);
     $('pity-label').textContent = `地品保底 ${s.pity.di}/50 · 天品 ${s.pity.tian}/200`;
-    $('btn-pick-peach').disabled = (tree.peaches || 0) < 1 || !!s.pending;
+    // 有待处理掉落时按钮可点，用来重新打开对比弹窗（弹窗可被 Esc / 遮罩关掉）。
+    $('btn-pick-peach').disabled = !s.pending && (tree.peaches || 0) < 1;
     const pickText = $('btn-pick-peach-text');
-    if (pickText) pickText.textContent = s.pending ? '先处理掉落' : '摘桃';
-    else $('btn-pick-peach').textContent = s.pending ? '先处理掉落' : '摘桃';
+    if (pickText) pickText.textContent = s.pending ? '处理掉落' : '摘桃';
+    else $('btn-pick-peach').textContent = s.pending ? '处理掉落' : '摘桃';
     const autoOn = $('auto-decomp-on');
     const autoQ = $('auto-decomp-q');
     if (document.activeElement !== autoOn) autoOn.checked = !!(s.autoDecomp && s.autoDecomp.on);
     if (document.activeElement !== autoQ) autoQ.value = String((s.autoDecomp && s.autoDecomp.maxQ) || 0);
     const badge = $('badge-gear');
-    const ready = tree.peaches >= 10 || (tree.upEnd && tree.upEnd <= Date.now());
-    if (badge) badge.classList.toggle('visible', ready);
+    const ready = window.Newbie
+      ? window.Newbie.gearDot(s, Date.now())
+      : tree.peaches >= 10 || (tree.upEnd && tree.upEnd <= Date.now());
+    if (badge) badge.classList.toggle('visible', Boolean(ready));
     renderGrid();
   }
 
@@ -245,17 +248,37 @@
     el.classList.add('show');
   }
 
+  function compareDiff(oldCp, newCp) {
+    if (window.Newbie) return window.Newbie.compareDiff(oldCp, newCp);
+    const delta = Math.round(newCp) - Math.round(oldCp);
+    return {
+      delta,
+      better: delta > 0,
+      sign: delta > 0 ? 'up' : delta < 0 ? 'down' : 'same',
+      color: delta >= 0 ? '#7ddea0' : '#f07167',
+      text: `战力 ${delta >= 0 ? '+' : ''}${fmt(delta)}`
+    };
+  }
+
   function openCompare(item) {
     const s = window.GameState.state;
     const old = s.equip[item.s];
     const oldCp = Math.round(window.Equip.combatPower(s));
     const newCp = Math.round(window.Equip.powerWithSwap(s, item));
-    const delta = newCp - oldCp;
+    const diff = compareDiff(oldCp, newCp);
     const deltaEl = $('compare-delta');
-    deltaEl.textContent = `战力 ${delta >= 0 ? '+' : ''}${fmt(delta)}`;
-    deltaEl.style.color = delta >= 0 ? '#7ddea0' : '#f07167';
-    $('compare-old').innerHTML = cardHtml(old, '当前');
-    $('compare-new').innerHTML = cardHtml(item, '新获得');
+    deltaEl.textContent = diff.text;
+    deltaEl.style.color = diff.color;
+    deltaEl.dataset.sign = diff.sign;
+    $('compare-old').innerHTML = `<div class="compare-label">当前装备</div>${cardHtml(old, '当前装备')}`;
+    $('compare-new').innerHTML = `<div class="compare-label is-new">新获得</div>${cardHtml(item, '新获得')}`;
+    const btnReplace = $('btn-replace');
+    const btnDecompose = $('btn-decompose');
+    if (btnReplace) {
+      btnReplace.classList.toggle('btn-primary', diff.better);
+      btnReplace.classList.toggle('is-recommended', diff.better);
+    }
+    if (btnDecompose) btnDecompose.classList.toggle('btn-primary', !diff.better);
     $('compare-modal').classList.add('active');
   }
 
@@ -294,7 +317,11 @@
 
   function pickPeach() {
     const s = window.GameState.state;
-    if (!unlocked() || s.pending || (s.tree.peaches || 0) < 1) return;
+    if (unlocked() && s.pending) {
+      openCompare(s.pending);
+      return;
+    }
+    if (!unlocked() || (s.tree.peaches || 0) < 1) return;
     s.tree.peaches -= 1;
     s.peachesPicked = (s.peachesPicked || 0) + 1;
     const item = window.Equip.rollItem(s);
@@ -446,5 +473,5 @@
     renderTree();
   }
 
-  window.GearUI = { init, tick, render: renderTree, grant };
+  window.GearUI = { init, tick, render: renderTree, grant, openCompare, compareDiff };
 })();
