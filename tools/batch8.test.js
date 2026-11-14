@@ -210,7 +210,21 @@ check('P3 镇妖塔 Boss 台词的显示条件与 keepQuote 一致（塔内不�
   assert.ok(!/if \(!mjRun && enemy\.isBoss && window\.Codex && typeof window\.Codex\.showBossQuote/.test(ui), '不得再对塔内 Boss 先显示再藏');
 });
 
+check('P3 只保留一份 12px .codex-tier 规则，含原边框色且不再有被覆盖的 10px', () => {
+  const css = text('css/style.css');
+  const blocks = [...css.matchAll(/\.codex-tier \{([\s\S]*?)\n\}/g)].map((m) => m[1]);
+  assert.strictEqual(blocks.length, 1, `应只剩一份 .codex-tier 基础规则，实际 ${blocks.length}`);
+  const body = blocks[0];
+  assert.ok(/font-size:\s*12px/.test(body), '字号应为覆盖后的 12px');
+  assert.ok(!/font-size:\s*10px/.test(body));
+  assert.ok(/height:\s*auto/.test(body) && /min-height:\s*20px/.test(body));
+  assert.ok(/border:\s*1px solid rgba\(230, 201, 138, 0\.28\)/.test(body), '未覆盖的边框应合并进留下的规则，显示不变');
+  assert.ok(/color:\s*var\(--text-muted\)/.test(body));
+  assert.ok(/border-radius:\s*3px/.test(body));
+});
+
 check('不改平衡数值，且不用 getImageData / 浏览器自动化', () => {
+
   const changed = ['js/dispatch.js', 'js/game.js', 'js/codex.js', 'js/newbie.js', 'js/tribulation.js', 'js/stage-ui.js', 'index.html', 'css/style.css'];
   changed.forEach((rel) => {
     const src = text(rel);

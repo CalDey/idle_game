@@ -127,6 +127,23 @@
     return { h, need: h >= RULES.TWO_HERO_FROM_H ? 2 : 1, tag: typeof m.tag === 'string' ? m.tag : TPL_MAP[m.tpl].tags[0], minQ: m.minQ === 'di' || m.minQ === 'tian' ? m.minQ : null };
   }
 
+  // 只拷贝展示/快照用的奖励数字，不改结算。
+  function copyReward(raw) {
+    const reward = {};
+    if (!raw || typeof raw !== 'object') return reward;
+    ['stone', 'jade', 'peach'].forEach((k) => {
+      const n = Math.floor(Number(raw[k]) || 0);
+      if (n > 0) reward[k] = n;
+    });
+    return reward;
+  }
+
+  function pinBoardSnapshot(b, reward) {
+    if (!b) return;
+    const snap = copyReward(reward);
+    if (Object.keys(snap).length) b.reward = snap;
+  }
+
   function normalize(raw) {
     const out = defaults();
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
@@ -136,7 +153,12 @@
     if (Array.isArray(raw.board)) {
       raw.board.forEach((b, i) => {
         const m = normalizeMission(b);
-        if (m && out.board.length < RULES.BOARD_SIZE) out.board.push(Object.assign({ slot: Number.isInteger(b.slot) ? b.slot : i, tpl: b.tpl }, m, { taken: Boolean(b.taken) }));
+        if (m && out.board.length < RULES.BOARD_SIZE) {
+          const row = Object.assign({ slot: Number.isInteger(b.slot) ? b.slot : i, tpl: b.tpl }, m, { taken: Boolean(b.taken) });
+          if (b.claimed) row.claimed = true;
+          pinBoardSnapshot(row, b.reward);
+          out.board.push(row);
+        }
       });
     }
     if (Array.isArray(raw.active)) {
@@ -151,12 +173,7 @@
         const startAt = Number(a.startAt);
         if (!heroes.length || !Number.isFinite(startAt)) return;
         heroes.forEach((id) => used.add(id));
-        const r = a.reward && typeof a.reward === 'object' ? a.reward : {};
-        const reward = {};
-        ['stone', 'jade', 'peach'].forEach((k) => {
-          const n = Math.floor(Number(r[k]) || 0);
-          if (n > 0) reward[k] = n;
-        });
+        const reward = copyReward(a.reward);
         const recRaw = a.reincarnationCount;
         const recSnap = (recRaw == null || recRaw === '') ? null : Math.floor(Number(recRaw));
         const row = Object.assign({
@@ -361,6 +378,8 @@
     };
     d.active.push(a);
     mission.taken = true;
+    delete mission.claimed;
+    pinBoardSnapshot(mission, q.reward);
     return { ok: true, mission: a };
   }
 
@@ -415,6 +434,14 @@
     }
     d.active.splice(idx, 1);
     d.total += 1;
+    if (a.date === d.date) {
+      const b = d.board.find((x) => x.slot === a.slot && x.tpl === a.tpl);
+      if (b) {
+        b.taken = true;
+        b.claimed = true;
+        pinBoardSnapshot(b, a.reward);
+      }
+    }
     return { ok: true, mission: a, reward: r };
   }
 
@@ -445,7 +472,11 @@
     d.active.splice(idx, 1);
     if (a.date === d.date) {
       const b = d.board.find((x) => x.slot === a.slot && x.tpl === a.tpl);
-      if (b) b.taken = false;
+      if (b) {
+        b.taken = false;
+        delete b.claimed;
+        delete b.reward;
+      }
     }
     return { ok: true, mission: a };
   }
@@ -597,15 +628,27 @@
     html += `<div class="dispatch-section-title">今日悬赏 <span class="dispatch-section-sub">每日 0 点刷新 · 仅可派未上阵的仙姬</span></div>`;
     d.board.forEach((b) => {
       const tpl = TPL_MAP[b.tpl];
-      const preview = quote(s, b, [], {});
+      const active = d.active.find((a) => a.slot === b.slot && a.tpl === b.tpl);
+      const taken = Boolean(b.taken || active);
+      const claimed = Boolean(b.claimed) || (taken && !active);
+      let rewardHtml;
+      let actionHtml;
+      if (taken) {
+        const snap = (active && active.reward) || b.reward;
+        const status = claimed ? '已领取' : '已派出';
+        rewardHtml = `${snap ? resLine(snap) : ''}`;
+        actionHtml = `<span class="dispatch-taken">${status}</span>`;
+      } else {
+        const preview = quote(s, b, [], {});
+        rewardHtml = `${resLine(preview.reward)}<span class="bond-tag bond-${b.tag}">${tagName(b.tag)}</span><span class="dispatch-bonus-hint">基础价，不含仙缘加成</span>`;
+        actionHtml = `<button type="button" class="btn btn-sm" data-dispatch-pick="${b.slot}">选人派遣</button>`;
+      }
       html += `
-        <div class="dispatch-mission${b.taken ? ' is-taken' : ''}">
+        <div class="dispatch-mission${taken ? ' is-taken' : ''}${claimed ? ' is-claimed' : ''}">
           <div class="dispatch-mission-head"><span class="dispatch-mission-name">${tpl.name}</span><span class="dispatch-mission-req">${reqLine(b)}</span></div>
           <div class="dispatch-mission-text">${tpl.text}</div>
-          <div class="evt-option-line evt-reward">${resLine(preview.reward)}<span class="bond-tag bond-${b.tag}">${tagName(b.tag)}</span><span class="dispatch-bonus-hint">每人 +25%</span></div>
-          <div class="dispatch-mission-actions">${b.taken
-            ? '<span class="dispatch-taken">今日已接</span>'
-            : `<button type="button" class="btn btn-sm" data-dispatch-pick="${b.slot}">选人派遣</button>`}</div>
+          <div class="evt-option-line evt-reward">${rewardHtml}</div>
+          <div class="dispatch-mission-actions">${actionHtml}</div>
         </div>`;
     });
     els.body.innerHTML = html;

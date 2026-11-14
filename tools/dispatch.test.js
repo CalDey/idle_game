@@ -108,7 +108,8 @@ check('跨日刷新：本地日期变化才刷新；已派出的任务跨日保�
   assert.ok(W.Dispatch.start(s, m.slot, pickFor(s, m), { now: clock.now, stonePerSec: 10 }).ok);
   // 当日再 ensure（例如每秒 tick、读档）不改变榜单，已接标记保留
   const again = W.Dispatch.ensureState(JSON.parse(JSON.stringify(s)), clock.now + 5 * H);
-  assert.strictEqual(JSON.stringify(again.board.map((b) => Object.assign({}, b, { taken: false }))), JSON.stringify(JSON.parse(board0).map((b) => Object.assign({}, b, { taken: false }))));
+  const boardCore = (board) => board.map((b) => ({ slot: b.slot, tpl: b.tpl, h: b.h, need: b.need, tag: b.tag, minQ: b.minQ, taken: false }));
+  assert.strictEqual(JSON.stringify(boardCore(again.board)), JSON.stringify(boardCore(JSON.parse(board0))), '当日榜单条目不变（已接快照字段除外）');
   assert.ok(again.board[0].taken);
   // 次日刷新
   const next = new Date(2026, 10, 16, 0, 0, 1).getTime();
@@ -489,10 +490,16 @@ check('UI 冒烟：洞府「派遣」按钮、弹窗榜单、选人派遣、倒�
   clickData(actions, 'dispatch-go', '1');
   assert.strictEqual(UI._state().view, 'board');
   assert.strictEqual(st.dispatch.active.length, 1);
+  const locked = Object.assign({}, st.dispatch.active[0].reward);
+  const fmtRes = (n) => (sandbox.GameConfig.formatNumber ? sandbox.GameConfig.formatNumber(n) : String(Math.round(n)));
+  const lockedBits = ['stone', 'jade', 'peach'].filter((k) => locked[k] > 0).map((k) => fmtRes(locked[k]));
   assert.ok(body.innerHTML.includes('已派出'));
   assert.ok(body.innerHTML.includes(sandbox.Dispatch.SETTLEMENT_HINT), '已派出任务应标明按派出时锁定、领取时封顶');
   assert.ok(body.innerHTML.includes(`剩余 ${b0.h}时00分`));
-  assert.ok(body.innerHTML.includes('今日已接'));
+  assert.ok(!body.innerHTML.includes('今日已接'), '已接条目不再用「今日已接」配实时报价');
+  lockedBits.forEach((bit) => assert.ok(body.innerHTML.includes(bit), `已接看板应显示锁定快照 ${bit}`));
+  assert.strictEqual((body.innerHTML.match(/基础价，不含仙缘加成/g) || []).length, 3, '未接条目标注基础价');
+  assert.strictEqual((body.innerHTML.match(/data-dispatch-pick=/g) || []).length, 3);
   assert.ok(sandbox.localStorage._data.xiuxian_idle_save_v1.includes('"dispatch"'), '派遣后已存档');
 
   // 队伍编辑：派遣中的仙姬不能上阵
@@ -529,6 +536,9 @@ check('UI 冒烟：洞府「派遣」按钮、弹窗榜单、选人派遣、倒�
   assert.ok(!els['badge-upgrade'].classList.contains('is-dispatch-claim'), '领完后洞府页签红点应灭');
   assert.ok(st.lingyu > lingyu || st.stones > stones || st.tree.peaches > peaches);
   assert.ok(body.innerHTML.includes('归来，获得'));
+  assert.ok(body.innerHTML.includes('已领取'), '已领条目应标已领取，不再给出实时报价');
+  lockedBits.forEach((bit) => assert.ok(body.innerHTML.includes(bit), `已领取后看板仍显示锁定快照 ${bit}`));
+  assert.ok(!body.innerHTML.includes('已派出') || body.innerHTML.includes('已领取'));
 
   // 召回
   const b1 = st.dispatch.board.find((b) => !b.taken);
@@ -539,6 +549,8 @@ check('UI 冒烟：洞府「派遣」按钮、弹窗榜单、选人派遣、倒�
   clickData(body, 'dispatch-recall', aid);
   assert.strictEqual(st.dispatch.active.length, 0);
   assert.ok(body.innerHTML.includes('已召回'));
+  assert.strictEqual((body.innerHTML.match(/基础价，不含仙缘加成/g) || []).length, 3, '召回后该条恢复基础价');
+  assert.ok(body.innerHTML.includes('已领取'), '先前已领的条目仍标已领取');
 
   // Esc 关闭
   (docListeners.keydown || []).forEach((fn) => fn({ key: 'Escape' }));
@@ -560,6 +572,11 @@ check('index.html 引用 dispatch.js 且有入口/弹窗节点；样式与图标
   ['btn-dispatch-open', 'dispatch-summary', 'badge-dispatch', 'dispatch-modal', 'dispatch-modal-body', 'dispatch-modal-actions', 'btn-dispatch-close'].forEach((id) => assert.ok(index.includes(`id="${id}"`), id));
   const css = text('css/style.css');
   ['.home-dispatch-btn', '.dispatch-dialog', '.dispatch-modal-body::-webkit-scrollbar', '.dispatch-hero-grid', '.squad-hero-card.is-dispatched'].forEach((c) => assert.ok(css.includes(c), c));
+  const src = text('js/dispatch.js');
+  assert.ok(src.includes('基础价，不含仙缘加成'), '未接看板应标明基础价');
+  assert.ok(src.includes("claimed ? '已领取' : '已派出'") || (src.includes('已领取') && src.includes('已派出')));
+  const render = src.slice(src.indexOf('function renderBoard'), src.indexOf('function renderPick'));
+  assert.ok(render.includes('active && active.reward') || render.includes('b.reward'), '已接条目读快照而不是再 quote 空阵容');
   ['ui_role', 'res_stone', 'res_lingyu', 'res_peach'].forEach((ic) => assert.ok(fs.existsSync(path.join(root, `assets/icons/${ic}@64.webp`)), ic));
 });
 

@@ -3706,7 +3706,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=132") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=133") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3714,11 +3714,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=132");
+  background-image: url("../assets/home/scene_xuan.webp?v=133");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=132");
+  background-image: url("../assets/home/scene_xian.webp?v=133");
 }
 
 .home-stage {
@@ -7530,18 +7530,6 @@ button.mijing-bless-card:active {
   margin-top: 2px;
 }
 
-.codex-tier {
-  min-width: 28px;
-  padding: 0 4px;
-  height: 16px;
-  line-height: 16px;
-  text-align: center;
-  font-size: 10px;
-  border-radius: 3px;
-  border: 1px solid rgba(230, 201, 138, 0.28);
-  color: var(--text-muted);
-}
-
 .codex-tier.is-ready {
   border-color: var(--accent-gold-bright);
   color: var(--accent-gold-bright);
@@ -7561,12 +7549,14 @@ button.mijing-bless-card:active {
   font-size: 11px;
 }
 
+/* 合并后只留一份：后续覆盖的 12px 换行规则，并保留未被覆盖的边框/颜色，删后显示不变 */
 .codex-tier {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 6px;
   height: auto;
+  min-width: 28px;
   min-height: 20px;
   padding: 2px 6px;
   font-size: 12px;
@@ -7574,6 +7564,9 @@ button.mijing-bless-card:active {
   white-space: normal;
   max-width: 100%;
   text-align: left;
+  border-radius: 3px;
+  border: 1px solid rgba(230, 201, 138, 0.28);
+  color: var(--text-muted);
 }
 
 .codex-tier-n {
