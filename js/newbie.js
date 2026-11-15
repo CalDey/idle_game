@@ -1530,6 +1530,35 @@
     }
   }
 
+  // 按 recommendBest().tab 给对应底栏页签加金点，其余红点（含顶栏）走 .has-recommend 弱化。
+  function syncRecommendNav(s) {
+    const rec = s ? recommendBest(s) : null;
+    const recTab = rec && rec.tab ? rec.tab : '';
+    const app = (els && els.app) || (typeof document !== 'undefined' && document.querySelector && document.querySelector('.app-container'));
+    if (app) {
+      if (app.classList && typeof app.classList.toggle === 'function') {
+        app.classList.toggle('has-recommend', Boolean(recTab));
+      }
+      if (typeof app.setAttribute === 'function') {
+        if (recTab) app.setAttribute('data-rec-tab', recTab);
+        else if (typeof app.removeAttribute === 'function') app.removeAttribute('data-rec-tab');
+      }
+    }
+    const nodes = (typeof document !== 'undefined' && document.querySelectorAll)
+      ? document.querySelectorAll('.nav-btn[data-tab]')
+      : [];
+    for (let i = 0; i < nodes.length; i += 1) {
+      const btn = nodes[i];
+      const on = Boolean(recTab) && btn.getAttribute && btn.getAttribute('data-tab') === recTab;
+      if (btn.classList && typeof btn.classList.toggle === 'function') btn.classList.toggle('is-recommended', on);
+      const badge = btn.querySelector && btn.querySelector('.nav-badge');
+      if (badge && badge.classList && typeof badge.classList.toggle === 'function') {
+        badge.classList.toggle('is-recommended', on);
+      }
+    }
+    return rec;
+  }
+
   function renderDots(s) {
     const now = Date.now();
     if (els.badgeStage) {
@@ -1889,6 +1918,7 @@
     renderGoal(s);
     renderGuide(s);
     renderDots(s);
+    syncRecommendNav(s);
   }
 
   function init(hooks) {
@@ -2002,6 +2032,7 @@
     chainKeyBuildCalls,
     resetChainCache,
     recommendBest,
+    syncRecommendNav,
     onStateReload,
     goalSession,
     formatBreakChainLabel,

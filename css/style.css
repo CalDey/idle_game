@@ -1463,6 +1463,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   min-height: 0;
 }
 
+/* 底栏在文档流中，只补滚动区内边距，不重复叠加导航高度 */
+#tab-gear {
+  padding-bottom: max(16px, calc(12px + env(safe-area-inset-bottom, 0px)));
+}
+
 .gear-locked-text,
 .stage-soon p {
   font-size: 13px;
@@ -1701,7 +1706,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   border: 1px solid var(--border-gold);
   border-radius: 6px;
   padding: 8px 10px;
-  min-height: 40px;
+  min-height: 44px;
   flex: 0 0 112px;
 }
 
@@ -1714,11 +1719,36 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 .auto-row label {
   flex: 1 1 180px;
   min-width: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #btn-tree-up {
   flex: none;
   min-width: 88px;
+  position: relative;
+}
+
+#btn-tree-up.is-upgrading {
+  min-width: 108px;
+  max-width: 52%;
+  white-space: normal;
+  line-height: 1.25;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.tree-up-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 0;
+  background: linear-gradient(90deg, rgba(230, 201, 138, 0.25), rgba(230, 201, 138, 0.95));
+  pointer-events: none;
+  border-radius: 0 1px 0 6px;
 }
 
 .compare-dialog {
@@ -3225,10 +3255,14 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   }
 
   #tab-gear .peach-btn,
-  #tab-gear #btn-tree-up,
-  #tab-gear .mini-select {
+  #tab-gear #btn-tree-up {
     min-height: 36px;
     padding: 5px 10px;
+  }
+
+  #tab-gear .mini-select {
+    min-height: 44px;
+    padding: 8px 10px;
   }
 
   #tab-gear .auto-row {
@@ -3736,7 +3770,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=148") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=149") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3744,11 +3778,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=148");
+  background-image: url("../assets/home/scene_xuan.webp?v=149");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=148");
+  background-image: url("../assets/home/scene_xian.webp?v=149");
 }
 
 .home-stage {
@@ -4002,6 +4036,13 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .action-badge.visible {
   display: block;
+}
+
+/* 摘桃/升级红点向内收，避免被 .peach-card / .tree-card 的 overflow:hidden 裁掉 */
+#btn-pick-peach .action-badge,
+#btn-tree-up .action-badge {
+  top: 2px;
+  right: 2px;
 }
 
 .home-reveal {
@@ -5341,6 +5382,27 @@ button.mijing-bless-card:active {
 .nav-badge {
   background: #f07167;
   box-shadow: 0 0 6px #f07167;
+}
+
+/* v149：目标条「推荐优先 ★」对应页签用金点突出，其它红点（含顶栏）缩小变暗 */
+.app-container.has-recommend .nav-badge.visible,
+.app-container.has-recommend .icon-btn-badge.visible {
+  width: 5px;
+  height: 5px;
+  opacity: 0.42;
+  box-shadow: 0 0 3px rgba(240, 113, 103, 0.35);
+}
+
+.app-container.has-recommend .nav-btn.is-recommended .nav-badge,
+.nav-btn.is-recommended .nav-badge,
+.nav-badge.is-recommended {
+  display: block;
+  width: 8px;
+  height: 8px;
+  opacity: 1;
+  background: #e6c98a;
+  border: 1px solid rgba(255, 236, 190, 0.95);
+  box-shadow: 0 0 8px rgba(230, 201, 138, 0.85);
 }
 
 .unlock-dialog {
@@ -7689,6 +7751,12 @@ button.mijing-bless-card:active {
   box-shadow: 0 0 8px rgba(230, 201, 138, 0.45);
 }
 
+.codex-entry-btn:active:not(:disabled) {
+  transform: scale(0.96);
+  background: rgba(230, 201, 138, 0.18);
+  border-color: rgba(230, 201, 138, 0.75);
+}
+
 /* 开篇五屏（世界观 batch5）：无名凡人视角，不显示立绘与 Boss 剪影，文字框居中稍大 */
 .story-modal.is-opening .story-portraits {
   display: none;
@@ -8879,6 +8947,16 @@ button.mijing-bless-card:active {
     padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   }
 
+  /* 法宝：底栏在文档流中，给滚动区底部留白，避免「≤地品」/自动分解贴边 */
+  #tab-gear {
+    padding-bottom: max(16px, calc(12px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  #tab-gear .mini-select,
+  #tab-gear .auto-row label {
+    min-height: 44px;
+  }
+
   #tab-stage .stage-action-row {
     margin-bottom: 4px;
   }
@@ -8912,17 +8990,12 @@ button.mijing-bless-card:active {
 
 /* === 因果簿与回收事件立绘 === */
 .karma-ledger-entry {
-  display: block;
-  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  max-width: 100%;
   margin: 0 0 8px;
-  padding: 6px 8px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  background: rgba(18, 12, 8, 0.7);
-  color: var(--accent-gold-bright);
-  font: inherit;
-  font-size: 13px;
-  letter-spacing: 0.08em;
   cursor: pointer;
 }
 

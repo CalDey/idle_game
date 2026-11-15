@@ -236,16 +236,43 @@
       }
       lastStageQ = stage.q;
     }
+    const upBtn = $('btn-tree-up');
+    const upText = $('btn-tree-up-text');
+    const upBar = $('btn-tree-up-bar');
+    const setUpLabel = (label) => {
+      if (upText) upText.textContent = label;
+    };
     if (tree.upEnd && tree.upEnd > Date.now()) {
       const left = Math.ceil((tree.upEnd - Date.now()) / 1000);
-      $('tree-cost-label').textContent = `升级中 ${window.GameConfig.formatDuration(left)}`;
-      $('btn-tree-up').disabled = true;
+      const dur = window.GameConfig.formatDuration(left);
+      $('tree-cost-label').textContent = `升级中 ${dur}`;
+      setUpLabel(`升级中 ${dur}`);
+      upBtn.disabled = true;
+      upBtn.classList.add('is-upgrading');
+      if (upBar) {
+        const total = window.GameConfig.treeUpgradeMs(tree.lv) || 1;
+        const p = Math.max(0, Math.min(1, 1 - (tree.upEnd - Date.now()) / total));
+        upBar.style.width = `${Math.round(p * 1000) / 10}%`;
+        upBar.hidden = false;
+      }
     } else if (tree.lv >= window.GameConfig.TREE_MAX_LEVEL) {
       $('tree-cost-label').textContent = '仙桃树已圆满';
-      $('btn-tree-up').disabled = true;
+      setUpLabel('升级');
+      upBtn.disabled = true;
+      upBtn.classList.remove('is-upgrading');
+      if (upBar) {
+        upBar.hidden = true;
+        upBar.style.width = '';
+      }
     } else {
       $('tree-cost-label').textContent = `升级需 ${fmt(cost)} 灵玉 / ${window.GameConfig.formatDuration(secs)}`;
-      $('btn-tree-up').disabled = (s.lingyu || 0) < cost;
+      setUpLabel('升级');
+      upBtn.disabled = (s.lingyu || 0) < cost;
+      upBtn.classList.remove('is-upgrading');
+      if (upBar) {
+        upBar.hidden = true;
+        upBar.style.width = '';
+      }
     }
     $('lingyu-val').textContent = fmt(s.lingyu || 0);
     $('pity-label').textContent = `地品保底 ${s.pity.di}/50 · 天品 ${s.pity.tian}/200`;

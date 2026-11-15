@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=148',
-    'assets/home/scene_xuan.webp?v=148',
-    'assets/home/scene_xian.webp?v=148'
+    'assets/home/scene_base.webp?v=149',
+    'assets/home/scene_xuan.webp?v=149',
+    'assets/home/scene_xian.webp?v=149'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -1388,6 +1388,9 @@
     }
 
     updateUpgradeButtonsState();
+    if (window.Newbie && typeof window.Newbie.syncRecommendNav === 'function') {
+      window.Newbie.syncRecommendNav(s);
+    }
   }
 
   // 离线弹窗标题与氛围句按时长分档（片刻 / 归来 / 久关 / 已满）；上限小时数仍按 getOfflineCapSeconds()
