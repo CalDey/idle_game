@@ -305,3 +305,7 @@ check('本命道途：催杀符描述改定；择道卡展示首层参悟灵石�
 
 console.log(`pacing-v2: ${passed} checks passed`);
 
+check('精英关标题带「精英」标签', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../js/stage-ui.js'), 'utf8');
+  assert.ok(src.includes("${enemy.isElite ? '精英 · ' : ''}"), '第 N 关标题在精英关加「精英 · 」');
+});

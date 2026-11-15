@@ -1328,7 +1328,8 @@
         enemyTitleEl.textContent = `第 ${stageNum} 关 · ${enemy.stageName ? `${enemy.stageName} · ` : ''}Boss【${enemy.name}】`;
       } else {
         const mobCnt = 3 + Math.min(2, Math.floor(((enemy.stageInChapter || 1) - 1) / 3));
-        enemyTitleEl.textContent = `第 ${stageNum} 关 · ${enemy.name} 等 ${mobCnt} 敌`;
+        // 精英关（第 33/43/…关）标题加「精英」，提示敌人更强、首通奖励翻倍
+        enemyTitleEl.textContent = `第 ${stageNum} 关 · ${enemy.isElite ? '精英 · ' : ''}${enemy.name} 等 ${mobCnt} 敌`;
       }
     }
     if (formHintEl) {
