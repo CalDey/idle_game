@@ -64,12 +64,15 @@ check('--bt-panel-h 只在窄屏媒体查询里被使用，基础样式不读', 
   });
 });
 
-check('桌面基础规则未改：说明 156px、灵兽 164px、描述省略号、道途 9.5em', () => {
+check('桌面基础规则未改：说明 156px、灵兽 164px、描述省略号；道途不再用 9.5em 省略', () => {
   assert.match(rule(base, '.meditation-caption'), /bottom:\s*156px/);
   assert.match(rule(base, '.beast-companion'), /bottom:\s*164px/);
   assert.match(rule(base, '.beast-companion'), /width:\s*min\(26%,\s*108px\)/);
   assert.match(rule(base, '.card-subtitle'), /text-overflow:\s*ellipsis/);
-  assert.match(rule(base, '.path-entry'), /max-width:\s*9\.5em/);
+  const pe = rule(base, '.path-entry');
+  assert.match(pe, /max-width:\s*none/);
+  assert.match(pe, /overflow:\s*visible/);
+  assert.ok(!/max-width:\s*9\.5em/.test(pe), '节奏 v2：入口不得再用 9.5em 把「化灵初开启」裁成「化…」');
   assert.match(rule(base, '#tab-cultivate>.gufeng-card'), /position:\s*absolute/);
   assert.match(rule(base, '#tab-cultivate>.gufeng-card'), /padding:\s*9px 12px 10px/);
   assert.match(rule(base, '.cultivate-codex-row'), /margin:\s*-2px 0 8px/);

@@ -1932,7 +1932,10 @@
     if (!unlocked() || !st.auto || isPlaying || !haltedByLoss || mijingView) return;
     if (now - lastAutoRetryAt < 30000) return;
     const curCp = Math.round(window.Battle.playerStats(s).cp);
-    if (curCp > lossPlayerCp) {
+    if (!(curCp > lossPlayerCp)) return;
+    const stageNum = st.cur || 1;
+    const rec = getRecommendedCp(s, stageNum, curCp);
+    if (curCp >= rec) {
       haltedByLoss = false;
       lastAutoRetryAt = now;
       const pane = $('tab-stage');
@@ -3227,12 +3230,6 @@
       empty.textContent = T.empty;
       list.appendChild(empty);
       return;
-    }
-    if (T.listHint) {
-      const hint = document.createElement('div');
-      hint.className = 'recall-list-hint';
-      hint.textContent = T.listHint;
-      list.appendChild(hint);
     }
     cleared.forEach((ch) => {
       const row = document.createElement('div');

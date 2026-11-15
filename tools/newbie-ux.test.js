@@ -229,6 +229,7 @@ function oldSave(fields) {
   assert.ok(!NB.peachGoalText(s).includes('30/30'), '兜底文案与摘满 30 分开');
   const src = text('js/newbie.js');
   assert.ok(src.includes('peachHoldUntil') && src.includes('PEACH_HOLD_MS'), '目标条展示会停顿再切走');
+  assert.ok(src.includes('compareModalOpen') && src.includes('peachHoldPausedAt'), '对比弹窗打开时先不切走 30/30 停顿');
 }
 
 // ---------- P1-2 红点 ----------
@@ -810,7 +811,7 @@ function breakAt(GS, roll) {
   const zuo = rows.find((r) => r.id === 'zuo');
   assert.strictEqual(jian.active, true);
   assert.strictEqual(jian.status, '已激活');
-  assert.strictEqual(jian.desc, '剑修角色绝技伤害 +15%（3 人：剑修角色绝技伤害 +30%）');
+  assert.strictEqual(jian.desc, '剑修角色绝技伤害 +13.2%（3 人：剑修角色绝技伤害 +21%）');
   assert.strictEqual(bing.active, true);
   assert.strictEqual(bing.status, '已满阶', '冰霜 3 人满阶');
   assert.strictEqual(yan.active, false);

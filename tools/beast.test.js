@@ -154,7 +154,7 @@ check('Bonds.modsForState：无灵兽时与改动前一致；有灵兽时与羁�
   const withBeast = Object.assign({}, base, { beasts: { owned: { xuanhu: { lv: 5 } }, active: 'xuanhu' } });
   const m = host(BD.modsForState(withBeast));
   assert.ok(Math.abs(m.atkMult - 1.02) < 1e-9);
-  assert.ok(Math.abs(m.heroMods.cloak.ultLifesteal - (0.1 + 0.05)) < 1e-9, '幽冥 2 人档 10% + 玄狐 Lv5 5%');
+  assert.ok(Math.abs(m.heroMods.cloak.ultLifesteal - (0.15 + 0.05)) < 1e-9, '幽冥 2 人档 15% + 玄狐 Lv5 5%');
   // 未加载 beasts.js 的环境（如旧测试）不受影响
   const W1 = runtime(['config', 'equip', 'battle', 'bonds']);
   assert.deepStrictEqual(host(W1.Bonds.modsForState(withBeast)), host(W1.Bonds.buildMods(squad)));

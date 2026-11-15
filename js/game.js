@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=141',
-    'assets/home/scene_xuan.webp?v=141',
-    'assets/home/scene_xian.webp?v=141'
+    'assets/home/scene_base.webp?v=142',
+    'assets/home/scene_xuan.webp?v=142',
+    'assets/home/scene_xian.webp?v=142'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -1347,6 +1347,14 @@
     if (breakLabel) {
       if (breakLabel.textContent !== breakText) breakLabel.textContent = breakText;
     }
+    const gainEl = document.getElementById('btn-breakthrough-gain');
+    if (gainEl) {
+      const gainText = canBreak && window.Newbie && typeof window.Newbie.breakGainText === 'function'
+        ? (window.Newbie.breakGainText(s) || '')
+        : '';
+      if (gainEl.textContent !== gainText) gainEl.textContent = gainText;
+      if (gainEl.hidden !== !gainText) gainEl.hidden = !gainText;
+    }
     if (els.breakthroughTribHint) {
       const baseHint = window.GameConfig && typeof window.GameConfig.shouldShowTribHint === 'function'
         ? window.GameConfig.shouldShowTribHint(stage)
@@ -1395,6 +1403,39 @@
     const tpl = window.UIText && window.UIText.t('dongfu', 'upgrade', { name }, null);
     // 文案原句不含等级，这里保留「至 Lv.X」以免丢信息
     return tpl ? tpl.replace(`扩建【${name}】`, `扩建【${name}】至 Lv.${lv}`) : fallback;
+  }
+
+  function pacingV2NoticeText(n) {
+    const qi = formatNumber((n && n.qi) || 0);
+    const stones = formatNumber((n && n.stones) || 0);
+    return `修为规矩已改定。补发 2 小时离线灵气（${qi}），药园造价按差价返还灵石（${stones}）。已得道果数量不变：此前道果仍按旧倍率计算，此后新得道果按新倍率计算。`;
+  }
+
+  function showPacingV2Notice() {
+    if (!window.GameState || typeof GameState.peekPacingV2Notice !== 'function') return false;
+    const n = GameState.peekPacingV2Notice();
+    if (!n) return false;
+    const modal = document.getElementById('pacing-v2-modal');
+    const body = document.getElementById('pacing-v2-message');
+    const text = pacingV2NoticeText(n);
+    if (body) body.textContent = text;
+    addLog(text, 'gold');
+    if (modal) {
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+    return true;
+  }
+
+  function closePacingV2Notice() {
+    const modal = document.getElementById('pacing-v2-modal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    if (window.GameState && typeof GameState.markPacingV2NoticeShown === 'function') {
+      GameState.markPacingV2NoticeShown();
+    }
   }
 
   function showOfflineModal(report) {
@@ -1870,6 +1911,8 @@
 
     const kickAudioPrompt = () => {
       if (els.offlineModal && els.offlineModal.classList.contains('active')) return;
+      const pacingModal = document.getElementById('pacing-v2-modal');
+      if (pacingModal && pacingModal.classList.contains('active')) return;
       if (window.GameAudio && typeof window.GameAudio.maybePromptConsent === 'function') {
         window.GameAudio.maybePromptConsent();
       }
@@ -1892,6 +1935,8 @@
 
     if (offlineReport) {
       showOfflineModal(offlineReport);
+    } else {
+      showPacingV2Notice();
     }
     if (!openingPlayed) kickAudioPrompt();
 
@@ -1965,8 +2010,23 @@
 
     els.btnCloseOffline.addEventListener('click', () => {
       els.offlineModal.classList.remove('active');
+      if (!showPacingV2Notice()) kickAudioPrompt();
+    });
+
+    const btnClosePacingV2 = document.getElementById('btn-close-pacing-v2');
+    const pacingV2Modal = document.getElementById('pacing-v2-modal');
+    if (btnClosePacingV2) btnClosePacingV2.addEventListener('click', () => {
+      closePacingV2Notice();
       kickAudioPrompt();
     });
+    if (pacingV2Modal) {
+      pacingV2Modal.addEventListener('click', (e) => {
+        if (e.target === pacingV2Modal) {
+          closePacingV2Notice();
+          kickAudioPrompt();
+        }
+      });
+    }
 
     if (els.btnOpenLog && els.logModal) {
       els.btnOpenLog.addEventListener('click', () => {
@@ -2108,6 +2168,7 @@
       btnOfflineChallenge.addEventListener('click', () => {
         els.offlineModal.classList.remove('active');
         if (window.StageUI && StageUI.challengeNow) StageUI.challengeNow();
+        showPacingV2Notice();
       });
     }
 

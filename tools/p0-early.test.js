@@ -1,4 +1,4 @@
-// P0 新档开局：赠桃 30 枚到账、引导先摘桃再闯关、按引导走（摘完赠桃换上法宝）时 1-1～1-3 稳赢，
+// P0 新档开局：赠桃 30 枚到账、引导先摘桃再闯关、按引导走（摘完赠桃换上法宝）时 1-1～1-2 稳赢，1-3 受前期缩放影响不再锁 90%，首次不敌约在 1-4～1-6，
 // 闯关胜率预测（64 场、种子 0x51ed27+i*7919）与独立种子实战在容差内，胜率标签分档。
 // 用法：node tools/p0-early.test.js（vm 加载真实 js，不用浏览器自动化 / getImageData）
 const assert = require('assert');
@@ -20,7 +20,7 @@ function memoryStorage() {
 
 function runtime() {
   const quiet = { log() {}, warn() {}, error() {}, info() {} };
-  const sandbox = { window: {}, console: quiet, localStorage: memoryStorage(), setTimeout() {}, clearTimeout() {}, setInterval() {}, clearInterval() {} };
+  const sandbox = { window: {}, console: quiet, localStorage: memoryStorage(), setTimeout() {}, clearTimeout() {}, setInterval() {}, clearInterval() {}, Math, Date };
   sandbox.document = { getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener() {} };
   sandbox.window.document = sandbox.document;
   sandbox.window.addEventListener = () => {};
@@ -119,14 +119,18 @@ check('引导：赠桃未摘完时目标停在摘桃、闯关不点红点；摘�
   assert.ok(/peachGoalDone\(s\)[\s\S]{0,120}先去法宝页摘桃/.test(game), '开闯关日志提示先摘桃');
 });
 
-check('按引导走（摘完赠桃）：1-1～1-3 实战稳赢（≥90%）；无装备 1-1 仍为 0%（数值未改）', () => {
+check('按引导走（摘完赠桃）：1-1 稳赢；1-2 大多能赢；1-3 受前期缩放不再锁胜；首次不敌约在 1-4～1-6；无装备 1-1 仍为 0%（数值未改）', () => {
   const W = runtime();
   [11, 29, 47].forEach((seed) => {
     const s = guidedState(W, seed);
-    [1, 2, 3].forEach((n) => {
-      const r = actualRate(W, s, n, 60, seed + n);
-      assert.ok(r >= 0.9, `gear seed ${seed} stage ${n}: ${r}`);
-    });
+    const r1 = actualRate(W, s, 1, 60, seed + 1);
+    assert.ok(r1 >= 0.9, `gear seed ${seed} stage 1: ${r1}`);
+    const r2 = actualRate(W, s, 2, 60, seed + 2);
+    assert.ok(r2 >= 0.7, `gear seed ${seed} stage 2 应大多能赢: ${r2}`);
+    const r3 = actualRate(W, s, 3, 60, seed + 3);
+    assert.ok(r3 < 0.9, `gear seed ${seed} stage 3 不再稳赢: ${r3}`);
+    const later = [4, 5, 6].map((n) => actualRate(W, s, n, 60, seed + n));
+    assert.ok(later[0] <= 0.2 && later[1] <= 0.1 && later[2] <= 0.1, `gear seed ${seed} 1-4～1-6 应接近不敌: ${later}`);
   });
   const W2 = runtime();
   W2.GameState.loadGame();

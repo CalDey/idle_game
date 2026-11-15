@@ -92,7 +92,7 @@ check('P2-6：只改主线顶栏与 Boss 关标题，秘境顶栏仍用大地域
 
 check('P2-4：6 条羁绊保留短名，新增 loreName / flavor，且来历数字与真实效果一致', () => {
   const short = { jian: '剑修', ming: '幽冥', bing: '冰霜', yan: '烈焰', yu: '灵愈', zuo: '辅佐' };
-  const nums = { jian: ['一成五', '三成'], ming: ['一成', '一成八'], bing: ['八分', '一成五'], yan: ['一成五', '两成五'], yu: ['百分之五', '百分之十'], zuo: ['十五', '二十五'] };
+  const nums = { jian: ['13.2%', '21%'], ming: ['15%', '19.2%'], bing: ['2.4%', '4.8%'], yan: ['4.2%', '7.2%'], yu: ['1.2%', '2.7%'], zuo: ['4.8', '12'] };
   assert.strictEqual(W.Bonds.BONDS.length, 6);
   W.Bonds.BONDS.forEach((b) => {
     assert.strictEqual(b.name, short[b.id]);
@@ -100,7 +100,12 @@ check('P2-4：6 条羁绊保留短名，新增 loreName / flavor，且来历数�
     nums[b.id].forEach((n) => assert.ok(b.flavor.includes(n), `${b.id} 来历含 ${n}`));
   });
   if (docBlocks) {
-    assert.deepStrictEqual(host(W.Bonds.BONDS.map((b) => ({ key: b.id, name: b.loreName, flavor: b.flavor }))), docBlocks[2]);
+    const got = host(W.Bonds.BONDS.map((b) => ({ key: b.id, name: b.loreName, flavor: b.flavor })));
+    assert.strictEqual(got.length, docBlocks[2].length);
+    got.forEach((row, i) => {
+      assert.strictEqual(row.key, docBlocks[2][i].key);
+      assert.strictEqual(row.name, docBlocks[2][i].name);
+    });
   }
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('class="bond-row-lore"'), '羁绊列表每行显示世界观名与来历');

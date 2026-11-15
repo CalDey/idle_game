@@ -129,7 +129,8 @@ check('G2 读档：realmIndex 超出境界上限时钳到最后一重，NaN 资�
       stones: 'Infinity',
       realmIndex: 99,
       lastSaveTime: now,
-      openingSeen: true
+      openingSeen: true,
+      pacingV2Compensated: true
     })
   });
   const W = runtime(['js/config.js', 'js/equip.js', 'js/state.js'], { localStorage: ls });

@@ -838,6 +838,7 @@ body {
 .breakthrough-actions {
   display: flex;
   flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
@@ -848,6 +849,27 @@ body {
   flex: 0 0 auto;
   min-width: 118px;
   max-width: 100%;
+}
+
+#btn-breakthrough {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+#btn-breakthrough .break-gain {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+#btn-breakthrough .break-gain[hidden] {
+  display: none;
 }
 
 .breakthrough-info {
@@ -2996,9 +3018,14 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .battle-result-overlay.is-banner .battle-fail-actions .btn {
-  min-height: 30px;
-  padding: 3px 8px;
-  font-size: 11px;
+  min-height: 36px;
+  padding: 5px 8px;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.battle-result-overlay.is-banner .battle-fail-actions .fail-gain {
+  font-size: 12px;
 }
 
 /* 3. 对比行 (32px) */
@@ -3706,7 +3733,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=141") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=142") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3714,11 +3741,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=141");
+  background-image: url("../assets/home/scene_xuan.webp?v=142");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=141");
+  background-image: url("../assets/home/scene_xian.webp?v=142");
 }
 
 .home-stage {
@@ -7248,9 +7275,9 @@ button.mijing-bless-card:active {
 /* === 新手体验 batch3 P1-1：主线剧情对话（主角立绘 + Boss 剪影，可跳过） === */
 .story-modal {
   z-index: 120;
-  padding: 12px;
+  padding: 12px 12px calc(58px + env(safe-area-inset-bottom, 0px) + 12px);
   align-items: flex-end;
-  background: radial-gradient(ellipse at 50% 30%, rgba(60, 20, 30, 0.55), rgba(4, 3, 12, 0.92) 70%);
+  background: rgba(4, 3, 12, 0.92);
 }
 
 .story-stage {
@@ -7332,7 +7359,7 @@ button.mijing-bless-card:active {
   padding: 10px 12px 8px;
   border: 1px solid rgba(214, 178, 102, 0.75);
   border-radius: 4px;
-  background: linear-gradient(180deg, #1c1408, #0d0a06);
+  background: #120c08;
   box-shadow: inset 0 0 0 2px #0d0a06, inset 0 0 0 3px rgba(214, 178, 102, 0.35), 0 4px 18px rgba(0, 0, 0, 0.6);
   color: #efe6cf;
   cursor: pointer;
@@ -8040,16 +8067,16 @@ button.mijing-bless-card:active {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 9.5em;
+  flex: 0 0 auto;
+  min-width: auto;
+  max-width: none;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .path-entry #path-entry-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: unset;
   white-space: nowrap;
 }
 
@@ -8280,6 +8307,13 @@ button.mijing-bless-card:active {
   font-size: 10px;
   color: var(--text-dim);
   white-space: nowrap;
+}
+
+.path-card-cost {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 
 .path-card .btn {

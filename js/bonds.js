@@ -30,61 +30,61 @@
     {
       id: 'jian', name: '剑修',
       loreName: '剑修·破妄同锋',
-      flavor: '未收的剑意叠在一处。持剑者绝技互相借力，伤害加一成五；三人同阵，加到三成。',
+      flavor: '未收的剑意叠在一处。持剑者绝技互相借力，伤害加 13.2%；三人同阵，加到 21%。',
       icon: 'slot_weapon', scope: 'member',
       tiers: [
-        { need: 2, desc: '剑修角色绝技伤害 +15%', mods: { ultDmgMult: 0.15 } },
-        { need: 3, desc: '剑修角色绝技伤害 +30%', mods: { ultDmgMult: 0.3 } }
+        { need: 2, desc: '剑修角色绝技伤害 +13.2%', mods: { ultDmgMult: 0.132 } },
+        { need: 3, desc: '剑修角色绝技伤害 +21%', mods: { ultDmgMult: 0.21 } }
       ]
     },
     {
       id: 'ming', name: '幽冥',
       loreName: '幽冥·灯下共噬',
-      flavor: '灯影里的人把溢出的伤势吞回去。幽冥角色绝技可吸血一成，三人则一成八。',
+      flavor: '灯影里的人把溢出的伤势吞回去。幽冥角色绝技可吸血 15%，三人则 19.2%。',
       icon: 'res_qi', scope: 'member',
       tiers: [
-        { need: 2, desc: '幽冥角色绝技吸血 10%', mods: { ultLifesteal: 0.1 } },
-        { need: 3, desc: '幽冥角色绝技吸血 18%', mods: { ultLifesteal: 0.18 } }
+        { need: 2, desc: '幽冥角色绝技吸血 15%', mods: { ultLifesteal: 0.15 } },
+        { need: 3, desc: '幽冥角色绝技吸血 19.2%', mods: { ultLifesteal: 0.192 } }
       ]
     },
     {
       id: 'bing', name: '冰霜',
       loreName: '冰霜·寒魄同修',
-      flavor: '同修一脉寒气。冰霜角色普攻有八分机会冰封目标，令其下次攻击落空；三人则一成五。',
+      flavor: '同修一脉寒气。冰霜角色普攻有 2.4% 几率冰封目标，令其下次攻击落空；三人则 4.8%。',
       icon: 'res_daoguo', scope: 'member',
       tiers: [
-        { need: 2, desc: '冰霜角色普攻 8% 几率冰封目标（下次攻击落空）', mods: { freezeChance: 0.08 } },
-        { need: 3, desc: '冰霜角色普攻 15% 几率冰封目标', mods: { freezeChance: 0.15 } }
+        { need: 2, desc: '冰霜角色普攻 2.4% 几率冰封目标（下次攻击落空）', mods: { freezeChance: 0.024 } },
+        { need: 3, desc: '冰霜角色普攻 4.8% 几率冰封目标', mods: { freezeChance: 0.048 } }
       ]
     },
     {
       id: 'yan', name: '烈焰',
       loreName: '烈焰·同烬相燎',
-      flavor: '火性同源，火星会溅到身旁。烈焰角色普攻对周围敌人溅射一成五，三人则两成五。',
+      flavor: '火性同源，火星会溅到身旁。烈焰角色普攻对周围敌人溅射 4.2%，三人则 7.2%。',
       icon: 'gf_jiuzhuan_jindan', scope: 'member',
       tiers: [
-        { need: 2, desc: '烈焰角色普攻对周围敌人溅射 15%', mods: { atkSplash: 0.15 } },
-        { need: 3, desc: '烈焰角色普攻对周围敌人溅射 25%', mods: { atkSplash: 0.25 } }
+        { need: 2, desc: '烈焰角色普攻对周围敌人溅射 4.2%', mods: { atkSplash: 0.042 } },
+        { need: 3, desc: '烈焰角色普攻对周围敌人溅射 7.2%', mods: { atkSplash: 0.072 } }
       ]
     },
     {
       id: 'yu', name: '灵愈',
       loreName: '灵愈·护生同脉',
-      flavor: '治愈的脉息连成一张网。全队生命加百分之五；三人同阵，加到百分之十。',
+      flavor: '治愈的脉息连成一张网。全队生命加 1.2%；三人同阵，加到 2.7%。',
       icon: 'df_lingquan', scope: 'team',
       tiers: [
-        { need: 2, desc: '全队生命 +5%', mods: { hpMult: 0.05 } },
-        { need: 3, desc: '全队生命 +10%', mods: { hpMult: 0.1 } }
+        { need: 2, desc: '全队生命 +1.2%', mods: { hpMult: 0.012 } },
+        { need: 3, desc: '全队生命 +2.7%', mods: { hpMult: 0.027 } }
       ]
     },
     {
       id: 'zuo', name: '辅佐',
       loreName: '辅佐·先机同筹',
-      flavor: '开阵之前就把气机推到众人腕上。全队开战怒气加十五；三人则加二十五。',
+      flavor: '开阵之前就把气机推到众人腕上。全队开战怒气加 4.8；三人则加 12。',
       icon: 'ui_bagua', scope: 'team',
       tiers: [
-        { need: 2, desc: '全队开战怒气 +15', mods: { rageStart: 15 } },
-        { need: 3, desc: '全队开战怒气 +25', mods: { rageStart: 25 } }
+        { need: 2, desc: '全队开战怒气 +4.8', mods: { rageStart: 4.8 } },
+        { need: 3, desc: '全队开战怒气 +12', mods: { rageStart: 12 } }
       ]
     }
   ];

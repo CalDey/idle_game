@@ -1,8 +1,8 @@
 # `js/` 核心模块职责、接口与数据流说明
 
-本文档说明 `js/` 目录下全部 JavaScript 模块的职责边界、对外接口、依赖关系及核心数据流。行数与接口以 main **`851adfb`** 为准。
+本文档说明 `js/` 目录下全部 JavaScript 模块的职责边界、对外接口、依赖关系及核心数据流。行数与接口以本提交（节奏 v2 / 文案定稿接入后的 main）为准。
 
-当前共 **30 个脚本**（见 [README.md 第 5 节](./README.md) 的加载顺序），不再是早期的 9 个文件。
+当前共 **33 个脚本**（见 [README.md 第 5 节](./README.md) 的加载顺序），不再是早期的 9 个文件。
 
 ---
 
@@ -13,23 +13,25 @@
 | 文件 | 行数 | 全局导出 | 职责简述 |
 | :--- | :---: | :--- | :--- |
 | [js/no-zoom.js](../../js/no-zoom.js) | 50 | 无（纯副作用） | 拦截手势缩放、多指缩放、双击放大与 `Ctrl+滚轮` |
-| [js/config.js](../../js/config.js) | 1447 | `GameConfig` / `CONFIG` | 境界、装备、桃树、功法、洞府、道果、称号、战斗常量、`MIJING` 测力常数、16 名角色与绝技、法宝专名池 `GEAR_UNIQUE_NAMES`、章节短名等 |
+| [js/config.js](../../js/config.js) | 1464 | `GameConfig` / `CONFIG` | 境界、装备、桃树、功法、洞府、道果、称号、战斗常量、`MIJING` 测力常数、16 名角色与绝技、法宝专名池 `GEAR_UNIQUE_NAMES`、章节短名、`ELITE_MULT` / `EARLY_RAMP`、节奏 v2 境界与洞府参数等 |
 | [js/ui-text.js](../../js/ui-text.js) | 196 | `UIText` | 突破 / 渡劫 / 离线 / 仙桃树 / 洞府 / 轮回等界面文案 |
-| [js/events-data.js](../../js/events-data.js) | 917 | `GameEventsData` | 24 条挂机/洞府机缘事件文案（`pool: idle / home`） |
+| [js/events-data.js](../../js/events-data.js) | 918 | `GameEventsData` | 24 条挂机/洞府机缘事件文案（`pool: idle / home`） |
 | [js/codex-data.js](../../js/codex-data.js) | 804 | `CodexData` | 图鉴条目与 Boss/小怪文案、开场台词 |
-| [js/story-data.js](../../js/story-data.js) | 363 | `StoryData` | 第 1–6 章主线对白与 30 个 Boss 遗言 |
+| [js/story-data.js](../../js/story-data.js) | 1651 | `StoryData` | 第 1–30 章主线对白与 30 个 Boss 遗言 |
 | [js/hero-lines-data.js](../../js/hero-lines-data.js) | 122 | `HeroLinesData` | 角色日常台词（点击/突破/闲置/出战/阵亡） |
 | [js/skill-text-data.js](../../js/skill-text-data.js) | 99 | `SkillTextData` | 绝技说明与施放台词（只做展示，数值仍以 config 为准） |
+| [js/tribulation-data.js](../../js/tribulation-data.js) | 60 | `TribulationData` | 渡劫演出文案 |
+
 
 ### 1.2 核心领域与状态
 
 | 文件 | 行数 | 全局导出 | 职责简述 |
 | :--- | :---: | :--- | :--- |
 | [js/equip.js](../../js/equip.js) | 284 | `Equip` | 装备生成（含专名）、属性/战力、天劫锁；不读写存档 |
-| [js/state.js](../../js/state.js) | 1140 | `GameState` | 状态树、产率、存档迁移、离线结算、轮回、小队、新手保底突破 |
-| [js/titles.js](../../js/titles.js) | 367 | `Titles` / `TitlesUI` | 15 个称号的条件、乘区与铭牌/弹窗 |
-| [js/battle.js](../../js/battle.js) | 2056 | `Battle`（兼 `module.exports`） | 6×8 确定性自走棋、绝技、胜率与推荐战力模拟 |
-| [js/bonds.js](../../js/bonds.js) | 241 | `Bonds` | 仙缘标签与 6 条羁绊（含 `loreName` / `flavor`），不写存档 |
+| [js/state.js](../../js/state.js) | 1521 | `GameState` | 状态树、产率、存档迁移、离线结算、轮回、小队、新手保底突破；节奏 v2 老档一次性补偿与已有道果旧倍率保留 |
+| [js/titles.js](../../js/titles.js) | 391 | `Titles` / `TitlesUI` | 15 个称号的条件、乘区与铭牌/弹窗 |
+| [js/battle.js](../../js/battle.js) | 2103 | `Battle`（兼 `module.exports`） | 6×8 确定性自走棋、绝技、胜率与推荐战力模拟 |
+| [js/bonds.js](../../js/bonds.js) | 248 | `Bonds` | 仙缘标签与 6 条羁绊（含 `loreName` / `flavor`；档位为 params_v2 ×0.6），不写存档 |
 | [js/beasts.js](../../js/beasts.js) | 227 | `Beasts` | 三只灵兽解锁/喂养/加成，经 `Bonds.modsForState` 并入战斗 |
 | [js/grow.js](../../js/grow.js) | 370 | `Grow` / `GrowUI` | 仙姬培元（按人升级，加成自身攻防血） |
 
@@ -37,25 +39,27 @@
 
 | 文件 | 行数 | 全局导出 | 职责简述 |
 | :--- | :---: | :--- | :--- |
-| [js/mijing.js](../../js/mijing.js) | 619 | `Mijing` | 秘境劫运：每日 2 次、8 波连战、每 2 波三选一；测力可缓存 |
-| [js/tower.js](../../js/tower.js) | 548 | `Tower` / `TowerUI` | 镇妖塔：独立爬塔，每日 3 次失败，首通奖励 |
+| [js/mijing.js](../../js/mijing.js) | 778 | `Mijing` | 秘境劫运：每日 2 次、8 波连战、每 2 波三选一；测力可缓存 |
+| [js/tower.js](../../js/tower.js) | 556 | `Tower` / `TowerUI` | 镇妖塔：独立爬塔，每日 3 次失败，首通奖励 |
 | [js/daily.js](../../js/daily.js) | 575 | `Daily` / `DailyUI` | 每日功课活跃度宝箱与七日累计签到 |
-| [js/dispatch.js](../../js/dispatch.js) | 761 | `Dispatch` | 仙姬派遣：每日 4 条悬赏，真实时间计时 |
-| [js/idle-events.js](../../js/idle-events.js) | 457 | `IdleEvents` | 挂机随机机缘（10–20 分钟冷却，顶栏入口） |
+| [js/dispatch.js](../../js/dispatch.js) | 851 | `Dispatch` | 仙姬派遣：每日 4 条悬赏，真实时间计时 |
+| [js/idle-events.js](../../js/idle-events.js) | 476 | `IdleEvents` | 挂机随机机缘（10–20 分钟冷却，顶栏入口） |
 | [js/home-fortune.js](../../js/home-fortune.js) | 486 | `HomeFortune` / `HomeFortuneUI` | 洞府挂机偶发机缘，复用事件池 |
-| [js/codex.js](../../js/codex.js) | 292 | `Codex` | 只读图鉴；存档字段 `state.codex = { v, maxRealm }` |
-| [js/story.js](../../js/story.js) | 307 | `Story` | 主线剧情弹窗；进度记在 `state.storySeen` |
-| [js/newbie.js](../../js/newbie.js) | 797 | `Newbie` | 新手引导、当前目标条、解锁卡、Esc/遮罩关弹窗、角色卡简介与选中台词 |
-| [js/audio.js](../../js/audio.js) | 411 | `GameAudio` | Web Audio 合成音效/BGM，开关默认关，需手势后才建上下文 |
+| [js/codex.js](../../js/codex.js) | 764 | `Codex` | 只读图鉴；存档字段 `state.codex = { v, maxRealm }` |
+| [js/story.js](../../js/story.js) | 506 | `Story` | 主线剧情弹窗、往事回溯（`RECALL_TEXT` 副标题/按钮/30 章简介，「果子」按第 26 章通关揭示）、1-1 战败旁白 `stage1_1_fail`；进度记在 `state.storySeen` |
+| [js/path.js](../../js/path.js) | 553 | `Path` | 本命道途（剑/体/符）；显示名与「改道」文案来自世界观定稿，路径/节点 id 不变；节点 per 为 v2 的 6 折（含符道经济） |
+| [js/tribulation.js](../../js/tribulation.js) | 299 | `Tribulation` | 大境界渡劫演出（纯 CSS/DOM） |
+| [js/newbie.js](../../js/newbie.js) | 2037 | `Newbie` | 新手引导、当前目标条、解锁卡、Esc/遮罩关弹窗、角色卡简介与选中台词 |
+| [js/audio.js](../../js/audio.js) | 544 | `GameAudio` | Web Audio 合成音效/BGM，开关默认关，需手势后才建上下文 |
 | [js/hero-voice.js](../../js/hero-voice.js) | 145 | `HeroVoice` | 立绘/棋盘台词气泡（限频、不阻塞） |
 
 ### 1.4 视图与主控
 
 | 文件 | 行数 | 全局导出 | 职责简述 |
 | :--- | :---: | :--- | :--- |
-| [js/gear.js](../../js/gear.js) | 495 | `GearUI` | 法宝页：摘桃、对比、分解、桃树升级；周期调用 `GameState.tickTimers` |
-| [js/stage-ui.js](../../js/stage-ui.js) | 3229 | `StageUI` | 闯关页：棋盘、布阵、回放、秘境/塔入口、羁绊条、失败跳转、挂机宝箱 |
-| [js/game.js](../../js/game.js) | 1850 | `portraitHeroList` / `roleCardClassName` | 主循环、修行/洞府/轮回/通用弹窗 |
+| [js/gear.js](../../js/gear.js) | 520 | `GearUI` | 法宝页：摘桃、对比、分解、桃树升级；周期调用 `GameState.tickTimers` |
+| [js/stage-ui.js](../../js/stage-ui.js) | 3544 | `StageUI` | 闯关页：棋盘、布阵、回放、秘境/塔入口、羁绊条、失败跳转、挂机宝箱 |
+| [js/game.js](../../js/game.js) | 2101 | `portraitHeroList` / `roleCardClassName` | 主循环、修行/洞府/轮回/通用弹窗 |
 | [js/beasts-ui.js](../../js/beasts-ui.js) | 226 | `BeastsUI` | 灵兽伴生界面 |
 
 ---

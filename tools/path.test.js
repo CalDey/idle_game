@@ -160,8 +160,8 @@ check('收益：符道 聚灵符/摄石符 乘入 getQiPerSec / getStonePerSec�
   const q0 = GS.getQiPerSec();
   const st0 = GS.getStonePerSec();
   s.path = { id: 'fu', lv: [3, 3, 3] };
-  assert.ok(Math.abs(GS.getQiPerSec() / q0 - 1.15) < 1e-9, '灵气 +15%');
-  assert.ok(Math.abs(GS.getStonePerSec() / st0 - 1.24) < 1e-9, '灵石 +24%');
+  assert.ok(Math.abs(GS.getQiPerSec() / q0 - 1.09) < 1e-9, '灵气 +9%（符道经济 6 折）');
+  assert.ok(Math.abs(GS.getStonePerSec() / st0 - 1.144) < 1e-9, '灵石 +14.4%（符道经济 6 折）');
   s.path = { id: 'jian', lv: [3, 3, 3] };
   assert.strictEqual(GS.getQiPerSec(), q0);
   assert.strictEqual(GS.getStonePerSec(), st0);
@@ -185,17 +185,17 @@ check('战斗 mods：未择道/无层数为 null（战斗逐帧一致）；各�
   const base = B.createSession(ps, 40, 1, null);
   s.path = { id: 'ti', lv: [3, 3, 3] };
   const tm = P.battleMods(s);
-  assert.ok(Math.abs(tm.hpMult - 1.09) < 1e-9 && Math.abs(tm.defMult - 1.12) < 1e-9 && Math.abs(tm.frontDmgTakenMult - 0.91) < 1e-9);
+  assert.ok(Math.abs(tm.hpMult - 1.054) < 1e-9 && Math.abs(tm.defMult - 1.072) < 1e-9 && Math.abs(tm.frontDmgTakenMult - 0.946) < 1e-9);
   const ti = B.createSession(ps, 40, 1, tm);
-  ti.playerUnits.forEach((u, i) => assert.ok(Math.abs(u.maxHp / base.playerUnits[i].maxHp - 1.09) < 1e-9, '体道 生命 +9%'));
+  ti.playerUnits.forEach((u, i) => assert.ok(Math.abs(u.maxHp / base.playerUnits[i].maxHp - 1.054) < 1e-9, '体道 生命 +5.4%'));
   s.path = { id: 'jian', lv: [3, 2, 1] };
   const jm = P.battleMods(s);
-  assert.ok(Math.abs(jm.critAdd - 0.09) < 1e-9 && Math.abs(jm.ultDmgMult - 1.14) < 1e-9 && Math.abs(jm.bossDmgMult - 1.08) < 1e-9);
+  assert.ok(Math.abs(jm.critAdd - 0.054) < 1e-9 && Math.abs(jm.ultDmgMult - 1.084) < 1e-9 && Math.abs(jm.bossDmgMult - 1.048) < 1e-9);
   const jian = B.createSession(ps, 40, 1, jm);
-  jian.playerUnits.forEach((u, i) => assert.ok(Math.abs(u.crit - Math.min(1, base.playerUnits[i].crit + 0.09)) < 1e-9, '剑道 暴击 +9%'));
+  jian.playerUnits.forEach((u, i) => assert.ok(Math.abs(u.crit - Math.min(1, base.playerUnits[i].crit + 0.054)) < 1e-9, '剑道 暴击 +5.4%'));
   s.path = { id: 'fu', lv: [0, 0, 3] };
   const fu = B.createSession(ps, 40, 1, P.battleMods(s));
-  fu.playerUnits.forEach((u, i) => assert.strictEqual(u.rage - base.playerUnits[i].rage, 24, '符道 开战怒气 +24'));
+  fu.playerUnits.forEach((u, i) => assert.ok(Math.abs((u.rage - base.playerUnits[i].rage) - 14.4) < 1e-9, '符道 开战怒气 +14.4'));
 });
 
 check('与仙缘羁绊合并：Bonds.modsForState 统一并入道途（mult 按增量叠加，只计一次）；秘境 combinedMods 与关卡预测都包含道途', () => {
@@ -208,16 +208,16 @@ check('与仙缘羁绊合并：Bonds.modsForState 统一并入道途（mult 按�
   assert.strictEqual(JSON.stringify(W.Bonds.buildMods(W.Battle.getSquadIds(s))), JSON.stringify(bm), '未择道时与原版羁绊 mods 完全一致');
   s.path = { id: 'ti', lv: [3, 0, 0] };
   const withPath = W.Bonds.modsForState(s);
-  assert.ok(Math.abs(withPath.hpMult - (bm.hpMult + 0.09)) < 1e-9, '道途只叠加一次');
+  assert.ok(Math.abs(withPath.hpMult - (bm.hpMult + 0.054)) < 1e-9, '道途只叠加一次');
   const cm = W.Mijing.combinedMods(s, {});
-  assert.ok(Math.abs(cm.hpMult - (bm.hpMult + 0.09)) < 1e-9, '秘境包含道途且不重复');
+  assert.ok(Math.abs(cm.hpMult - (bm.hpMult + 0.054)) < 1e-9, '秘境包含道途且不重复');
   s.path = { id: 'ti', lv: [0, 0, 0] };
   assert.strictEqual(JSON.stringify(W.Bonds.modsForState(s)), JSON.stringify(bm), '无层数时回到原版');
   // 无羁绊阵容：只有道途也能生效
   s.squad = ['saintess'];
   s.path = { id: 'jian', lv: [2, 0, 0] };
   const solo = W.Bonds.modsForState(s);
-  assert.ok(solo && Math.abs(solo.critAdd - 0.06) < 1e-9);
+  assert.ok(solo && Math.abs(solo.critAdd - 0.036) < 1e-9);
   // 源码：stage-ui / mijing 不再各自合并（避免重复计）；预测缓存键含道途签名
   const su = text('js/stage-ui.js');
   const mj = text('js/mijing.js');
@@ -346,6 +346,8 @@ check('文案对象：E2–E5 新界面字符串集中在 Path.TEXT，不散落�
   assert.strictEqual(T.respecNoRefund, '已投入灵石不退还');
   assert.ok(T.chooseConfirmTitle && T.chooseConfirm.includes('{name}'));
   assert.ok(T.respecConfirmTitle && T.respecConfirm.includes('{name}'));
+  assert.ok(T.respecConfirm.includes('按节点位置保留'), '改道确认须说明层数按位置保留');
+  assert.ok(T.respecConfirmFree && T.respecConfirmFree.includes('免费'));
   assert.strictEqual(T.respecConfirmTitle, '改道确认');
   assert.ok(T.flashChosen.includes('{name}') && T.flashChosen.includes('已把本命押在'));
   Object.keys(T).forEach((k) => {
@@ -396,6 +398,11 @@ check('UI 冒烟：境界卡入口（化灵前锁定）、择道/重定需确认
   const actions = els['path-modal-actions'];
   assert.strictEqual((body.innerHTML.match(/data-path-choose=/g) || []).length, 3);
   assert.ok(body.innerHTML.includes(TXT.combatNote), '弹窗注明战斗内生效');
+  const firstCost = sandbox.Path.nodeCost(st, 0);
+  assert.ok(firstCost != null && (body.innerHTML.match(/path-card-cost/g) || []).length === 3, '择道页每张卡显示参悟花费');
+  const costLabel = TXT.btnUpgrade.replace('{cost}', sandbox.GameConfig.formatNumber(firstCost));
+  assert.ok(body.innerHTML.includes(costLabel), '择道卡展示 nodeCost(s,0) 折算后的灵石');
+
   clickData(body, 'path-choose', 'jian');
   assert.ok(!st.path || !st.path.id, '择道需二次确认，不应立即生效');
   assert.ok(body.innerHTML.includes('data-path-confirm="yes"'));
@@ -423,9 +430,14 @@ check('UI 冒烟：境界卡入口（化灵前锁定）、择道/重定需确认
   assert.strictEqual(UI._view(), 'respec');
   assert.ok(body.innerHTML.includes(TXT.respecNoRefund), '重定说明含不退还');
   assert.ok(!/data-path-respec="jian"/.test(body.innerHTML));
+  st.path.freeRespec = 1;
+  UI.render();
   clickData(body, 'path-respec', 'ti');
   assert.strictEqual(st.path.id, 'jian', '改修需二次确认');
   assert.ok(body.innerHTML.includes(TXT.respecConfirmTitle));
+  assert.ok(body.innerHTML.includes('按节点位置保留'), '确认框说明层数按位置保留');
+  assert.ok(body.innerHTML.includes(TXT.respecConfirmFree), '确认框标明此世仍有免费改道');
+
   clickData(body, 'path-confirm', 'yes');
   assert.strictEqual(st.path.id, 'ti');
   assert.deepStrictEqual(Array.from(st.path.lv), [1, 0, 0]);
@@ -450,7 +462,7 @@ check('index.html 引用 path.js 且有入口/弹窗节点；样式存在', () =
   assert.ok(row.includes('id="btn-path-open"') && row.includes('class="breakthrough-actions"'), '入口应与突破按钮同一行');
   assert.ok(!/id="btn-path-open"[^>]*\shidden(?:\s|\/|>)/.test(row), '化灵前入口不再 hidden');
   const css = text('css/style.css');
-  ['.path-entry', '.path-dialog', '.path-modal-body::-webkit-scrollbar', '.path-node', '.path-card', '.breakthrough-actions', '.path-entry.is-locked', '.path-confirm'].forEach((c) => assert.ok(css.includes(c), c));
+  ['.path-entry', '.path-dialog', '.path-modal-body::-webkit-scrollbar', '.path-node', '.path-card', '.path-card-cost', '.breakthrough-actions', '.path-entry.is-locked', '.path-confirm'].forEach((c) => assert.ok(css.includes(c), c));
   const hero = css.slice(css.indexOf('/* Hero stage */'));
   assert.ok(/min-height:\s*168px/.test(hero.slice(0, 400)), 'hero-stage 高度保持不变');
   assert.ok(fs.existsSync(path.join(root, 'assets/icons/gf_taiqingjue@64.webp')));

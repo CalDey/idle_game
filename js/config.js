@@ -11,7 +11,7 @@
       baseSuccessRate: 0.92,
       rateDecayPerSub: 0.02,
       tribulationSuccessRate: 0.75,
-      failureQiLossRatio: 0.25,
+      failureQiLossRatio: 0.12,
       realmMultiplier: 1.0,
       desc: '精血如雷，骨文入血催神曦淬肉；败则血枯骨裂。'
     },
@@ -19,11 +19,11 @@
       id: 'dongtian',
       name: '洞天',
       baseQi: 260,
-      stepGrowth: 1.36,
+      stepGrowth: 2.4,
       baseSuccessRate: 0.89,
       rateDecayPerSub: 0.02,
       tribulationSuccessRate: 0.72,
-      failureQiLossRatio: 0.26,
+      failureQiLossRatio: 0.12,
       realmMultiplier: 1.35,
       desc: '夺天地造化开洞天吞神精；败则洞天崩、本源倒灌。'
     },
@@ -31,23 +31,23 @@
       id: 'hualing',
       name: '化灵',
       baseQi: 1500,
-      stepGrowth: 1.38,
+      stepGrowth: 4.88,
       baseSuccessRate: 0.86,
       rateDecayPerSub: 0.022,
       tribulationSuccessRate: 0.68,
-      failureQiLossRatio: 0.27,
-      realmMultiplier: 1.7,
+      failureQiLossRatio: 0.13,
+      realmMultiplier: 1.85,
       desc: '肉身、精神与洞天三重成灵；半途易成残灵。'
     },
     {
       id: 'mingwen',
       name: '铭纹',
       baseQi: 8500,
-      stepGrowth: 1.40,
+      stepGrowth: 1.72,
       baseSuccessRate: 0.83,
       rateDecayPerSub: 0.024,
       tribulationSuccessRate: 0.65,
-      failureQiLossRatio: 0.28,
+      failureQiLossRatio: 0.13,
       realmMultiplier: 2.3,
       desc: '体内自铭杀符，不再只抄凶兽；错纹噬主。'
     },
@@ -55,11 +55,11 @@
       id: 'liezhen',
       name: '列阵',
       baseQi: 48000,
-      stepGrowth: 1.41,
+      stepGrowth: 1.15,
       baseSuccessRate: 0.80,
       rateDecayPerSub: 0.025,
       tribulationSuccessRate: 0.62,
-      failureQiLossRatio: 0.29,
+      failureQiLossRatio: 0.14,
       realmMultiplier: 3.1,
       desc: '身内铺杀阵推演杀伐；阵反则己身为祭。'
     },
@@ -67,11 +67,11 @@
       id: 'zunzhe',
       name: '尊者',
       baseQi: 260000,
-      stepGrowth: 1.43,
+      stepGrowth: 3.26,
       baseSuccessRate: 0.78,
       rateDecayPerSub: 0.026,
       tribulationSuccessRate: 0.58,
-      failureQiLossRatio: 0.30,
+      failureQiLossRatio: 0.14,
       realmMultiplier: 4.2,
       desc: '凡人称尊；成尊必染血债，方圆可寸草不生。'
     },
@@ -79,11 +79,11 @@
       id: 'shenhuo',
       name: '神火',
       baseQi: 1400000,
-      stepGrowth: 1.44,
+      stepGrowth: 1.38,
       baseSuccessRate: 0.75,
       rateDecayPerSub: 0.028,
       tribulationSuccessRate: 0.55,
-      failureQiLossRatio: 0.31,
+      failureQiLossRatio: 0.15,
       realmMultiplier: 6.0,
       desc: '燃神火、种道种；晚年火可熄，借火易被反吞。'
     },
@@ -91,11 +91,11 @@
       id: 'zhenyi',
       name: '真一',
       baseQi: 7500000,
-      stepGrowth: 1.46,
+      stepGrowth: 1.15,
       baseSuccessRate: 0.72,
       rateDecayPerSub: 0.03,
       tribulationSuccessRate: 0.52,
-      failureQiLossRatio: 0.32,
+      failureQiLossRatio: 0.15,
       realmMultiplier: 8.5,
       desc: '真神长燃；道种不稳则神形俱裂。'
     },
@@ -103,11 +103,11 @@
       id: 'shengji',
       name: '圣祭',
       baseQi: 40000000,
-      stepGrowth: 1.47,
+      stepGrowth: 1.15,
       baseSuccessRate: 0.69,
       rateDecayPerSub: 0.03,
       tribulationSuccessRate: 0.48,
-      failureQiLossRatio: 0.33,
+      failureQiLossRatio: 0.16,
       realmMultiplier: 11.8,
       desc: '危境过渡，可渡神王劫；可跳过则顺，败则为祭。'
     },
@@ -115,11 +115,11 @@
       id: 'tianshen',
       name: '天神',
       baseQi: 220000000,
-      stepGrowth: 1.49,
+      stepGrowth: 1.6,
       baseSuccessRate: 0.66,
       rateDecayPerSub: 0.032,
       tribulationSuccessRate: 0.45,
-      failureQiLossRatio: 0.34,
+      failureQiLossRatio: 0.16,
       realmMultiplier: 17.5,
       desc: '断肢可再生，一滴血崩山；威压镇下境。'
     },
@@ -127,11 +127,11 @@
       id: 'xudao',
       name: '虚道',
       baseQi: 1200000000,
-      stepGrowth: 1.50,
+      stepGrowth: 1.15,
       baseSuccessRate: 0.63,
       rateDecayPerSub: 0.034,
       tribulationSuccessRate: 0.42,
-      failureQiLossRatio: 0.35,
+      failureQiLossRatio: 0.17,
       realmMultiplier: 25.5,
       desc: '以道种触大道；易化道失我。'
     },
@@ -139,11 +139,11 @@
       id: 'zhanwo',
       name: '斩我',
       baseQi: 6500000000,
-      stepGrowth: 1.52,
+      stepGrowth: 1.15,
       baseSuccessRate: 0.60,
       rateDecayPerSub: 0.036,
       tribulationSuccessRate: 0.39,
-      failureQiLossRatio: 0.36,
+      failureQiLossRatio: 0.17,
       realmMultiplier: 37.2,
       desc: '斩我明道；斩偏则道消人灭。'
     },
@@ -151,11 +151,11 @@
       id: 'dunyi',
       name: '遁一',
       baseQi: 36000000000,
-      stepGrowth: 1.54,
+      stepGrowth: 2.5,
       baseSuccessRate: 0.58,
       rateDecayPerSub: 0.038,
       tribulationSuccessRate: 0.36,
-      failureQiLossRatio: 0.37,
+      failureQiLossRatio: 0.18,
       realmMultiplier: 65.0,
       desc: '一方霸主，统领杀伐。'
     },
@@ -163,11 +163,11 @@
       id: 'zhizun',
       name: '至尊',
       baseQi: 200000000000,
-      stepGrowth: 1.55,
+      stepGrowth: 1.89,
       baseSuccessRate: 0.55,
       rateDecayPerSub: 0.04,
       tribulationSuccessRate: 0.35,
-      failureQiLossRatio: 0.38,
+      failureQiLossRatio: 0.18,
       realmMultiplier: 120.0,
       desc: '人道绝巅；威压压境，长生靠神源非善果。（当前终点）'
     }
@@ -207,7 +207,7 @@
   });
 
   // 洞天之后逐步抬高灵气需求，避免十几分钟通关至至尊后。倍数由 tools/sim.js 校准。
-  const LATE_REALM_QI_MULT = [1, 4, 6, 8, 11, 14, 18, 22, 26, 30, 35, 40, 48, 60];
+  const LATE_REALM_QI_MULT = [1, 2.76, 17.8, 223, 872, 1030, 3570, 2420, 900, 1100, 798, 292, 450, 720];
   REALM_STAGES.forEach((stage) => {
     const mult = LATE_REALM_QI_MULT[stage.majorIndex] || 1;
     if (mult !== 1) stage.reqQi = Math.round(stage.reqQi * mult);
@@ -406,6 +406,8 @@
     GROWTH: 1.0223,
     BASE_CP: 600,
     BOSS_MULT: 1.5,
+    ELITE_MULT: 1.35,
+    EARLY_RAMP: { A: 0.70, peakStage: 5, endStage: 30, bossFactor: 0.25 },
     SPLIT: { atk: 0.04, hp: 0.40, def: 0.0165 },
     MAX_ROUNDS: 24,
     BOARD_COLS: 6,
@@ -644,34 +646,34 @@
       desc: '引地脉灵泉浇灌洞府，日夜孕育下品灵石。',
       baseCost: 150,
       costScale: 1.26,
-      baseStonePerSec: 10,
+      baseStonePerSec: 6,
       unlockRealmIndex: 2 // 搬血后
     },
     {
       id: 'yaoyuan',
       name: '百草灵药园',
       desc: '栽种千年灵草，与坊市互通有无，灵石源源不断。',
-      baseCost: 2200,
-      costScale: 1.28,
-      baseStonePerSec: 110,
+      baseCost: 3000,
+      costScale: 1.31,
+      baseStonePerSec: 40,
       unlockRealmIndex: 6 // 化灵初
     },
     {
       id: 'lingmai',
       name: '地底极品灵脉',
       desc: '拘禁一条地底灵脉入驻洞府，灵石喷涌而出。',
-      baseCost: 38000,
-      costScale: 1.30,
-      baseStonePerSec: 1450,
+      baseCost: 600000,
+      costScale: 1.33,
+      baseStonePerSec: 550,
       unlockRealmIndex: 15 // 尊者初
     },
     {
       id: 'dongtian_fudi',
       name: '三十六洞天福地',
       desc: '开辟一方随身小世界，自生灵矿，万古不枯。',
-      baseCost: 750000,
-      costScale: 1.33,
-      baseStonePerSec: 24000,
+      baseCost: 46000000,
+      costScale: 1.35,
+      baseStonePerSec: 9000,
       unlockRealmIndex: 27 // 天神初
     },
     {
@@ -679,8 +681,8 @@
       name: '先天混沌祖脉',
       desc: '夺天地造化，演混沌灵源，顷刻间灵石成山。',
       baseCost: 16000000,
-      costScale: 1.36,
-      baseStonePerSec: 450000,
+      costScale: 1.38,
+      baseStonePerSec: 170000,
       unlockRealmIndex: 36 // 遁一初
     }
   ];
@@ -690,18 +692,18 @@
     {
       id: 'xiantian_daoti',
       name: '先天道体',
-      desc: '每级额外提升 +50% 灵气获取速度',
+      desc: '每级额外提升 +10% 灵气获取速度',
       baseCost: 1,
       costScale: 1.6,
-      bonusPerLevel: 0.5
+      bonusPerLevel: 0.1
     },
     {
       id: 'qiyun_jiashang',
       name: '天道眷顾',
-      desc: '每级额外提升 +50% 灵石产出速度',
+      desc: '每级额外提升 +10% 灵石产出速度',
       baseCost: 1,
       costScale: 1.6,
-      bonusPerLevel: 0.5
+      bonusPerLevel: 0.1
     },
     {
       id: 'pomo_daoxin',

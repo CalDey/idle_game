@@ -59,6 +59,28 @@
     };
   }
 
+  function isEliteStage(n) {
+    const stageNum = Math.max(1, Math.floor(n || 1));
+    // 每章第 3 关；定稿举例为 13/23/33/…，第 1 章 1-3 不加精英，以免跟前期「首次不敌 1-4~1-6」打架。
+    return stageNum % 10 === 3 && stageNum > 10;
+  }
+
+  function earlyRampMult(B, stageNum, isBoss) {
+    const R = B && B.EARLY_RAMP;
+    if (!R) return 1;
+    const A = Number(R.A) || 0;
+    const peak = Number(R.peakStage) || 5;
+    const end = Number(R.endStage) || 30;
+    const bossFactor = R.bossFactor == null ? 0.25 : Number(R.bossFactor);
+    let r = 0;
+    if (stageNum <= 1) r = 0;
+    else if (stageNum <= peak) r = (stageNum - 1) / (peak - 1);
+    else if (stageNum < end) r = (end - stageNum) / (end - peak);
+    else r = 0;
+    const a = isBoss ? A * bossFactor : A;
+    return 1 + a * r;
+  }
+
   function enemyFor(n) {
     const stageNum = Math.max(1, Math.floor(n || 1));
     const B = cfg().BATTLE;
@@ -73,7 +95,11 @@
       : mobs[(stageNum - 1) % mobs.length];
     const name = entry && typeof entry === 'object' ? entry.name : entry;
     const img = entry && typeof entry === 'object' ? entry.img : '';
-    const cp = B.BASE_CP * Math.pow(B.GROWTH, stageNum - 1) * (isBoss ? B.BOSS_MULT : 1);
+    const isElite = isEliteStage(stageNum);
+    let cp = B.BASE_CP * Math.pow(B.GROWTH, stageNum - 1) * (isBoss ? B.BOSS_MULT : 1);
+    const ramp = earlyRampMult(B, stageNum, isBoss);
+    cp *= ramp;
+    if (isElite && B.ELITE_MULT) cp *= B.ELITE_MULT;
     // 章节短名 / Boss 关名：只作显示，缺数据时为空串（调用方回退大地域名）
     const chapterDef = (B.CHAPTERS || [])[chapter - 1];
     const chapterName = chapterDef && chapterDef.name ? chapterDef.name : '';
@@ -90,6 +116,7 @@
       name,
       img,
       isBoss,
+      isElite,
       cp,
       atk: cp * B.SPLIT.atk,
       hp: cp * B.SPLIT.hp,
@@ -1946,8 +1973,8 @@
 
   // 推荐战力：以当前队伍属性比例缩放，二分得到胜率达到目标（默认 60%，即「大概率胜」）所需的显示战力。
   // 与 winRate / winRateLabel / 失败提示共用同一套战斗模拟，避免「推荐 600 却显示不敌」。
-  const RECOMMENDED_WIN_RATE = 0.6;
-  const RECOMMENDED_SIMS = 16;
+  const RECOMMENDED_WIN_RATE = 0.9;
+  const RECOMMENDED_SIMS = 24;
   const RECOMMENDED_ITERS = 8;
 
   function scalePlayerForProbe(player, scale) {
@@ -2018,15 +2045,22 @@
   function firstClearReward(state, n) {
     const stageNum = Math.max(1, Math.floor(n || 1));
     const isBoss = stageNum % 10 === 0;
+    const elite = isEliteStage(stageNum);
     const baseJade = 2 + Math.floor(stageNum / 10);
-    const peaches = isBoss ? 5 : 1;
-    const lingyu = isBoss ? baseJade * 5 : baseJade;
+    let peaches = isBoss ? 5 : 1;
+    let lingyu = isBoss ? baseJade * 5 : baseJade;
+    if (elite) {
+      peaches *= 2;
+      lingyu *= 2;
+    }
     const GS = root.GameState || (typeof window !== 'undefined' && window.GameState);
     const stonePerSec = GS && typeof GS.getStonePerSec === 'function' ? GS.getStonePerSec() : 0;
     const qiPerSec = GS && typeof GS.getQiPerSec === 'function' ? GS.getQiPerSec() : 0;
-    const stones = Math.round(stonePerSec * (isBoss ? 300 : 60));
-    const qi = Math.round(qiPerSec * (isBoss ? 150 : 30));
-    return { peaches, lingyu, stones, qi, isBoss };
+    const stoneSec = isBoss ? 60 : (elite ? 30 : 10);
+    const qiSec = isBoss ? 30 : (elite ? 15 : 5);
+    const stones = Math.round(stonePerSec * stoneSec);
+    const qi = Math.round(qiPerSec * qiSec);
+    return { peaches, lingyu, stones, qi, isBoss, isElite: elite };
   }
 
   const Battle = {
@@ -2037,6 +2071,8 @@
     DEFAULT_PLAYER_SLOTS,
     mulberry32,
     enemyFor,
+    isEliteStage,
+    earlyRampMult,
     playerStats,
     isHeroUnlocked,
     unlockedHeroes,

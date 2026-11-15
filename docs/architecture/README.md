@@ -1,6 +1,6 @@
 # 暗黑修仙（纯前端 H5）架构设计文档
 
-本目录收录了《暗黑修仙》仓库的完整架构设计文档。内容按仓库源码梳理，对应 GitHub 仓库 [CalDey/idle_game](https://github.com/CalDey/idle_game) 的 **main 分支提交 `851adfb`**（完整哈希 `851adfb669104be15dfdc4f5c9068b9b6f7f9816`，2026-11-15）。线上 GitHub Pages 为 [https://caldey.github.io/idle_game/](https://caldey.github.io/idle_game/)。
+本目录收录了《暗黑修仙》仓库的完整架构设计文档。内容按仓库源码梳理，对应 GitHub 仓库 [CalDey/idle_game](https://github.com/CalDey/idle_game) 的 **main 分支提交 `851adfb`**（已随节奏 v2 与文案定稿继续更新；行数以 modules.md 为准）。线上 GitHub Pages 为 [https://caldey.github.io/idle_game/](https://caldey.github.io/idle_game/)。
 
 源码入口见 [`index.html`](../../index.html)、[`css/style.css`](../../css/style.css)、`js/*.js` 与 `tools/*.js`。文档旨在说明系统设计、模块边界、数据流转、数值公式与扩展方式。
 
@@ -114,18 +114,21 @@ idle_game/
 16. `js/story.js` — `window.Story`
 17. `js/audio.js` — `window.GameAudio`
 18. `js/newbie.js` — `window.Newbie`
-19. `js/game.js` — 主控制器（`init` + `gameLoop`）
-20. `js/events-data.js` — `window.GameEventsData`
-21. `js/idle-events.js` — `window.IdleEvents`
-22. `js/daily.js` — `window.Daily` / `window.DailyUI`
-23. `js/home-fortune.js` — `window.HomeFortune` / `window.HomeFortuneUI`
-24. `js/codex-data.js` — `window.CodexData`
-25. `js/codex.js` — `window.Codex`
-26. `js/hero-lines-data.js` — `window.HeroLinesData`
-27. `js/hero-voice.js` — `window.HeroVoice`
-28. `js/skill-text-data.js` — `window.SkillTextData`
-29. `js/dispatch.js` — `window.Dispatch`（及派遣 UI）
-30. `js/beasts-ui.js` — `window.BeastsUI`
+19. `js/tribulation-data.js` — `window.TribulationData`
+20. `js/tribulation.js` — `window.Tribulation`
+21. `js/game.js` — 主控制器（`init` + `gameLoop`）
+22. `js/events-data.js` — `window.GameEventsData`
+23. `js/idle-events.js` — `window.IdleEvents`
+24. `js/daily.js` — `window.Daily` / `window.DailyUI`
+25. `js/home-fortune.js` — `window.HomeFortune` / `window.HomeFortuneUI`
+26. `js/codex-data.js` — `window.CodexData`
+27. `js/codex.js` — `window.Codex`
+28. `js/hero-lines-data.js` — `window.HeroLinesData`
+29. `js/hero-voice.js` — `window.HeroVoice`
+30. `js/skill-text-data.js` — `window.SkillTextData`
+31. `js/dispatch.js` — `window.Dispatch`（及派遣 UI）
+32. `js/path.js` — `window.Path`（本命道途；展示文案用「改道」，id 不变）
+33. `js/beasts-ui.js` — `window.BeastsUI`
 
 `game.js` 在 `init()` 中初始化 TitlesUI / GearUI / StageUI / Newbie；Daily、Dispatch、Tower、Grow、Codex、IdleEvents、HomeFortune、Audio、HeroVoice、BeastsUI 等在各自文件里监听 `DOMContentLoaded` 自行挂载。
 

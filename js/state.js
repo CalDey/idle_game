@@ -251,6 +251,12 @@
       storySeen: {},
       // 开篇五屏（世界观 batch5）：只给全新存档播一次；旧档读档时视为已看过
       openingSeen: false,
+      // 新档不补发节奏 v2 补偿；旧档在 loadGame 里按旗标只发一次
+      pacingV2Compensated: true,
+      pacingV2LegacyTotalDaoGuo: 0,
+      pacingV2Notice: null,
+      refine: {},
+      exchange: { date: '', n: 0 },
       ...v2Fields
     };
   }
@@ -266,17 +272,39 @@
     return window.GameConfig.REALM_STAGES[idx];
   }
 
+  const DAOGUO_RATE_QI_OLD = 0.25;
+  const DAOGUO_RATE_QI_NEW = 0.02;
+  const DAOGUO_RATE_STONE_OLD = 0.20;
+  const DAOGUO_RATE_STONE_NEW = 0.015;
+  const YAOYUAN_COST_OLD = { baseCost: 2200, costScale: 1.28 };
+  const PACING_V2_OFFLINE_QI_SEC = 2 * 3600;
+
+  function talentBonusPerLevel(id, fallback) {
+    const list = window.GameConfig && window.GameConfig.DAOGUO_TALENTS;
+    const t = list && list.find((x) => x.id === id);
+    const v = t && t.bonusPerLevel;
+    return typeof v === 'number' ? v : fallback;
+  }
+
+  function daoguoBaseMultiplier(oldRate, newRate) {
+    const total = state.totalDaoGuo || 0;
+    const legacyRaw = state.pacingV2LegacyTotalDaoGuo;
+    const legacy = Math.min(total, Math.max(0, Number(legacyRaw) || 0));
+    const fresh = Math.max(0, total - legacy);
+    return 1 + legacy * oldRate + fresh * newRate;
+  }
+
   function getDaoGuoQiMultiplier() {
-    const baseMult = 1 + (state.totalDaoGuo || 0) * 0.25;
+    const baseMult = daoguoBaseMultiplier(DAOGUO_RATE_QI_OLD, DAOGUO_RATE_QI_NEW);
     const talentLv = (state.talents && state.talents.xiantian_daoti) || 0;
-    const talentMult = 1 + talentLv * 0.5;
+    const talentMult = 1 + talentLv * talentBonusPerLevel('xiantian_daoti', 0.1);
     return baseMult * talentMult;
   }
 
   function getDaoGuoStoneMultiplier() {
-    const baseMult = 1 + (state.totalDaoGuo || 0) * 0.20;
+    const baseMult = daoguoBaseMultiplier(DAOGUO_RATE_STONE_OLD, DAOGUO_RATE_STONE_NEW);
     const talentLv = (state.talents && state.talents.qiyun_jiashang) || 0;
-    const talentMult = 1 + talentLv * 0.5;
+    const talentMult = 1 + talentLv * talentBonusPerLevel('qiyun_jiashang', 0.1);
     return baseMult * talentMult;
   }
 
@@ -918,6 +946,16 @@
       unlockVisited: normalizeUnlockSeen(saved.unlockVisited),
       storySeen: normalizeStorySeen(saved.storySeen, saved),
       openingSeen: saved.openingSeen !== false,
+      pacingV2Compensated: saved.pacingV2Compensated === true,
+      pacingV2LegacyTotalDaoGuo: Object.prototype.hasOwnProperty.call(saved, 'pacingV2LegacyTotalDaoGuo')
+        ? clampNonNeg(saved.pacingV2LegacyTotalDaoGuo, 0, false)
+        : 0,
+      pacingV2Notice: saved.pacingV2Notice && typeof saved.pacingV2Notice === 'object' ? saved.pacingV2Notice : null,
+      refine: (saved.refine && typeof saved.refine === 'object' && !Array.isArray(saved.refine)) ? saved.refine : {},
+      exchange: {
+        date: (saved.exchange && saved.exchange.date) || '',
+        n: clampNonNeg(saved.exchange && saved.exchange.n, 0, true)
+      },
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
       playTimeMs: saved.playTimeMs || 0,
       lifetimeQi: saved.lifetimeQi || 0,
@@ -1052,6 +1090,56 @@
     return report;
   }
 
+  function dongfuLevelsCost(baseCost, costScale, lv) {
+    let sum = 0;
+    const n = Math.max(0, Math.floor(Number(lv) || 0));
+    for (let i = 0; i < n; i++) sum += Math.floor(baseCost * Math.pow(costScale, i));
+    return sum;
+  }
+
+  function yaoyuanPriceDiffRefund(s) {
+    const lv = Math.max(0, Math.floor(Number(s && s.dongfu && s.dongfu.yaoyuan) || 0));
+    if (lv <= 0) return 0;
+    const item = window.GameConfig && window.GameConfig.DONGFU_LIST
+      && window.GameConfig.DONGFU_LIST.find((d) => d.id === 'yaoyuan');
+    if (!item) return 0;
+    const paidOld = dongfuLevelsCost(YAOYUAN_COST_OLD.baseCost, YAOYUAN_COST_OLD.costScale, lv);
+    const paidNew = dongfuLevelsCost(item.baseCost, item.costScale, lv);
+    return Math.max(0, paidOld - paidNew);
+  }
+
+  function applyPacingV2Compensation(s) {
+    if (!s || s.pacingV2Compensated === true) return null;
+    s.pacingV2LegacyTotalDaoGuo = Math.max(0, Number(s.totalDaoGuo) || 0);
+    const qiPerSec = getQiPerSec();
+    const qiGain = Math.round((Number.isFinite(qiPerSec) ? qiPerSec : 0) * PACING_V2_OFFLINE_QI_SEC);
+    if (qiGain > 0) {
+      s.qi = (s.qi || 0) + qiGain;
+      s.lifetimeQi = (s.lifetimeQi || 0) + qiGain;
+    }
+    const stoneGain = yaoyuanPriceDiffRefund(s);
+    if (stoneGain > 0) s.stones = (s.stones || 0) + stoneGain;
+    s.pacingV2Compensated = true;
+    s.pacingV2Notice = {
+      qi: qiGain,
+      stones: stoneGain,
+      shown: false
+    };
+    return s.pacingV2Notice;
+  }
+
+  function peekPacingV2Notice() {
+    const n = state && state.pacingV2Notice;
+    if (!n || n.shown) return null;
+    return n;
+  }
+
+  function markPacingV2NoticeShown() {
+    if (!state || !state.pacingV2Notice) return;
+    state.pacingV2Notice.shown = true;
+    saveGame();
+  }
+
   function loadGame() {
     let raw = null;
     try {
@@ -1093,7 +1181,9 @@
         window.HomeFortune.onResume(state, (offlineReport && offlineReport.effectiveSeconds ? offlineReport.effectiveSeconds : 0) * 1000, now);
       }
       if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
-      return { isNew: false, offlineReport };
+      const pacingV2Notice = applyPacingV2Compensation(state);
+      if (pacingV2Notice) saveGame();
+      return { isNew: false, offlineReport, pacingV2Notice };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
       if (raw) {
@@ -1213,7 +1303,7 @@
     if (state.mijing && typeof state.mijing === 'object') {
       fresh.mijing = JSON.parse(JSON.stringify(state.mijing));
     }
-    // 本命道途：轮回保留所选道途，参悟层数清零（灵石投入随轮回重修），赠 1 次免费重定
+    // 本命道途：轮回保留所选道途，参悟层数清零（灵石投入随轮回重修），赠 1 次免费改道
     if (state.path && typeof state.path === 'object') {
       fresh.path = window.Path ? window.Path.onReincarnate(state.path) : JSON.parse(JSON.stringify(state.path));
     }
@@ -1257,6 +1347,13 @@
     fresh.unlockVisited = normalizeUnlockSeen(state.unlockVisited) || {};
     fresh.storySeen = normalizeStorySeen(state.storySeen, state);
     fresh.openingSeen = true;
+    fresh.pacingV2Compensated = true;
+    fresh.pacingV2LegacyTotalDaoGuo = Math.max(0, Number(state.pacingV2LegacyTotalDaoGuo) || 0);
+    fresh.pacingV2Notice = null;
+    fresh.refine = state.refine && typeof state.refine === 'object' ? JSON.parse(JSON.stringify(state.refine)) : {};
+    fresh.exchange = state.exchange && typeof state.exchange === 'object'
+      ? { date: state.exchange.date || '', n: state.exchange.n || 0 }
+      : { date: '', n: 0 };
     fresh.titles = {
       owned: [...((state.titles && state.titles.owned) || ['churu'])],
       worn: (state.titles && state.titles.worn) || 'churu',
@@ -1356,6 +1453,16 @@
     getCurrentStage,
     getDaoGuoQiMultiplier,
     getDaoGuoStoneMultiplier,
+    applyPacingV2Compensation,
+    peekPacingV2Notice,
+    markPacingV2NoticeShown,
+    yaoyuanPriceDiffRefund,
+    YAOYUAN_COST_OLD,
+    DAOGUO_RATE_QI_OLD,
+    DAOGUO_RATE_QI_NEW,
+    DAOGUO_RATE_STONE_OLD,
+    DAOGUO_RATE_STONE_NEW,
+    PACING_V2_OFFLINE_QI_SEC,
     getQiPerSec,
     getStonePerSec,
     getTapQiGain,

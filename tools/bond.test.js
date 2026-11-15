@@ -124,21 +124,21 @@ check('阈值与进度：1/2 未激活，2 人一档，3 人二档（满级）�
 
 check('buildMods / mergeMods 数值：成员加成只给持标签角色，全队加成给全体', () => {
   const m = Bd.buildMods(['ziling', 'qinglan', 'saintess', 'jianghua', 'miko', 'sweetmaid']);
-  assert.ok(Math.abs(m.heroMods.ziling.ultDmgMult - 1.15) < 1e-9);
-  assert.ok(Math.abs(m.heroMods.qinglan.ultDmgMult - 1.15) < 1e-9);
+  assert.ok(Math.abs(m.heroMods.ziling.ultDmgMult - 1.132) < 1e-9);
+  assert.ok(Math.abs(m.heroMods.qinglan.ultDmgMult - 1.132) < 1e-9);
   assert.ok(!m.heroMods.saintess);
-  assert.ok(Math.abs(m.hpMult - 1.05) < 1e-9, '灵愈 2 人 全队生命 +5%');
-  assert.strictEqual(m.rageStart, 15, '辅佐 2 人 开战怒气 +15');
-  assert.strictEqual(m.heroMods.miko.atkSplash, 0.15);
-  assert.strictEqual(m.heroMods.jianghua.atkSplash, 0.15);
+  assert.ok(Math.abs(m.hpMult - 1.012) < 1e-9, '灵愈 2 人 全队生命 +1.2%');
+  assert.strictEqual(m.rageStart, 4.8, '辅佐 2 人 开战怒气 +4.8');
+  assert.strictEqual(m.heroMods.miko.atkSplash, 0.042);
+  assert.strictEqual(m.heroMods.jianghua.atkSplash, 0.042);
   const m3 = Bd.buildMods(['qinglan', 'shuanghua', 'yueshi', 'saintess', 'qingkui']);
-  assert.strictEqual(m3.heroMods.yueshi.freezeChance, 0.15);
-  assert.ok(Math.abs(m3.hpMult - 1.1) < 1e-9);
+  assert.strictEqual(m3.heroMods.yueshi.freezeChance, 0.048);
+  assert.ok(Math.abs(m3.hpMult - 1.027) < 1e-9);
   const merged = Bd.mergeMods({ atkMult: 1.2, hpMult: 1.1, freezeChance: 0.1 }, m3);
-  assert.ok(Math.abs(merged.hpMult - 1.2) < 1e-9, '倍率按增量相加');
+  assert.ok(Math.abs(merged.hpMult - 1.127) < 1e-9, '倍率按增量相加');
   assert.ok(Math.abs(merged.atkMult - 1.2) < 1e-9);
   assert.strictEqual(merged.freezeChance, 0.1);
-  assert.strictEqual(merged.heroMods.yueshi.freezeChance, 0.15);
+  assert.strictEqual(merged.heroMods.yueshi.freezeChance, 0.048);
   assert.strictEqual(Bd.mergeMods(null, null), null);
 });
 
@@ -152,35 +152,29 @@ check('无羁绊时战斗与改动前 battle.js 逐事件一致；秘境劫运 m
   let compared = 0;
   for (const sq of squads) {
     for (const [ri, qi, n] of [[3, 0, 9], [8, 1, 30], [12, 2, 57], [16, 3, 90]]) {
-      const pOld = oldW.Battle.playerStats(simState(oldW, ri, qi, sq));
       const pNew = newW.Battle.playerStats(simState(newW, ri, qi, sq));
       const bondMods = newW.Bonds.buildMods(sq);
       for (let seed = 1; seed <= 12; seed++) {
-        const a = JSON.stringify(oldW.Battle.createSession(pOld, n, seed).runToEnd(true));
+        // 节奏 v2 改了前期缩放与精英关，不再与旧 battle.js 逐事件比敌人；无羁绊时不传 mods 应与显式 null 一致
         if (bondMods === null) {
+          const a = JSON.stringify(newW.Battle.createSession(pNew, n, seed).runToEnd(true));
           assert.strictEqual(JSON.stringify(newW.Battle.createSession(pNew, n, seed, bondMods).runToEnd(true)), a, `无羁绊 ${sq} stage ${n} seed ${seed}`);
-          assert.strictEqual(JSON.stringify(newW.Battle.simulate(pNew, n, seed)), JSON.stringify(oldW.Battle.simulate(pOld, n, seed)));
           compared++;
         }
         const bl = blessingsList[seed % blessingsList.length];
         const oldM = oldW.Mijing.buildMods(bl);
         const newM = newW.Mijing.buildMods(bl);
         assert.deepStrictEqual(JSON.parse(JSON.stringify(newM)), JSON.parse(JSON.stringify(oldM)), '劫运 mods 定义不变');
-        // 事件日志与胜负完全一致；units 快照仅多出逐角色 mod* 字段（实现由全队改为逐角色），剔除后也一致
-        const ao = JSON.stringify(oldW.Battle.createSession(pOld, n, seed, oldM).runToEnd(true), stripMod);
-        const an = JSON.stringify(newW.Battle.createSession(pNew, n, seed, newM).runToEnd(true), stripMod);
-        assert.strictEqual(an, ao, `劫运 ${JSON.stringify(bl)} stage ${n} seed ${seed} 与改动前一致`);
       }
     }
   }
   assert.ok(compared >= 90, `无羁绊对比场次 ${compared}`);
-  // 同一阵容 winRate 不传 mods 与改动前一致
   const st = simState(newW, 8, 1, NO_BOND_SQUAD);
-  assert.strictEqual(newW.Battle.winRate(st, 30, 30), oldW.Battle.winRate(simState(oldW, 8, 1, NO_BOND_SQUAD), 30, 30));
+  assert.ok(typeof newW.Battle.winRate(st, 30, 30) === 'number');
 });
 
 check('加成在战斗内核生效：绝技增伤、绝技吸血、冰封、溅射、全队生命、开战怒气', () => {
-  // 剑修：首个剑修绝技前事件完全一致，该绝技伤害约 ×1.15
+  // 剑修：首个剑修绝技前事件完全一致，该绝技伤害约 ×1.132
   const sq = ['ziling', 'qinglan', 'saintess'];
   const p = B.playerStats(simState(W, 12, 2, sq));
   const mods = Bd.buildMods(sq);
@@ -195,7 +189,7 @@ check('加成在战斗内核生效：绝技增伤、绝技吸血、冰封、溅�
     const d1 = r1[i].targets[0].dmg;
     if (d0 >= 30) {
       // 伤害取整，允许 ±1.5 的取整误差
-      assert.ok(Math.abs(d1 - d0 * 1.15) <= 1.5, `绝技伤害比 ${d1}/${d0}`);
+      assert.ok(Math.abs(d1 - d0 * 1.132) <= 1.5, `绝技伤害比 ${d1}/${d0}`);
       checkedUlt++;
     }
   }
@@ -208,14 +202,14 @@ check('加成在战斗内核生效：绝技增伤、绝技吸血、冰封、溅�
   const pm = B.playerStats(simState(W, 8, 1, ming));
   const rm = B.createSession(pm, 30, 2, Bd.buildMods(ming)).runToEnd(true);
   assert.ok(rm.events.some((e) => e.type === 'ult' && e.who === 'a' && ['cloak', 'ziling', 'honglian'].includes(e.heroId) && e.heals.length > 0), '幽冥绝技吸血');
-  assert.strictEqual(B.createSession(pm, 30, 2, Bd.buildMods(ming)).playerUnits[0].modUltLifesteal, 0.18);
+  assert.strictEqual(B.createSession(pm, 30, 2, Bd.buildMods(ming)).playerUnits[0].modUltLifesteal, 0.192);
 
   // 冰霜 + 烈焰
   const fx = ['shuanghua', 'yueshi', 'qinglan', 'miko', 'honglian', 'jianghua'];
   const pf = B.playerStats(simState(W, 8, 1, fx));
   let froze = false;
   let splash = false;
-  for (let seed = 1; seed <= 10; seed++) {
+  for (let seed = 1; seed <= 40; seed++) {
     const ev = B.createSession(pf, 30, seed, Bd.buildMods(fx)).runToEnd(true).events;
     froze = froze || ev.some((e) => e.froze);
     splash = splash || ev.some((e) => Array.isArray(e.splash) && e.splash.length > 0);
@@ -225,8 +219,8 @@ check('加成在战斗内核生效：绝技增伤、绝技吸血、冰封、溅�
   const sf = B.createSession(pf, 30, 1, Bd.buildMods(fx));
   sf.playerUnits.forEach((u) => {
     const tags = Bd.tagsOf(u.heroId);
-    assert.strictEqual(u.modFreeze, tags.includes('bing') ? 0.15 : 0, `${u.heroId} 冰封几率`);
-    assert.strictEqual(u.modAtkSplash, tags.includes('yan') ? 0.25 : 0, `${u.heroId} 溅射`);
+    assert.strictEqual(u.modFreeze, tags.includes('bing') ? 0.048 : 0, `${u.heroId} 冰封几率`);
+    assert.strictEqual(u.modAtkSplash, tags.includes('yan') ? 0.072 : 0, `${u.heroId} 溅射`);
   });
 
   // 灵愈 / 辅佐（全队）
@@ -235,8 +229,8 @@ check('加成在战斗内核生效：绝技增伤、绝技吸血、冰封、溅�
   const base = B.createSession(pt, 30, 1, null);
   const buff = B.createSession(pt, 30, 1, Bd.buildMods(team));
   buff.playerUnits.forEach((u, i) => {
-    assert.ok(Math.abs(u.maxHp / base.playerUnits[i].maxHp - 1.1) < 1e-9, '灵愈 3 人 全队生命 +10%');
-    assert.strictEqual(u.rage - base.playerUnits[i].rage, 25, '辅佐 3 人 开战怒气 +25');
+    assert.ok(Math.abs(u.maxHp / base.playerUnits[i].maxHp - 1.027) < 1e-9, '灵愈 3 人 全队生命 +2.7%');
+    assert.strictEqual(u.rage - base.playerUnits[i].rage, 12, '辅佐 3 人 开战怒气 +12');
   });
 });
 
@@ -349,10 +343,10 @@ check('UI 冒烟：闯关页羁绊条、队伍弹窗羁绊面板与角色卡标�
 
   assert.ok(sandbox.StageUI.openSquadModal());
   const panel = els['squad-bond-panel'].innerHTML;
-  assert.ok(panel.includes('幽冥角色绝技吸血 18%'));
-  assert.ok(panel.includes('剑修角色绝技伤害 +15%（3 人：剑修角色绝技伤害 +30%）'));
+  assert.ok(panel.includes('幽冥角色绝技吸血 19.2%'));
+  assert.ok(panel.includes('剑修角色绝技伤害 +13.2%（3 人：剑修角色绝技伤害 +21%）'));
   // 新手体验 batch3 P2-4：羁绊说明改为每标签一行的图标列表，「差 N 人」单列
-  assert.ok(/bond-row bond-bing is-inactive[^]*冰霜角色普攻 8% 几率冰封目标[^]*差 1 人/.test(panel));
+  assert.ok(/bond-row bond-bing is-inactive[^]*冰霜角色普攻 2.4% 几率冰封目标[^]*差 1 人/.test(panel));
   const list = els['squad-hero-list'].innerHTML;
   ALL.forEach((id) => Bd.tagsOf(id).forEach((t) => assert.ok(list.includes(`bond-tag bond-${t}`), `角色卡标签 ${id}:${t}`)));
   assert.ok(list.includes('<span class="bond-tag bond-yan">烈焰</span>'));
@@ -361,7 +355,7 @@ check('UI 冒烟：闯关页羁绊条、队伍弹窗羁绊面板与角色卡标�
   assert.ok(sandbox.StageUI.startBattle(true));
   sandbox.StageUI.skipBattle();
   const used = seen.filter(Boolean).pop();
-  assert.ok(used && used.heroMods && used.heroMods.cloak && used.heroMods.cloak.ultLifesteal === 0.18, '普通推关使用羁绊 mods');
+  assert.ok(used && used.heroMods && used.heroMods.cloak && used.heroMods.cloak.ultLifesteal === 0.192, '普通推关使用羁绊 mods');
   assert.ok(!JSON.stringify(st).includes('heroMods'), '存档状态不含羁绊 mods');
   GS.saveGame();
   const saved = sandbox.localStorage._data.xiuxian_idle_save_v1 || '';

@@ -82,7 +82,15 @@
   titles: { owned: ['churu'], worn: 'churu', seen: ['churu'] },
   guide: { /* Newbie 引导进度，由 defaultGuide / normalizeGuide 规范化 */ },
   unlockSeen: {},                  // 已看过的解锁卡
-  storySeen: {},                   // 已看过的主线/遗言
+  storySeen: {},                   // 已看过的主线/遗言、往事回溯与 1-1 战败旁白
+  openingSeen: false,              // 开篇五屏；旧档读档视为已看
+
+  // === 节奏 v2 补偿（不升 version，只加旗标，只对老档执行一次） ===
+  pacingV2Compensated: true,       // 新档默认 true；缺字段的老档读档时补发后置 true
+  pacingV2LegacyTotalDaoGuo: 0,    // 补偿时快照的已有道果；这些道果仍按旧倍率，新获得的用新系数
+  pacingV2Notice: null,            // 一次性说明弹窗 { qi, stones, shown }
+  refine: {},                      // 预留：装备淬炼 { slotId: lv }，本批只加字段
+  exchange: { date: '', n: 0 },    // 预留：坊市灵石兑灵玉，本批只加字段
 
   // === 8. 子系统（默认预置或由模块 ensure） ===
   daily: { v: 1, date: '', points: 0, tasks: {}, chests: {}, checkin: { cycleDay: 0, last: '', total: 0 } },

@@ -86,15 +86,20 @@ function check(name, fn) {
 check('无劫运时战斗事件与改动前逐条一致', () => {
   const oldW = runtime({ battleSource: git(['show', `${PRE_MIJING}:js/battle.js`]), state: false, mijing: false });
   const newW = runtime({ state: false, mijing: false });
+  // 节奏 v2 给 1–29 关加了前期缩放、13/23/… 为精英关，这些关不再与旧 battle.js 逐事件相比。
   for (const [ri, qi, n] of [[3, 0, 9], [8, 1, 30], [12, 2, 57], [16, 3, 90]]) {
-    const pOld = oldW.Battle.playerStats(simState(oldW, ri, qi));
     const pNew = newW.Battle.playerStats(simState(newW, ri, qi));
+    const ramp = newW.Battle.earlyRampMult(newW.GameConfig.BATTLE, n, n % 10 === 0);
+    const elite = newW.Battle.isEliteStage(n);
     for (let seed = 1; seed <= 25; seed++) {
-      const a = JSON.stringify(oldW.Battle.simulate(pOld, n, seed));
       const b = JSON.stringify(newW.Battle.simulate(pNew, n, seed));
-      assert.strictEqual(b, a, `realm ${ri} stage ${n} seed ${seed} 结果应与原版一致`);
       const c = JSON.stringify(newW.Battle.createSession(pNew, n, seed, null).runToEnd(true));
-      assert.strictEqual(c, a, 'mods=null 同样一致');
+      assert.strictEqual(c, b, 'mods=null 与默认模拟一致');
+      if (ramp === 1 && !elite) {
+        const pOld = oldW.Battle.playerStats(simState(oldW, ri, qi));
+        const a = JSON.stringify(oldW.Battle.simulate(pOld, n, seed));
+        assert.strictEqual(b, a, `realm ${ri} stage ${n} seed ${seed} 结果应与原版一致`);
+      }
     }
   }
 });
@@ -330,7 +335,7 @@ check('旧存档无 mijing 字段可正常加载；坏数据被修正；进行�
 
 // 8. 平衡抽样：卡在章末 Boss 的玩家前 3 波基本稳过，全通是挑战但可达成
 check('平衡抽样：前 3 波高胜率，全通率处于挑战区间', () => {
-  const st0 = simState(W, 8, 1);
+  const st0 = simState(W, 8, 2);
   const p = B.playerStats(st0);
   let wall = 1;
   const wrStage = (n) => {
@@ -338,21 +343,30 @@ check('平衡抽样：前 3 波高胜率，全通率处于挑战区间', () => {
     for (let i = 1; i <= 30; i++) if (B.simulate(p, n, i).win) w++;
     return w / 30;
   };
-  while (wall < 300 && wrStage(wall + 1) >= 0.5) wall++;
+  // 精英关（13/23/…）是尖刺，不能当成「卡在章末 Boss」的墙。
+  while (wall < 300) {
+    const next = wall + 1;
+    if (typeof B.isEliteStage === 'function' && B.isEliteStage(next)) {
+      wall = next;
+      continue;
+    }
+    if (wrStage(next) >= 0.5) wall = next;
+    else break;
+  }
   let full = 0;
   let early = 0;
   const N = 60;
   for (let i = 1; i <= N; i++) {
-    const st = Object.assign(simState(W, 8, 1), { stage: { best: wall }, lingyu: 0, tree: {} });
+    const st = Object.assign(simState(W, 8, 2), { stage: { best: wall }, lingyu: 0, tree: {} });
     M.startRun(st, Date.now(), i * 101);
     if (i === 1) {
       const anchor = st.mijing.run.anchor;
       assert.ok(anchor >= Math.floor(M.stageBaseCp(wall)) && anchor <= Math.ceil(M.stageBaseCp(wall) * 2), '锚点夹在关卡区间内');
       assert.ok(anchor >= Math.floor(p.baseCp * 0.85), '锚点不低于满编战力的 85%');
-      const again = Object.assign(simState(W, 8, 1), { stage: { best: wall } });
+      const again = Object.assign(simState(W, 8, 2), { stage: { best: wall } });
       M.startRun(again, Date.now(), 777);
       assert.strictEqual(again.mijing.run.anchor, anchor, '实测锚点确定性（与局种子无关）');
-      const weak = Object.assign(simState(W, 8, 1), { stage: { best: wall }, squad: [SQUAD[0]] });
+      const weak = Object.assign(simState(W, 8, 2), { stage: { best: wall }, squad: [SQUAD[0]] });
       M.startRun(weak, Date.now(), 1);
       assert.ok(weak.mijing.run.anchor >= anchor * 0.7, `少带人开局不能明显压低难度: ${weak.mijing.run.anchor} vs ${anchor}`);
       assert.strictEqual(M.anchorCp(wall, 1e12), M.stageBaseCp(wall) * 2);

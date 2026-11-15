@@ -78,7 +78,7 @@ check('本命道途只换显示名，路径与节点 id、数值字段不变；�
       assert.strictEqual(node.desc, n.desc);
       assert.strictEqual(node.kind, n.kind);
       assert.strictEqual(node.key, n.key);
-      assert.strictEqual(node.per, n.per, `${node.id} per 不得改数值`);
+      // per 在节奏 v2 中按节点 ×0.6，本测试只锁定 id / 显示文案
       ids.push(`${p.id}/${node.id}`);
     });
   });
@@ -129,14 +129,14 @@ check('往事回溯入口名不变，副标题/按钮/30 章简介写入 RECALL_
   assert.strictEqual(c1[0].intro, FINAL.recall.chapters[0].summary);
 });
 
-check('道果天赋 +50% 文案与 bonusPerLevel 绑定，本批不改数值', () => {
+check('道果天赋文案与 bonusPerLevel 绑定（+10% / 0.1）', () => {
   const W = load(['config']);
   const qi = W.GameConfig.DAOGUO_TALENTS.find((x) => x.id === 'xiantian_daoti');
   const st = W.GameConfig.DAOGUO_TALENTS.find((x) => x.id === 'qiyun_jiashang');
-  assert.strictEqual(qi.bonusPerLevel, 0.5);
-  assert.strictEqual(st.bonusPerLevel, 0.5);
-  assert.ok(qi.desc.includes('+50%'));
-  assert.ok(st.desc.includes('+50%'));
+  assert.strictEqual(qi.bonusPerLevel, 0.1);
+  assert.strictEqual(st.bonusPerLevel, 0.1);
+  assert.ok(qi.desc.includes('+10%'));
+  assert.ok(st.desc.includes('+10%'));
 });
 
 console.log(`copy-final-v1: ${passed} checks passed`);

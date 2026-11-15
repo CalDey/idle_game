@@ -143,8 +143,8 @@ sequenceDiagram
 | 数值项 | 入口 | 当前公式 |
 | :--- | :--- | :--- |
 | 当前境界 | `getCurrentStage()` | 直接返回 `REALM_STAGES[realmIndex]`（生成表时已乘 `LATE_REALM_QI_MULT`） |
-| 道果灵气倍率 | `getDaoGuoQiMultiplier()` | `(1 + totalDaoGuo × 0.25) × (1 + lv_先天道体 × 0.5)` |
-| 道果灵石倍率 | `getDaoGuoStoneMultiplier()` | `(1 + totalDaoGuo × 0.20) × (1 + lv_天道眷顾 × 0.5)` |
+| 道果灵气倍率 | `getDaoGuoQiMultiplier()` | 新获得道果：`(1 + fresh × 0.02 + legacy × 0.25) × (1 + lv_先天道体 × 0.1)`。老档在补偿时把当时的 `totalDaoGuo` 记入 `pacingV2LegacyTotalDaoGuo`，已有道果仍按 0.25，新获得的按 0.02。 |
+| 道果灵石倍率 | `getDaoGuoStoneMultiplier()` | 同上：已有道果 ×0.20，新获得 ×0.015；天赋每级 +10%。 |
 | 每秒灵气 | `getQiPerSec()` L279 | 基础吐纳 **1/秒** + Σ(功法 `baseQiPerSec × lv`)，再乘：境界 `multiplier`、道果灵气倍率、`(1 + 装备 qi 副词条)`、`(1 + 0.02 × floor(best/10))`、`Titles.qiFactor`、`(1 + 0.01 × floor(聚灵石等级/10))`。**功法不再另加「每 10 级 +25%」项。** |
 | 每秒灵石 | `getStonePerSec()` L303 | 基础 **0.5/秒** + Σ(洞府 `baseStonePerSec × lv`)，再乘：`multiplier^0.65`、道果灵石倍率、`(1 + stone 副词条)`、`(1 + 0.02 × 章节数)`、`Titles.factor(..., 'stone')`。**不再使用 `1 + realmIndex×0.08`，也没有洞府「每 10 级 +20%」。** |
 | 点击灵气 | `getTapQiGain()` L500 | `max(2, round((3 + getQiPerSec()×0.35) × Titles.factor(..., 'tap') × 10) / 10)` |

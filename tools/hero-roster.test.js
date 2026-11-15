@@ -335,7 +335,9 @@ function saveRaw(fields) {
     tree: { lv: 1, peaches: 4, gifted: true, regenAt: now, upEnd: 0 },
     squad: ['lanyi', 'cloak', 'saintess', 'miko', 'shuanghua', 'sweetmaid'],
     formation: { lanyi: { c: 2, r: 4 } },
-    unlockedHeroes: PREVIOUS_IDS.slice()
+    unlockedHeroes: PREVIOUS_IDS.slice(),
+    openingSeen: true,
+    pacingV2Compensated: true
   }, fields));
 }
 

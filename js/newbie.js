@@ -773,6 +773,15 @@
     return `，再成功一次（约 ${pct}%）可至${chain.nextRealmName}，战力 +${fmt(chain.nextGain)}`;
   }
 
+  function breakGainText(s) {
+    if (!s || tribulationGate(s) || !canBreakNow(s)) return '';
+    const chain = estimateBreakChain(s, CHAIN_SECONDS);
+    if (!chain) return '';
+    if (chain.breaks >= 1 && chain.gain > 0) return `战力 +${fmt(chain.gain)}`;
+    if (chain.nextGain > 0) return `战力 +${fmt(chain.nextGain)}`;
+    return '';
+  }
+
   function formatBreakChainLabel(s, chain) {
     if (!chain) return '';
     const st = currentStageOf(s);
@@ -1442,11 +1451,18 @@
 
   let peachHoldUntil = 0;
   let peachHoldGoal = null;
+  let peachHoldPausedAt = 0;
+
+  function compareModalOpen() {
+    const m = document.getElementById('compare-modal');
+    return Boolean(m && m.classList.contains('active'));
+  }
 
   function onStateReload() {
     lastGoal = null;
     peachHoldUntil = 0;
     peachHoldGoal = null;
+    peachHoldPausedAt = 0;
     resetChainCache();
   }
   function goalSession() {
@@ -1460,8 +1476,21 @@
     const now = Date.now();
     // 摘满 30 或树已摘空时，先把完成文案停 1.2 秒再切下一目标。
     if (!peachHoldUntil && lastGoal && lastGoal.id === 'peach' && goal.id !== 'peach' && peachGoalDone(s)) {
-      peachHoldUntil = now + PEACH_HOLD_MS;
       peachHoldGoal = { id: 'peach', text: peachGoalText(s), tab: 'tab-gear' };
+      if (compareModalOpen()) {
+        peachHoldPausedAt = now;
+        peachHoldUntil = now + PEACH_HOLD_MS;
+      } else {
+        peachHoldUntil = now + PEACH_HOLD_MS;
+        peachHoldPausedAt = 0;
+      }
+    }
+    if (peachHoldUntil && peachHoldGoal && compareModalOpen()) {
+      if (!peachHoldPausedAt) peachHoldPausedAt = now;
+    } else if (peachHoldPausedAt) {
+      const left = Math.max(0, peachHoldUntil - peachHoldPausedAt);
+      peachHoldUntil = now + left;
+      peachHoldPausedAt = 0;
     }
     if (peachHoldUntil && now < peachHoldUntil && peachHoldGoal) {
       if (els.goal.hidden) els.goal.hidden = false;
@@ -1963,6 +1992,7 @@
     canBreakNow,
     estimateSpendDetail,
     estimateBreakChain,
+    breakGainText,
     estimateWaitEta,
     tribulationGate,
     tribHintText,

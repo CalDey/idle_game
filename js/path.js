@@ -4,8 +4,8 @@
 //   收益类加成（灵气/灵石）乘到 GameState.getQiPerSec / getStonePerSec。
 // - 参悟花费 = 当前灵石产出 × 分钟数（COST_MINUTES，可调常量），下限 COST_FLOOR；用作 化灵 之后的灵石去处。
 // - 节点按境界开放：第 1 节点 化灵初、第 2 节点 尊者初、第 3 节点 天神初。
-// - 重定（改道）：花费 RESPEC_MINUTES 分钟灵石产出，已参悟层数按节点位置保留到新道途；每次轮回赠 1 次免费重定。
-// - 转世：保留所选道途；参悟层数清零（与功法/洞府一样属于灵石投入，随轮回重修）；赠 1 次免费重定。
+// - 改道：花费 RESPEC_MINUTES 分钟灵石产出，已参悟层数按节点位置保留到新道途；每次轮回赠 1 次免费改道。
+// - 转世：保留所选道途；参悟层数清零（与功法/洞府一样属于灵石投入，随轮回重修）；赠 1 次免费改道。
 // - 存档字段 state.path（旧存档缺省自动补全，坏数据被修正）。不发放、不消耗道果与灵气。
 (function () {
   const root = typeof window !== 'undefined' ? window : globalThis;
@@ -25,25 +25,25 @@
     {
       id: 'jian', name: '剑道', icon: 'assets/ui/path/path_jian', motto: '以心饲剑，锋才肯替你出手。',
       nodes: [
-        { id: 'fengmang', name: '剑心锋芒', kind: 'mod', key: 'critAdd', per: 0.03, fmt: (v) => `全队暴击率 +${Math.round(v * 100)}%`, desc: '锋不是练出来的，是从心口抽出来的。' },
-        { id: 'jianyi', name: '剑意入骨', kind: 'mod', key: 'ultDmgMult', per: 0.07, fmt: (v) => `全队绝技伤害 +${Math.round(v * 100)}%`, desc: '剑意留下就不走。挥得越深，越难装没听见。' },
-        { id: 'zhanyao', name: '斩其魁首', kind: 'mod', key: 'bossDmgMult', per: 0.08, fmt: (v) => `对首领伤害 +${Math.round(v * 100)}%`, desc: '剑不看对面是人是妖，只看谁挡在最前。' }
+        { id: 'fengmang', name: '剑心锋芒', kind: 'mod', key: 'critAdd', per: 0.018, fmt: (v) => `全队暴击率 +${Math.round(v * 100)}%`, desc: '锋不是练出来的，是从心口抽出来的。' },
+        { id: 'jianyi', name: '剑意入骨', kind: 'mod', key: 'ultDmgMult', per: 0.042, fmt: (v) => `全队绝技伤害 +${Math.round(v * 100)}%`, desc: '剑意留下就不走。挥得越深，越难装没听见。' },
+        { id: 'zhanyao', name: '斩其魁首', kind: 'mod', key: 'bossDmgMult', per: 0.048, fmt: (v) => `对首领伤害 +${Math.round(v * 100)}%`, desc: '剑不看对面是人是妖，只看谁挡在最前。' }
       ]
     },
     {
       id: 'ti', name: '体道', icon: 'assets/ui/path/path_ti', motto: '拿骨去挡，才能让别人还活着。',
       nodes: [
-        { id: 'liangu', name: '拆骨饲身', kind: 'mod', key: 'hpMult', per: 0.03, fmt: (v) => `全队生命 +${Math.round(v * 100)}%`, desc: '骨要拆开再接。接上的，就不再全是你的。' },
-        { id: 'tiebi', name: '肉身作垣', kind: 'mod', key: 'defMult', per: 0.04, fmt: (v) => `全队防御 +${Math.round(v * 100)}%`, desc: '墙是用自己砌的，破了就再砌一层。' },
-        { id: 'zhenyue', name: '承锋不退', kind: 'mod', key: 'frontDmgTakenMult', per: -0.03, fmt: (v) => `前排承伤 -${Math.round(-v * 100)}%`, desc: '站在最前的人，是把自己当成了盾。' }
+        { id: 'liangu', name: '拆骨饲身', kind: 'mod', key: 'hpMult', per: 0.018, fmt: (v) => `全队生命 +${Math.round(v * 100)}%`, desc: '骨要拆开再接。接上的，就不再全是你的。' },
+        { id: 'tiebi', name: '肉身作垣', kind: 'mod', key: 'defMult', per: 0.024, fmt: (v) => `全队防御 +${Math.round(v * 100)}%`, desc: '墙是用自己砌的，破了就再砌一层。' },
+        { id: 'zhenyue', name: '承锋不退', kind: 'mod', key: 'frontDmgTakenMult', per: -0.018, fmt: (v) => `前排承伤 -${Math.round(-v * 100)}%`, desc: '站在最前的人，是把自己当成了盾。' }
       ]
     },
     {
       id: 'fu', name: '符道', icon: 'assets/ui/path/path_fu', motto: '符是借条，写下的都要还。',
       nodes: [
-        { id: 'julingfu', name: '聚灵符', kind: 'income', key: 'qi', per: 0.05, fmt: (v) => `灵气获取 +${Math.round(v * 100)}%`, desc: '气不会白来，符只是替你伸手去拿。' },
-        { id: 'zhaocaifu', name: '摄石符', kind: 'income', key: 'stone', per: 0.08, fmt: (v) => `灵石产出 +${Math.round(v * 100)}%`, desc: '石也是被写来的，不是自己长出来的。' },
-        { id: 'jingshenfu', name: '催杀符', kind: 'mod', key: 'rageStart', per: 8, fmt: (v) => `全队开战怒气 +${Math.round(v)}`, desc: '符一燃，神智先热起来，才能抢先出手。' }
+        { id: 'julingfu', name: '聚灵符', kind: 'income', key: 'qi', per: 0.03, fmt: (v) => `灵气获取 +${Math.round(v * 100)}%`, desc: '气不会白来，符只是替你伸手去拿。' },
+        { id: 'zhaocaifu', name: '摄石符', kind: 'income', key: 'stone', per: 0.048, fmt: (v) => `灵石产出 +${Math.round(v * 100)}%`, desc: '石也是被写来的，不是自己长出来的。' },
+        { id: 'jingshenfu', name: '催杀符', kind: 'mod', key: 'rageStart', per: 4.8, fmt: (v) => `全队开战怒气 +${Math.round(v)}`, desc: '符一燃，杀心先于人醒。' }
       ]
     }
   ];
@@ -95,7 +95,8 @@
     chooseConfirmTitle: '择道确认',
     chooseConfirm: '确定择【{name}】为本命道途？',
     respecConfirmTitle: '改道确认',
-    respecConfirm: '改修【{name}】后，{refund}。确定改修？',
+    respecConfirm: '改修【{name}】后，已参悟层数按节点位置保留到新道途。{freeNote}{refund}。确定改修？',
+    respecConfirmFree: '此世还可免费改一次。',
     confirmYes: '确定',
     confirmNo: '取消'
   };
@@ -224,7 +225,7 @@
     return { ok: true, from, to: pathId, cost, free: cost === 0 };
   }
 
-  // 转世：保留道途，层数清零，赠 1 次免费重定
+  // 转世：保留道途，层数清零，赠 1 次免费改道
   function onReincarnate(prevPath) {
     const p = normalize(prevPath);
     return { v: 1, id: p.id, lv: [0, 0, 0], freeRespec: p.id ? 1 : 0, respecs: p.respecs, spent: 0 };
@@ -351,6 +352,7 @@
         <div class="path-card-head">${pathIconHtml(path)}<span class="path-card-name">${path.name}</span>${o.current ? `<span class="path-card-tag">${t('tagCurrent')}</span>` : ''}</div>
         <div class="path-card-motto">${path.motto}</div>
         <ul class="path-card-nodes">${lines}</ul>
+        ${o.learnCost != null ? `<div class="path-card-cost">${t('btnUpgrade', { cost: fmtN(o.learnCost) })}</div>` : ''}
         ${o.button || ''}
       </div>`;
   }
@@ -359,9 +361,10 @@
     if (!pending || !PATH_MAP[pending.pathId]) return '';
     const path = PATH_MAP[pending.pathId];
     const kind = pending.kind === 'respec' ? 'respec' : 'choose';
+    const freeNote = kind === 'respec' && peek(GS().state).freeRespec > 0 ? t('respecConfirmFree') : '';
     return `<div class="path-confirm">
       <div class="path-confirm-title">${t(kind + 'ConfirmTitle')}</div>
-      <div class="path-confirm-msg">${t(kind + 'Confirm', { name: path.name, refund: t('respecNoRefund') })}</div>
+      <div class="path-confirm-msg">${t(kind + 'Confirm', { name: path.name, refund: t('respecNoRefund'), freeNote })}</div>
       <div class="path-confirm-actions">
         <button type="button" class="btn btn-primary btn-sm" data-path-confirm="yes">${t('confirmYes')}</button>
         <button type="button" class="btn btn-sm" data-path-confirm="no">${t('confirmNo')}</button>
@@ -378,8 +381,9 @@
     let actions = '';
     if (!p.id || view === 'choose') {
       html += `<div class="path-intro">${t('introChoose')}</div>`;
+      const firstCost = nodeCost(s, 0);
       PATHS.forEach((path) => {
-        html += pathCard(path, { button: `<button type="button" class="btn btn-primary btn-sm" data-path-choose="${path.id}">${t('btnChoose')}</button>` });
+        html += pathCard(path, { learnCost: firstCost, button: `<button type="button" class="btn btn-primary btn-sm" data-path-choose="${path.id}">${t('btnChoose')}</button>` });
       });
       actions = `<button type="button" class="btn" data-path-close="1">${t('btnClose')}</button>`;
     } else if (view === 'respec') {
