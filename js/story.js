@@ -244,6 +244,13 @@
     return els;
   }
 
+  function speakerLabel(l) {
+    if (!l) return '';
+    if (l.name) return l.name;
+    if (l.who === 'codex') return '图鉴';
+    return '旁白';
+  }
+
   function showLine() {
     const e = ensureEls();
     if (!e) return;
@@ -253,7 +260,8 @@
     e.modal.classList.toggle('is-last-words', l.kind === 'last');
     // 开篇是无名凡人视角：不显示主角立绘与 Boss 剪影
     e.modal.classList.toggle('is-opening', Boolean(l.opening));
-    if (e.name) e.name.textContent = l.name || (l.who === 'narrator' ? '' : '');
+    // 说话人名签：有名用名；旁白 / 图鉴显示固定标签；开篇五屏不显示（CSS 隐藏）
+    if (e.name) e.name.textContent = speakerLabel(l);
     if (e.text) e.text.textContent = l.text;
     if (l.who === 'hero' && e.hero) {
       const h = heroCfg(l.heroId);
@@ -500,6 +508,7 @@
     pendingAfter,
     lastWordsFor,
     resolveLines,
+    speakerLabel,
     play,
     beforeBattle,
     afterBossWin,
