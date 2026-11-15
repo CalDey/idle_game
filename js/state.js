@@ -256,8 +256,9 @@
       storySeen: {},
       // 开篇五屏（世界观 batch5）：只给全新存档播一次；旧档读档时视为已看过
       openingSeen: false,
-      // 新档不补发节奏 v2 补偿；旧档在 loadGame 里按旗标只发一次
+      // 新档不补发节奏 v2 补偿，也不走老档门槛一半保底；旧档在 loadGame 里按旗标只发一次
       pacingV2Compensated: true,
+      pacingV2FloorApplied: true,
       pacingV2LegacyTotalDaoGuo: 0,
       pacingV2Notice: null,
       refine: {},
@@ -958,6 +959,7 @@
       storySeen: normalizeStorySeen(saved.storySeen, saved),
       openingSeen: saved.openingSeen !== false,
       pacingV2Compensated: saved.pacingV2Compensated === true,
+      pacingV2FloorApplied: saved.pacingV2FloorApplied === true,
       pacingV2LegacyTotalDaoGuo: Object.prototype.hasOwnProperty.call(saved, 'pacingV2LegacyTotalDaoGuo')
         ? clampNonNeg(saved.pacingV2LegacyTotalDaoGuo, 0, false)
         : 0,
@@ -1125,8 +1127,10 @@
   // 节奏 v2 改定前的境界曲线（只用于说明弹窗对照，不参与实际突破）。baseQi 未改，改的是 stepGrowth 与 LATE。
   const PACING_V2_OLD_STEP_GROWTH = [1.35, 1.36, 1.38, 1.40, 1.41, 1.43, 1.44, 1.46, 1.47, 1.49, 1.50, 1.52, 1.54, 1.55];
   const PACING_V2_OLD_LATE_QI_MULT = [1, 4, 6, 8, 11, 14, 18, 22, 26, 30, 35, 40, 48, 60];
-  // 数值策划尚未确认 744万→28.5亿 等跳变是否符合预期，本版不展示门槛句；把开关改为 true 即可接上。
-  const SHOW_PACING_V2_THRESHOLD_LINE = false;
+  // v154：展示门槛重算句（新门槛对照旧门槛，并写出失败损失）。
+  const SHOW_PACING_V2_THRESHOLD_LINE = true;
+  // 老存档一次性保底：补偿后灵气至少到新突破门槛的 50%。新档不走。
+  const PACING_V2_QI_FLOOR_RATIO = 0.5;
 
   function pacingV2OldReqQi(realmIndex) {
     const stages = window.GameConfig && window.GameConfig.REALM_STAGES;
@@ -1163,11 +1167,35 @@
     if (SHOW_PACING_V2_THRESHOLD_LINE) {
       const th = pacingV2Threshold(s);
       if (th && th.nextQi != null && th.oldQi != null) {
-        text += `突破门槛重算：下一重需 ${fmt(th.nextQi)} 灵气（原 ${fmt(th.oldQi)}），失败损耗降至 14%。`;
+        const cur = Math.max(0, Number(s && s.qi) || 0);
+        const stages = window.GameConfig && window.GameConfig.REALM_STAGES;
+        const idx = Math.max(0, Math.min(Math.floor(Number(s && s.realmIndex) || 0), (stages && stages.length ? stages.length : 1) - 1));
+        const ratioRaw = stages && stages[idx] && stages[idx].failureLossRatio;
+        const ratio = Number.isFinite(Number(ratioRaw)) ? Number(ratioRaw) : 0.14;
+        const loss = Math.floor(Math.min(cur, th.nextQi) * ratio);
+        const pct = Math.round(ratio * 100);
+        text += `突破门槛重算：下一重需 ${fmt(th.nextQi)} 灵气（原 ${fmt(th.oldQi)}）。当前 ${fmt(cur)}/${fmt(th.nextQi)}，失败损失 ${fmt(loss)}（${pct}%）。`;
       }
+    }
+    if (n && Number(n.floorQi) > 0) {
+      text += '灵气已补至门槛一半。';
     }
     text += '已有道果效果不变。';
     return text;
+  }
+
+  function applyPacingV2QiFloor(s) {
+    if (!s || s.pacingV2FloorApplied === true) return 0;
+    s.pacingV2FloorApplied = true;
+    const th = pacingV2Threshold(s);
+    if (!th || th.nextQi == null) return 0;
+    const floorQi = Math.ceil(th.nextQi * PACING_V2_QI_FLOOR_RATIO);
+    const cur = Math.max(0, Number(s.qi) || 0);
+    if (cur >= floorQi) return 0;
+    const add = floorQi - cur;
+    s.qi = cur + add;
+    s.lifetimeQi = (Number(s.lifetimeQi) || 0) + add;
+    return add;
   }
 
   function applyPacingV2Compensation(s) {
@@ -1245,8 +1273,19 @@
       }
       if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
       const pacingV2Notice = applyPacingV2Compensation(state);
-      if (pacingV2Notice) saveGame();
-      return { isNew: false, offlineReport, pacingV2Notice };
+      const floorQi = applyPacingV2QiFloor(state);
+      if (floorQi > 0) {
+        if (!state.pacingV2Notice || typeof state.pacingV2Notice !== 'object') {
+          state.pacingV2Notice = { qi: 0, stones: 0, shown: false, floorQi };
+        } else {
+          state.pacingV2Notice.floorQi = floorQi;
+          // 若原先弹窗已看过，再亮一次，好让玩家看到保底说明
+          state.pacingV2Notice.shown = false;
+        }
+      }
+      const notice = floorQi > 0 ? state.pacingV2Notice : pacingV2Notice;
+      if (pacingV2Notice || floorQi > 0) saveGame();
+      return { isNew: false, offlineReport, pacingV2Notice: notice };
     } catch (err) {
       console.warn('读取存档异常，初始化新存档:', err);
       if (raw) {
@@ -1418,6 +1457,7 @@
     fresh.storySeen = normalizeStorySeen(state.storySeen, state);
     fresh.openingSeen = true;
     fresh.pacingV2Compensated = true;
+    fresh.pacingV2FloorApplied = true;
     fresh.pacingV2LegacyTotalDaoGuo = Math.max(0, Number(state.pacingV2LegacyTotalDaoGuo) || 0);
     fresh.pacingV2Notice = null;
     fresh.refine = state.refine && typeof state.refine === 'object' ? JSON.parse(JSON.stringify(state.refine)) : {};
@@ -1524,12 +1564,14 @@
     getDaoGuoQiMultiplier,
     getDaoGuoStoneMultiplier,
     applyPacingV2Compensation,
+    applyPacingV2QiFloor,
     peekPacingV2Notice,
     markPacingV2NoticeShown,
     formatPacingV2Notice,
     pacingV2Threshold,
     pacingV2OldReqQi,
     SHOW_PACING_V2_THRESHOLD_LINE,
+    PACING_V2_QI_FLOOR_RATIO,
     PACING_V2_OLD_STEP_GROWTH,
     PACING_V2_OLD_LATE_QI_MULT,
     yaoyuanPriceDiffRefund,

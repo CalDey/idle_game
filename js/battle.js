@@ -1971,13 +1971,11 @@
     return '不敌';
   }
 
-  // 推荐战力：以当前队伍属性比例缩放，二分得到胜率达到目标（默认 60%，即「大概率胜」）所需的显示战力。
+  // 推荐战力：以当前队伍属性比例缩放，二分得到胜率达到目标（默认 90%，即「大概率胜」）所需的显示战力。
   // 与 winRate / winRateLabel / 失败提示共用同一套战斗模拟，避免「推荐 600 却显示不敌」。
   const RECOMMENDED_WIN_RATE = 0.9;
   const RECOMMENDED_SIMS = 24;
   const RECOMMENDED_ITERS = 8;
-  // v152：仅第 1-5 关（stageNum === 5）的推荐战力定为 1250（数值策划稍后复核；不改敌人数值）
-  const STAGE_5_RECOMMENDED_CP = 1250;
 
   function scalePlayerForProbe(player, scale) {
     const s = Number(scale);
@@ -2036,11 +2034,6 @@
       else lo = mid;
     }
     const rec = Math.max(1, Math.round(baseCp * hi));
-    const isSpecial = typeof n === 'object' && n !== null && (n.mijingWave || n.towerFloor);
-    const stageNum = typeof n === 'object' && n !== null
-      ? Math.floor(Number(n.n) || 0)
-      : Math.max(1, Math.floor(n || 1));
-    if (!isSpecial && stageNum === 5) return STAGE_5_RECOMMENDED_CP;
     return rec;
   }
 
@@ -2103,7 +2096,6 @@
     recommendedCp,
     failPowerGap,
     RECOMMENDED_WIN_RATE,
-    STAGE_5_RECOMMENDED_CP,
     firstClearReward
   };
 

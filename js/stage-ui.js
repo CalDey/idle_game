@@ -2659,29 +2659,20 @@
   }
 
   function renderMijingEntry() {
-    const btn = $('btn-mijing-entry');
+    if (window.MoreMenu && typeof window.MoreMenu.refresh === 'function') window.MoreMenu.refresh();
+    const btn = $('btn-mijing-detail');
     const M = MJ();
     if (!btn || !M) return;
-    const s = window.GameState.state;
-    const run = M.activeRun(s);
+    const run = M.activeRun(window.GameState.state);
+    if (!run) return;
+    const needPick = Array.isArray(run.choices) && run.choices.length > 0;
     let text;
-    let state;
-    if (mijingView && run) {
-      text = '返回闯关';
-      state = 'back';
-    } else if (run) {
-      text = '续秘境';
-      state = 'resume';
-    } else if (!M.isUnlocked(s)) {
-      text = '秘境·未开';
-      state = 'locked';
-    } else {
-      const left = M.attemptsLeft(s, Date.now());
-      text = `秘境 ${left}/${M.DAILY_ATTEMPTS}`;
-      state = left > 0 ? 'ready' : 'empty';
-    }
+    if (needPick) text = '择运';
+    else if (mijingView) text = '返回闯关';
+    else text = '续秘境';
     if (btn.textContent !== text) btn.textContent = text;
-    if (btn.dataset.state !== state) btn.dataset.state = state;
+    btn.classList.toggle('btn-primary', needPick);
+    btn.classList.toggle('ready-pulse', needPick);
   }
 
   function blessingChipText(run) {
@@ -2708,7 +2699,7 @@
     }
     if (btn) {
       const needPick = Array.isArray(run.choices) && run.choices.length > 0;
-      btn.textContent = needPick ? '择运' : '劫运';
+      btn.textContent = needPick ? '择运' : (mijingView ? '返回闯关' : '续秘境');
       btn.classList.toggle('btn-primary', needPick);
       btn.classList.toggle('ready-pulse', needPick);
     }
@@ -2794,6 +2785,15 @@
       return;
     }
     openMijingModal('intro');
+  }
+
+  // 「更多」格子：未解锁也打开原弹窗以展示锁定提示；进行中则打开详情。
+  function openMijingFromMore() {
+    const M = MJ();
+    if (!M) return false;
+    const run = mijingRun();
+    if (run) return openMijingModal('detail');
+    return openMijingModal('intro');
   }
 
   function blessCardHtml(b, stacks, clickable) {
@@ -3099,14 +3099,20 @@
   }
 
   function initMijingUI() {
-    const entry = $('btn-mijing-entry');
-    if (entry) entry.addEventListener('click', onMijingEntryClick);
     const detailBtn = $('btn-mijing-detail');
     if (detailBtn) {
       detailBtn.addEventListener('click', () => {
         const run = mijingRun();
         if (!run) return;
-        openMijingModal(Array.isArray(run.choices) && run.choices.length > 0 ? 'pick' : 'detail');
+        if (Array.isArray(run.choices) && run.choices.length > 0) {
+          openMijingModal('pick');
+          return;
+        }
+        if (mijingView) {
+          exitMijing();
+          return;
+        }
+        enterMijing();
       });
     }
     const closeBtn = $('btn-mijing-close');
@@ -3126,7 +3132,12 @@
         const actBtn = e.target.closest && e.target.closest('[data-mj-action]');
         if (!actBtn || actBtn.disabled) return;
         const act = actBtn.getAttribute('data-mj-action');
-        if (act === 'close' || act === 'back') closeMijingModal();
+        if (act === 'back') closeMijingModal();
+        else if (act === 'close') {
+          const shouldEnter = mijingModalMode === 'detail' && mijingRun() && !mijingView;
+          closeMijingModal();
+          if (shouldEnter) enterMijing();
+        }
         else if (act === 'start') {
           if (!mijingStartArmed) {
             mijingStartArmed = true;
@@ -3545,6 +3556,7 @@
     saveSquad,
     enterMijing,
     exitMijing,
+    openMijingFromMore,
     openMijingModal,
     closeMijingModal,
     pickMijingBlessing,

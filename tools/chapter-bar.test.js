@@ -12,7 +12,9 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 assert.ok(html.includes('class="stage-chapter-bar"'), '须有章节条');
 assert.ok(html.includes('id="btn-story-recall"') && html.includes('class="story-recall-entry"'), '须有往事回溯入口');
-assert.ok(html.includes('class="stage-trial-pills"'), '须有秘境/镇妖塔药丸');
+assert.ok(!html.includes('class="stage-trial-pills"') && !html.includes('btn-mijing-entry') && !html.includes('btn-tower-entry'), '秘境/镇妖塔药丸应已挪出章节条');
+assert.ok(html.includes('id="nav-btn-more"') && html.includes('id="more-modal"'), '底栏应有更多入口和面板');
+assert.ok(html.includes('id="mijing-run-card"'), '闯关页须保留进行中的秘境进度卡');
 
 const bar = css.match(/\.stage-chapter-bar\s*\{[^}]*\}/);
 assert.ok(bar, '缺少 .stage-chapter-bar 规则');

@@ -1,4 +1,4 @@
-// v152：修为改定弹窗文案、1-5 推荐战力 1250、解锁卡合并、目标条「★功法」、
+// v152 护栏 + v154 修订：修为改定门槛句打开、1-5 推荐战力改回公式、解锁卡合并、目标条「★功法」、
 // 窄屏道果格、对白层立绘渐隐与战败旁白不画右侧暗影、因果簿存档文档。
 // 不跑浏览器，不是视觉验收。
 // 用法：node tools/qa-v152.test.js
@@ -58,24 +58,33 @@ function check(name, fn) {
   console.log(`ok - ${name}`);
 }
 
-check('修为改定弹窗：返还灵石为 0 时不写该行；道果句改为「已有道果效果不变」；门槛句默认关闭', () => {
+check('修为改定弹窗：返还灵石为 0 时不写该行；道果句「已有道果效果不变」；门槛句按 X/Y 与失败损失打开', () => {
   const W = runtime();
   W.GameState.loadGame();
   const s = W.GameState.state;
   s.realmIndex = 17; // 尊者后：数值策划要核对的 744万→28.5亿 样本
-  assert.strictEqual(W.GameState.SHOW_PACING_V2_THRESHOLD_LINE, false, '本版不展示门槛重算句');
+  assert.strictEqual(W.GameState.SHOW_PACING_V2_THRESHOLD_LINE, true, '本版应展示门槛重算句');
+  s.qi = 549000000;
   const zero = W.GameState.formatPacingV2Notice({ qi: 12345, stones: 0 }, s);
   assert.ok(zero.includes('修为规矩已改定'));
   assert.ok(zero.includes('补发 2 小时离线灵气'));
   assert.ok(!zero.includes('返还灵石'), `0 返还时不应出现返还灵石：${zero}`);
   assert.ok(zero.includes('已有道果效果不变'));
   assert.ok(!zero.includes('已得道果数量不变'));
-  assert.ok(!zero.includes('突破门槛重算'), `开关关闭时不应出现门槛句：${zero}`);
+  assert.ok(zero.includes('突破门槛重算'), `开关打开时应出现门槛句：${zero}`);
+  assert.ok(zero.includes('28.5亿') && zero.includes('744万'), zero);
+  assert.ok(zero.includes(`${W.GameConfig.formatNumber(549000000)}/${W.GameConfig.formatNumber(2846071280)}`), `应按 X/Y 显示：${zero}`);
+  assert.ok(zero.includes('失败损失') && zero.includes('14%'), zero);
+  const loss = Math.floor(Math.min(549000000, 2846071280) * 0.14);
+  const fmtLoss = W.GameConfig.formatNumber(loss);
+  assert.ok(zero.includes(fmtLoss), `失败损失应为 floor(min(X,Y)×0.14)=${fmtLoss}：${zero}`);
+  assert.ok(!zero.includes('灵气已补至门槛一半'), '未给保底时不写保底句');
 
-  const paid = W.GameState.formatPacingV2Notice({ qi: 12345, stones: 800 }, s);
+  const paid = W.GameState.formatPacingV2Notice({ qi: 12345, stones: 800, floorQi: 1000 }, s);
   assert.ok(paid.includes('药园造价按差价返还灵石'), paid);
   assert.ok(paid.includes('已有道果效果不变'));
-  assert.ok(!paid.includes('突破门槛重算'));
+  assert.ok(paid.includes('突破门槛重算'));
+  assert.ok(paid.includes('灵气已补至门槛一半'), paid);
 
   const th = W.GameState.pacingV2Threshold(s);
   assert.ok(th, '尊者后应能算出下一重门槛');
@@ -86,23 +95,30 @@ check('修为改定弹窗：返还灵石为 0 时不写该行；道果句改为�
   assert.strictEqual(fmt(th.oldQi), '744万');
 });
 
-check('1-5 关推荐战力覆盖为 1250；邻关不被同一常数钉死', () => {
+check('1-4/1-5/1-6 推荐战力按公式（EARLY_RAMP.A=0.50，无 1250 硬编码）', () => {
+  const src = text('js/battle.js');
+  assert.ok(!src.includes('STAGE_5_RECOMMENDED_CP'), '应去掉 1-5 硬编码常量');
+  assert.ok(!/默认 60%/.test(src), '注释应改为 90%，不再写 60%');
+  assert.ok(/默认 90%/.test(src));
   const W = runtime();
   W.GameState.loadGame();
   const s = W.GameState.state;
   s.realmIndex = 2;
-  assert.strictEqual(W.Battle.STAGE_5_RECOMMENDED_CP, 1250);
-  assert.strictEqual(W.Battle.recommendedCp(s, 5), 1250);
-  assert.strictEqual(W.Battle.recommendedCp(s, W.Battle.enemyFor(5)), 1250);
+  assert.strictEqual(W.GameConfig.BATTLE.EARLY_RAMP.A, 0.5);
+  assert.strictEqual(W.Battle.RECOMMENDED_WIN_RATE, 0.9);
   const rec4 = W.Battle.recommendedCp(s, 4);
+  const rec5 = W.Battle.recommendedCp(s, 5);
   const rec6 = W.Battle.recommendedCp(s, 6);
-  assert.notStrictEqual(rec4, 1250, `1-4 不应被钉成 1250，实际 ${rec4}`);
-  assert.notStrictEqual(rec6, 1250, `1-6 不应被钉成 1250，实际 ${rec6}`);
-  // 敌人数值未改：第 5 关仍按原公式（ramp 1.7）
+  // 默认 6 人队、搬血后的公式值，供数值策划核对（其离线骨架曾估 1125/1249/1264）
+  console.log(`   推荐战力 1-4=${rec4}  1-5=${rec5}  1-6=${rec6}`);
+  assert.ok(rec4 > 0 && rec5 > 0 && rec6 > 0);
+  assert.notStrictEqual(rec5, 1250, `1-5 不得再钉死 1250，实际 ${rec5}`);
+  assert.ok(rec4 <= rec5 && rec5 <= rec6 + 50, `推荐线应大致前低后平：${rec4}/${rec5}/${rec6}`);
   const e5 = W.Battle.enemyFor(5);
   const B = W.GameConfig.BATTLE;
   const expect = B.BASE_CP * Math.pow(B.GROWTH, 4) * W.Battle.earlyRampMult(B, 5, false);
-  assert.ok(Math.abs(e5.cp / expect - 1) < 1e-9, `第 5 关敌方战力不应被改：${e5.cp} vs ${expect}`);
+  assert.ok(Math.abs(e5.cp / expect - 1) < 1e-9, `第 5 关敌方战力应跟公式（A=0.50）：${e5.cp} vs ${expect}`);
+  assert.ok(Math.abs(W.Battle.earlyRampMult(B, 5, false) - 1.5) < 1e-12);
 });
 
 check('目标条推荐标签显示「★功法」，id 仍是 gongfa', () => {
@@ -191,4 +207,57 @@ check('因果簿按钮图标：本批无 handoff 素材，不替换借用的 ui_
   assert.ok(!/ui_karma_book/.test(html + gear));
 });
 
+
+check('老存档突破门槛 50% 保底：只补一次，新档不受影响', () => {
+  const THRESH = 2846071280;
+  const FLOOR = Math.ceil(THRESH * 0.5);
+  const BEFORE = 549000000;
+
+  // 已做过 v2 补偿、尚未做保底的老档
+  const prep = runtime();
+  prep.GameState.loadGame();
+  const raw = JSON.parse(JSON.stringify(prep.GameState.state));
+  raw.pacingV2Compensated = true;
+  delete raw.pacingV2FloorApplied;
+  raw.pacingV2Notice = { qi: 1, stones: 0, shown: true };
+  raw.realmIndex = 17;
+  raw.qi = BEFORE;
+  raw.lifetimeQi = BEFORE;
+  raw.lastSaveTime = Date.now();
+  const storage = memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) });
+  const W = runtime({ storage });
+  const r1 = W.GameState.loadGame();
+  const s = W.GameState.state;
+  console.log(`   老档保底样例：尊者后 补偿后前 ${BEFORE} → 后 ${s.qi}（门槛一半 ${FLOOR}）`);
+  assert.strictEqual(s.pacingV2FloorApplied, true);
+  assert.strictEqual(s.qi, FLOOR, `灵气应补到门槛一半 ${FLOOR}，实际 ${s.qi}`);
+  assert.strictEqual(s.lifetimeQi, BEFORE + (FLOOR - BEFORE));
+  assert.ok(r1.pacingV2Notice && r1.pacingV2Notice.floorQi === (FLOOR - BEFORE));
+  assert.strictEqual(r1.pacingV2Notice.shown, false, '补保底后应再亮一次改定弹窗');
+  const notice = W.GameState.formatPacingV2Notice(r1.pacingV2Notice, s);
+  assert.ok(notice.includes('灵气已补至门槛一半'), notice);
+
+  const qiAfter = s.qi;
+  const lifeAfter = s.lifetimeQi;
+  const r2 = W.GameState.loadGame();
+  assert.strictEqual(W.GameState.state.qi, qiAfter, '重载不得再补保底');
+  assert.strictEqual(W.GameState.state.lifetimeQi, lifeAfter);
+  assert.strictEqual(W.GameState.state.pacingV2FloorApplied, true);
+  assert.ok(!r2.pacingV2Notice || r2.pacingV2Notice.floorQi === (FLOOR - BEFORE));
+
+  // 已高于 50% 的老档：只打旗，不改灵气
+  const rawHi = JSON.parse(JSON.stringify(raw));
+  rawHi.qi = FLOOR + 1000;
+  rawHi.lifetimeQi = FLOOR + 1000;
+  const Wh = runtime({ storage: memoryStorage({ [SAVE_KEY]: JSON.stringify(rawHi) }) });
+  Wh.GameState.loadGame();
+  assert.strictEqual(Wh.GameState.state.qi, FLOOR + 1000);
+  assert.strictEqual(Wh.GameState.state.pacingV2FloorApplied, true);
+
+  const fresh = runtime();
+  const nf = fresh.GameState.loadGame();
+  assert.strictEqual(nf.isNew, true);
+  assert.strictEqual(fresh.GameState.state.pacingV2FloorApplied, true);
+  assert.strictEqual(fresh.GameState.state.qi, 0, '新档不补保底');
+});
 console.log(`qa-v152.test.js ${passed} checks ok`);

@@ -1996,6 +1996,7 @@
         api.switchTab(u.tab);
         if (u.pane && typeof api.openHome === 'function') api.openHome(u.pane);
         if (u.key === 'dispatch' && typeof api.openDispatch === 'function') api.openDispatch();
+        if (u.key === 'mijing' && window.MoreMenu && typeof window.MoreMenu.open === 'function') window.MoreMenu.open();
         tick();
       });
     }

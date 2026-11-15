@@ -464,7 +464,7 @@ check('闯关页秘境 UI 冒烟：开启、播放/跳过、择运、结算、�
   const logs = [];
   sandbox.StageUI.init({ log: (m) => logs.push(m), onChange() {}, switchTab() {} });
   sandbox.StageUI.render();
-  assert.strictEqual(els['btn-mijing-entry'].textContent, '秘境 2/2');
+  assert.strictEqual(M.attemptsLeft(st, Date.now()), 2);
 
   function drain(maxSteps) {
     let n = 0;
@@ -487,7 +487,7 @@ check('闯关页秘境 UI 冒烟：开启、播放/跳过、择运、结算、�
   assert.ok(sandbox.StageUI.startMijingRun());
   assert.strictEqual(st.mijing.used, 1);
   assert.ok(st.mijing.run);
-  assert.strictEqual(els['btn-mijing-entry'].textContent, '返回闯关');
+  assert.strictEqual(els['btn-mijing-detail'].textContent, '返回闯关');
   assert.ok(els['stage-chapter-title'].textContent.startsWith('秘境劫运'));
   assert.ok(els['battle-stage-enemy-title'].textContent.startsWith('秘境 1/8 波'));
   assert.strictEqual(els['btn-stage-challenge'].textContent, '迎 战');
@@ -519,7 +519,7 @@ check('闯关页秘境 UI 冒烟：开启、播放/跳过、择运、结算、�
   assert.ok(st.mijing.bestWave >= 0 && st.mijing.bestWave <= 8);
   if (st.mijing.bestWave >= 2) assert.ok(picks >= 1);
   sandbox.StageUI.closeMijingModal();
-  assert.strictEqual(els['btn-mijing-entry'].textContent, '秘境 1/2');
+  assert.strictEqual(M.attemptsLeft(st, Date.now()), 1);
   assert.ok(els['stage-chapter-title'].textContent.startsWith('第 4 章'));
   // 普通推关仍可进行，且不会消耗秘境次数
   const before = st.stage.wins + st.stage.losses;
@@ -544,14 +544,14 @@ check('闯关页秘境 UI 冒烟：开启、播放/跳过、择运、结算、�
   }
   assert.strictEqual(st.mijing.used, 2);
   sandbox.StageUI.render();
-  assert.strictEqual(els['btn-mijing-entry'].textContent, '秘境 0/2');
+  assert.strictEqual(M.attemptsLeft(st, Date.now()), 0);
 });
 
 // 10. 页面引用
 check('index.html 引用 mijing.js 且有入口/面板/弹窗节点', () => {
   const index = text('index.html');
   assert.match(index, /<script src="js\/battle\.js\?v=\d+"><\/script>\s*(?:<script src="js\/bonds\.js\?v=\d+"><\/script>\s*)?<script src="js\/mijing\.js\?v=\d+"><\/script>\s*(?:<script src="js\/tower\.js\?v=\d+"><\/script>\s*)?<script src="js\/gear\.js/);
-  ['btn-mijing-entry', 'mijing-run-card', 'mijing-modal', 'mijing-modal-body', 'mijing-modal-actions', 'btn-mijing-detail'].forEach((id) => {
+  ['nav-btn-more', 'more-modal', 'mijing-run-card', 'mijing-modal', 'mijing-modal-body', 'mijing-modal-actions', 'btn-mijing-detail'].forEach((id) => {
     assert.ok(index.includes(`id="${id}"`), id);
   });
   M.BLESSINGS.forEach((b) => assert.ok(fs.existsSync(path.join(root, `assets/icons/${b.icon}@64.webp`)), `图标存在 ${b.icon}`));

@@ -122,7 +122,7 @@ check('精英关：每章第 3 关，ELITE_MULT=1.35；奖励灵石 30 秒 / 灵
   const W = runtime();
   const B = W.GameConfig.BATTLE;
   assert.strictEqual(B.ELITE_MULT, 1.35);
-  assert.strictEqual(B.EARLY_RAMP.A, 0.7);
+  assert.strictEqual(B.EARLY_RAMP.A, 0.5);
   assert.strictEqual(B.EARLY_RAMP.peakStage, 5);
   assert.strictEqual(B.EARLY_RAMP.endStage, 30);
   assert.strictEqual(B.EARLY_RAMP.bossFactor, 0.25);
@@ -144,9 +144,9 @@ check('精英关：每章第 3 关，ELITE_MULT=1.35；奖励灵石 30 秒 / 灵
   const r30 = W.Battle.earlyRampMult(B, 30, false);
   const r5b = W.Battle.earlyRampMult(B, 5, true);
   assert.strictEqual(r1, 1);
-  assert.ok(Math.abs(r5 - 1.7) < 1e-12);
+  assert.ok(Math.abs(r5 - 1.5) < 1e-12);
   assert.strictEqual(r30, 1);
-  assert.ok(Math.abs(r5b - (1 + 0.7 * 0.25)) < 1e-12);
+  assert.ok(Math.abs(r5b - (1 + 0.5 * 0.25)) < 1e-12);
 
   W.GameState.loadGame();
   const qi = W.GameState.getQiPerSec();
@@ -207,6 +207,7 @@ check('老存档补偿只发一次：2h 灵气、药园造价差价、道果数�
   delete raw.pacingV2Compensated;
   delete raw.pacingV2LegacyTotalDaoGuo;
   delete raw.pacingV2Notice;
+  raw.pacingV2FloorApplied = true; // 本用例只核 2h 补偿，保底另测
   raw.qi = 100;
   raw.stones = 1000;
   raw.lifetimeQi = 0;

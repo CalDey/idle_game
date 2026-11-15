@@ -630,8 +630,12 @@
     syncTabsFade();
   }
 
-  function open() {
+  function open(tabId) {
     if (!els) return;
+    if (tabId) {
+      const tab = tabs.find((x) => x.id === tabId);
+      if (tab) activeTab = tabId;
+    }
     syncMaxRealm();
     render();
     els.list.scrollTop = 0;

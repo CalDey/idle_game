@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=153',
-    'assets/home/scene_xuan.webp?v=153',
-    'assets/home/scene_xian.webp?v=153'
+    'assets/home/scene_base.webp?v=154',
+    'assets/home/scene_xuan.webp?v=154',
+    'assets/home/scene_xian.webp?v=154'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -1533,10 +1533,11 @@
   }
 
   function initTabs() {
-    const navBtns = document.querySelectorAll('.nav-btn');
+    const navBtns = document.querySelectorAll('.nav-btn[data-tab]');
     navBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-tab');
+        if (!targetId) return;
         switchToTab(targetId);
       });
     });

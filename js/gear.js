@@ -167,7 +167,33 @@
     return '已达最高阶段';
   }
 
+  // 仙桃溢出展示（只改显示，不裁存量）。文案集中在这里，方便改措辞。
+  const PEACH_OVERFLOW_HINT = '已溢 · 停结';
+  function peachOverflowTitle(cap) {
+    return `仙桃已溢过上限 ${cap}。树不再结新果，吃到 ${cap} 以下才会再长。`;
+  }
+
+  function renderPeachCount(tree, cap) {
+    const el = $('peach-count');
+    const wrap = el && el.closest ? el.closest('.peach-count-wrap') : (el && el.parentElement);
+    if (!el) return;
+    const peaches = Number(tree && tree.peaches) || 0;
+    const overflow = peaches > cap;
+    if (overflow) {
+      el.innerHTML = `${peaches}/${cap}<span class="peach-overflow-hint">${PEACH_OVERFLOW_HINT}</span>`;
+      el.classList.add('is-overflow');
+    } else {
+      el.textContent = `${peaches}/${cap}`;
+      el.classList.remove('is-overflow');
+    }
+    if (wrap) {
+      if (overflow) wrap.setAttribute('title', peachOverflowTitle(cap));
+      else wrap.removeAttribute('title');
+    }
+  }
+
   function renderTree() {
+
     const s = window.GameState.state;
     const tree = s.tree;
     const cap = window.GameConfig.peachCap(tree.lv);
@@ -185,7 +211,7 @@
     const cp = Math.round(window.Equip.combatPower(s));
     $('cp-value').textContent = fmt(cp);
     $('cp-stats').textContent = `攻${fmt(attr.atk)} · 血${fmt(attr.hp)} · 防${fmt(attr.def)} · 速${fmt(attr.spd)}`;
-    $('peach-count').textContent = `${tree.peaches}/${cap}`;
+        renderPeachCount(tree, cap);
     const remain = Math.max(0, (tree.regenAt || 0) + window.GameConfig.PEACH.INTERVAL_MS - Date.now());
     $('peach-next').textContent =
       tree.peaches >= cap ? gearText('full', null, '仙桃已满') : `下一枚 ${window.GameConfig.formatDuration(Math.ceil(remain / 1000))}`;
@@ -544,5 +570,5 @@
     renderTree();
   }
 
-  window.GearUI = { init, tick, render: renderTree, grant, openCompare, compareDiff };
+  window.GearUI = { init, tick, render: renderTree, grant, openCompare, compareDiff, PEACH_OVERFLOW_HINT, peachOverflowTitle, renderPeachCount };
 })();

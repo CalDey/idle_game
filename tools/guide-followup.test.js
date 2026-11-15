@@ -253,7 +253,7 @@ check('H2 离开 Boss 关或进入新关时立刻关掉台词并取消计时、�
   assert.ok(/function startBattle\([\s\S]*hideBossQuote[\s\S]*showBossQuote/.test(ui), '开新战先关旧台词再按需显示');
 });
 
-check('H3 ≤400px 的 path-entry 换行写在全局 nowrap 之后，秘境入口 12px', () => {
+check('H3 ≤400px 的 path-entry 换行写在全局 nowrap 之后', () => {
   const css = text('css/style.css');
   const mediaMatches = [...css.matchAll(/@media \(max-width: 400px\) \{([\s\S]*?)\n\}\n/g)];
   const wrapMedia = mediaMatches.filter((m) => m[1].includes('.path-entry') && /white-space:\s*normal/.test(m[1]));
@@ -264,10 +264,6 @@ check('H3 ≤400px 的 path-entry 换行写在全局 nowrap 之后，秘境入�
   const gPos = css.lastIndexOf(g[0]);
   assert.ok(lastWrap.index > gPos, '窄屏换行必须写在全局 nowrap 之后，否则 375 宽仍会变成「本命道…」');
   assert.ok(/text-overflow:\s*unset/.test(lastWrap[1]));
-  const pill = css.match(/^\.mijing-entry-pill \{([\s\S]*?)^\}/m);
-  assert.ok(pill, '应有 .mijing-entry-pill 规则');
-  assert.ok(/font-size:\s*12px/.test(pill[1]), `秘境入口应为 12px，实际：${pill[1]}`);
-  assert.ok(!/font-size:\s*11px/.test(pill[1]));
 });
 
 console.log(`\nguide-followup: ${passed} checks passed`);

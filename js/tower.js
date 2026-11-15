@@ -347,39 +347,23 @@
   }
 
   function renderEntry() {
-    const btn = document.getElementById('btn-tower-entry');
     const badge = document.getElementById('badge-tower');
     const T = window.Tower;
     const GS = window.GameState;
-    if (!btn || !T || !GS || !GS.state) return;
+    if (!T || !GS || !GS.state) return;
     const s = GS.state;
     if (!T.isUnlocked(s)) {
-      btn.hidden = true;
       if (badge) badge.classList.remove('visible');
+      if (window.MoreMenu && typeof window.MoreMenu.refresh === 'function') window.MoreMenu.refresh();
       return;
     }
-    btn.hidden = false;
-    const t = T.ensure(s, Date.now());
+    const tw = T.ensure(s, Date.now());
     const left = T.failsLeft(s, Date.now());
-    const best = t.best || 0;
-    const text = best > 0 ? `塔 ${best}` : '镇妖塔';
-    const labelEl = document.getElementById('tower-entry-label');
-    if (labelEl) labelEl.textContent = text;
-    else if (btn.dataset.label !== text) {
-      // fallback if label span missing
-      const badgeEl = document.getElementById('badge-tower');
-      btn.textContent = text;
-      if (badgeEl) btn.appendChild(badgeEl);
-      btn.dataset.label = text;
-    }
-    const state = left > 0 ? 'ready' : 'empty';
-    if (btn.dataset.state !== state) btn.dataset.state = state;
     let dot = false;
     if (left > 0) {
       const p = window.Battle && window.Battle.playerStats(s);
-      const enemy = T.floorEnemy(T.currentFloor(s));
       const squad = window.Battle && window.Battle.getSquadIds ? window.Battle.getSquadIds(s).join(',') : '';
-      const key = `${T.currentFloor(s)}:${Math.round((p && p.cp) || 0)}:${squad}:${t.date}:${left}:${previewCacheSig(s)}`;
+      const key = `${T.currentFloor(s)}:${Math.round((p && p.cp) || 0)}:${squad}:${tw.date}:${left}:${previewCacheSig(s)}`;
       if (dotCache.key === key && Date.now() - dotCache.at < 5000) {
         dot = dotCache.on;
       } else {
@@ -388,7 +372,7 @@
       }
     }
     if (badge) badge.classList.toggle('visible', dot);
-    btn.classList.toggle('has-claim', dot);
+    if (window.MoreMenu && typeof window.MoreMenu.refresh === 'function') window.MoreMenu.refresh();
   }
 
   function previewRate(s, floor) {
@@ -511,7 +495,6 @@
 
   function init() {
     els = {
-      btn: document.getElementById('btn-tower-entry'),
       badge: document.getElementById('badge-tower'),
       modal: document.getElementById('tower-modal'),
       close: document.getElementById('btn-close-tower'),
@@ -525,14 +508,11 @@
       btn: document.getElementById('btn-tower-challenge'),
       toast: document.getElementById('tower-toast')
     };
-    // 'btn' overwritten - fix: entry vs challenge
-    els.entry = document.getElementById('btn-tower-entry');
     els.btn = document.getElementById('btn-tower-challenge');
     if (!els.modal) {
       els = null;
       return;
     }
-    if (els.entry) els.entry.addEventListener('click', open);
     if (els.close) els.close.addEventListener('click', close);
     if (els.btn) els.btn.addEventListener('click', onChallenge);
     renderEntry();
