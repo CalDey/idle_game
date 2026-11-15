@@ -153,7 +153,7 @@ check('重定：花费 30 分钟产出；层数按节点位置保留；同道途
   assert.strictEqual(s.path.freeRespec, 0);
 });
 
-check('收益：符道 聚灵符/招财符 乘入 getQiPerSec / getStonePerSec；其他道途不影响收益', () => {
+check('收益：符道 聚灵符/摄石符 乘入 getQiPerSec / getStonePerSec；其他道途不影响收益', () => {
   const W = runtime();
   const s = freshState(W, 27);
   const GS = W.GameState;
@@ -346,6 +346,11 @@ check('文案对象：E2–E5 新界面字符串集中在 Path.TEXT，不散落�
   assert.strictEqual(T.respecNoRefund, '已投入灵石不退还');
   assert.ok(T.chooseConfirmTitle && T.chooseConfirm.includes('{name}'));
   assert.ok(T.respecConfirmTitle && T.respecConfirm.includes('{name}'));
+  assert.strictEqual(T.respecConfirmTitle, '改道确认');
+  assert.ok(T.flashChosen.includes('{name}') && T.flashChosen.includes('已把本命押在'));
+  Object.keys(T).forEach((k) => {
+    assert.ok(!String(T[k]).includes('重定'), `TEXT.${k} 不应再出现「重定」`);
+  });
   assert.ok(T.confirmYes && T.confirmNo);
   const src = text('js/path.js');
   ['化灵初开启', '加成在战斗内生效，不计入面板战力', '已投入灵石不退还'].forEach((str) => {
@@ -401,7 +406,7 @@ check('UI 冒烟：境界卡入口（化灵前锁定）、择道/重定需确认
   clickData(body, 'path-choose', 'jian');
   clickData(body, 'path-confirm', 'yes');
   assert.strictEqual(st.path.id, 'jian');
-  assert.ok(body.innerHTML.includes('已立本命：剑道'));
+  assert.ok(body.innerHTML.includes('已把本命押在剑道上'));
   assert.ok(body.innerHTML.includes('剑心锋芒') && body.innerHTML.includes('尊者初开放'));
   assert.ok(body.innerHTML.includes(TXT.combatNote));
   assert.ok(sandbox.localStorage._data.xiuxian_idle_save_v1.includes('"path"'), '择道后已存档');

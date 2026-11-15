@@ -1522,6 +1522,9 @@
           : `第 ${sim.rounds} 回合不敌 ${enemy.name}，闯关受挫`;
       }
       showFailOverlay(enemy, player, Boolean(sim.timeout), st.fails);
+      if (window.Story && typeof window.Story.afterStageFail === 'function') {
+        window.Story.afterStageFail(stageNum);
+      }
 
       window.GameState.saveGame();
       if (window.Titles) window.Titles.sync(s);
@@ -3168,11 +3171,13 @@
   function recallText() {
     return (window.Story && window.Story.RECALL_TEXT) || {
       entry: '往事回溯',
-      entryHint: '重看已通章节的开篇与 Boss 对白，不发放奖励。',
+      entrySub: '走过的章，可以再翻一遍。赏，不会再给。',
+      entryHint: '走过的章，可以再翻一遍。赏，不会再给。',
       modalTitle: '往事回溯',
-      empty: '尚未通关任何章节。',
-      replayIntro: '开篇',
-      replayBoss: 'Boss 对白',
+      empty: '尚无已通之章。走过去，才会留下可翻的账。',
+      listHint: '只准回看，不重发奖励。',
+      replayIntro: '重看开篇',
+      replayBoss: '重看对白',
       close: '关闭'
     };
   }
@@ -3223,6 +3228,12 @@
       list.appendChild(empty);
       return;
     }
+    if (T.listHint) {
+      const hint = document.createElement('div');
+      hint.className = 'recall-list-hint';
+      hint.textContent = T.listHint;
+      list.appendChild(hint);
+    }
     cleared.forEach((ch) => {
       const row = document.createElement('div');
       row.className = 'recall-chapter';
@@ -3262,8 +3273,8 @@
     const title = $('recall-modal-title');
     const hint = $('recall-modal-hint');
     const closeBtn = $('btn-recall-close');
-    if (title) title.textContent = T.modalTitle;
-    if (hint) hint.textContent = T.entryHint;
+    if (title) title.textContent = T.modalTitle || T.entry || '往事回溯';
+    if (hint) hint.textContent = T.entrySub || T.entryHint || '';
     if (closeBtn) closeBtn.textContent = T.close;
     renderRecallList();
     modal.classList.add('active');

@@ -6,17 +6,57 @@
 
   const CHAPTER_SIZE = 10;
 
-  // 往事回溯文案集中在此，便于世界观后续替换（用户拍板前先用占位）。
+  // 往事回溯文案：文案定稿 v1。入口名保持「往事回溯」。
   const RECALL_TEXT = {
-    entry: '往事回溯',
-    entryHint: '重看已通章节的开篇与 Boss 对白，不发放奖励。',
-    modalTitle: '往事回溯',
-    empty: '尚未通关任何章节。',
-    replayIntro: '开篇',
-    replayBoss: 'Boss 对白',
-    close: '关闭',
-    // 每章一句话简介：先留空，等世界观文案与用户拍板后再填。
-    chapterIntro: {}
+    entry: "往事回溯",
+    entrySub: "走过的章，可以再翻一遍。赏，不会再给。",
+    entryHint: "走过的章，可以再翻一遍。赏，不会再给。",
+    modalTitle: "往事回溯",
+    empty: "尚无已通之章。走过去，才会留下可翻的账。",
+    listHint: "只准回看，不重发奖励。",
+    listItem: "第{ch}章 · {chapterName}",
+    listItemSub: "已过{bossName} · 第{bossStage}关",
+    replayIntro: "重看开篇",
+    replayBoss: "重看对白",
+    modalIntroTitle: "第{ch}章 · {chapterName} · 开篇",
+    modalBossTitle: "第{ch}章 · {bossStageName} · 对白",
+    close: "关闭",
+    chapterIntro: {
+      1: "黑山要一口精血换路。你还没有名字。",
+      2: "她吞了破丹，专咬身上有灵气的人。",
+      3: "化灵后的关口是他。他把人当货来灌窍。",
+      4: "次货被送到无灯作坊。她说死了更好用。",
+      5: "她说血还浅，再修一夜会更香。",
+      6: "她受着龙祭，最怕被人叫破不是龙。",
+      7: "枝头挂着空皮。她要你把热气交给根。",
+      8: "她截走不该停在骨头里的雷。",
+      9: "她只问这血够不够换一个尊字。",
+      10: "她吞了山神之位，受香火也受怨。",
+      11: "她闻香来送祭，也为了自己不被烧。",
+      12: "神已不再点头。它仍按旧令挡路。",
+      13: "她烧无主尸骨，自居火神座下收骨人。",
+      14: "她走进火里，却成了替人收柴的人。",
+      15: "他问你是来称臣，还是来为祭。",
+      16: "她专裹坠落的渡劫者。不要乱叫醒谁。",
+      17: "鲸背上是迁徙的冰墓。它自己也成了墓。",
+      18: "剑还在，人已不是人。她认剑不认人。",
+      19: "给一个人续命，抽的是别人的生机。",
+      20: "被取走的不只是这一世，也不只是人。",
+      21: "她提着认娘的灯，问你把哪一半留下。",
+      22: "她不记得名字，只记得漏走的魂要追回来。",
+      23: "魂归灯，心归莲。剩下的杀业还站着。",
+      24: "她表面称臣，骨子里在等主君乱一次。",
+      25: "两套账在收同一批名字。名仍未公开。",
+      26: "「果子」二字已经落地。你不该再当没听见。",
+      27: "她拦住不该上行的人，却不知自己已除名。",
+      28: "她比此刻的天律更老，却赢不了现行的律。",
+      29: "你还不该有名字。身上却已闻得见甜味。",
+      30: "它长得像你，只说长到这里，就够了。"
+    }
+  };
+
+  const STORY_LINES = {
+    stage1_1_fail: "凡躯挡不住它。仙桃树下压着一件法宝，前一个主人没能活着取走——去拿。"
   };
 
   function data() {
@@ -337,6 +377,25 @@
     return open;
   }
 
+  // 1-1 教学性战败：尚未首通时弹出旁白，只播一次（记入 storySeen.stage1_1_fail）。
+  function pendingStage1Fail(s) {
+    const st = s || S();
+    if (!st) return false;
+    const best = (st.stage && st.stage.best) || 0;
+    if (best >= 1) return false;
+    const seen = st.storySeen && typeof st.storySeen === 'object' ? st.storySeen : {};
+    return !seen.stage1_1_fail;
+  }
+
+  function afterStageFail(stageNum, done) {
+    if (Math.floor(Number(stageNum) || 0) !== 1) return false;
+    if (open || !pendingStage1Fail()) return false;
+    return play([{
+      key: 'stage1_1_fail',
+      lines: [{ speaker: '旁白', text: STORY_LINES.stage1_1_fail }]
+    }], done);
+  }
+
   function chapterMeta(ch) {
     const list = (window.GameConfig && window.GameConfig.BATTLE && window.GameConfig.BATTLE.CHAPTERS) || [];
     return list.find((c) => c && c.chapter === ch) || null;
@@ -348,9 +407,13 @@
     return name ? `第 ${ch} 章 · ${name}` : `第 ${ch} 章`;
   }
 
-  function chapterIntroText(ch) {
+  function chapterIntroText(ch, best) {
     const map = RECALL_TEXT.chapterIntro || {};
-    return map[ch] || map[String(ch)] || '';
+    const text = map[ch] || map[String(ch)] || '';
+    const b = best == null ? currentBest() : best;
+    // 「果子」只在第 26 章通关后可见，与现有揭示规则一致。
+    if (text.indexOf('果子') >= 0 && !isChapterCleared(26, b)) return '';
+    return text;
   }
 
   // 已通关：best 达到该章 Boss 关（第 N 章 = N*10）
@@ -366,7 +429,7 @@
       chapter: c.chapter,
       name: c.name || '',
       title: chapterTitle(c.chapter),
-      intro: chapterIntroText(c.chapter),
+      intro: chapterIntroText(c.chapter, best),
       bossStage: c.chapter * CHAPTER_SIZE
     }));
   }
@@ -413,6 +476,7 @@
   window.Story = {
     CHAPTER_SIZE,
     RECALL_TEXT,
+    STORY_LINES,
     chapterOf,
     bossForStage,
     bossEntry,
@@ -428,6 +492,8 @@
     openingPending,
     playOpening,
     isOpen,
+    pendingStage1Fail,
+    afterStageFail,
     finish,
     chapterTitle,
     chapterIntroText,

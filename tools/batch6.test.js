@@ -188,7 +188,7 @@ function loadRuntime(storage, extraFiles) {
   const ui = text('js/stage-ui.js');
   assert.ok(ui.includes('openRecallModal') && ui.includes('RECALL_TEXT') && ui.includes('replayChapter'));
   assert.ok(!/grantReward|giveReward|发放[道灵石桃]/.test(ui));
-  assert.ok(text('js/story.js').includes('不发放奖励') || text('index.html').includes('不发放奖励'));
+  assert.ok(/不发放奖励|不重发奖励|赏，不会再给/.test(text('js/story.js') + text('index.html')), '回溯须保留不重发奖励之意');
   assert.ok(SD.chapters.length >= 30, '沿用现有章节数据');
 }
 

@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=139',
-    'assets/home/scene_xuan.webp?v=139',
-    'assets/home/scene_xian.webp?v=139'
+    'assets/home/scene_base.webp?v=140',
+    'assets/home/scene_xuan.webp?v=140',
+    'assets/home/scene_xian.webp?v=140'
   ];
   const prefetchedHomeBg = Object.create(null);
 
