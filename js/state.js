@@ -168,6 +168,10 @@
     const stage = getCurrentStage();
     const guaranteed = isBreakGuaranteed();
     const rate = getBreakthroughSuccessRate();
+    let heartRune = null;
+    if (stage.isMajorTribulation && window.Karma && typeof window.Karma.consumeHeartRune === 'function') {
+      heartRune = window.Karma.consumeHeartRune(state);
+    }
     state.breakAttempts = (Number(state.breakAttempts) || 0) + 1;
     if (window.Daily && typeof window.Daily.hook === 'function') window.Daily.hook(state, 'breakthrough', 1, Date.now());
     if (guaranteed || roll < rate) {
@@ -175,16 +179,17 @@
       state.realmIndex += 1;
       state.pityBonus = 0;
       if (window.Codex && typeof window.Codex.syncMaxRealm === 'function') window.Codex.syncMaxRealm(state);
-      return { success: true, guaranteed, rate, loss: 0, stage, nextStage: getCurrentStage() };
+      return { success: true, guaranteed, rate, loss: 0, stage, nextStage: getCurrentStage(), heartRune };
     }
     const loss = Math.floor(Math.min(state.qi, stage.reqQi) * stage.failureLossRatio);
-    state.qi = Math.max(0, state.qi - loss);
+    const appliedLoss = heartRune && heartRune.noQiLossOnFail ? 0 : loss;
+    state.qi = Math.max(0, state.qi - appliedLoss);
     state.pityBonus = Math.min(0.35, (state.pityBonus || 0) + 0.04);
     state.failBreakthroughs = (state.failBreakthroughs || 0) + 1;
     // 只返回「还没看过说明」；flags.breakFailTipShown 由 game.js 在说明真正弹出时写入（v140-B2），
     // 避免说明排队期间刷新导致永远看不到。
     const firstFailTip = !state.flags.breakFailTipShown;
-    return { success: false, guaranteed: false, rate, loss, stage, nextStage: stage, firstFailTip };
+    return { success: false, guaranteed: false, rate, loss: appliedLoss, stage, nextStage: stage, firstFailTip, heartRune };
   }
 
   function createDefaultState() {
@@ -257,6 +262,8 @@
       pacingV2Notice: null,
       refine: {},
       exchange: { date: '', n: 0 },
+      // 因果回收：旧档缺省为空账本；由 Karma.normalize 在读档时补全
+      karma: { v: 1, events: {}, callbacks: {}, effects: {}, eligibleSince: {}, bookUnlocked: false, noticeShown: false, pendingElite: null, prefightShown: false },
       ...v2Fields
     };
   }
@@ -351,7 +358,8 @@
       (1 + stonePct) *
       (1 + 0.02 * chapters) *
       (window.Titles ? window.Titles.factor(state, 'stone') : 1) *
-      (window.Path ? window.Path.stoneFactor(state) : 1)
+      (window.Path ? window.Path.stoneFactor(state) : 1) *
+      (window.Karma ? window.Karma.gardenFactor(state) : 1)
     );
   }
 
@@ -811,7 +819,10 @@
     const talentLv = (state.talents && state.talents.pomo_daoxin) || 0;
     const talentBonus = Math.min(0.30, talentLv * 0.03);
     const titleBonus = window.Titles ? window.Titles.addend(state, 'break') : 0;
-    const total = stage.successRate + (state.pityBonus || 0) + talentBonus + titleBonus;
+    let total = stage.successRate + (state.pityBonus || 0) + talentBonus + titleBonus;
+    if (stage.isMajorTribulation && window.Karma && typeof window.Karma.heartRuneActive === 'function' && window.Karma.heartRuneActive(state)) {
+      total += 0.30;
+    }
     return Math.min(0.98, Number(total.toFixed(3)));
   }
 
@@ -956,6 +967,9 @@
         date: (saved.exchange && saved.exchange.date) || '',
         n: clampNonNeg(saved.exchange && saved.exchange.n, 0, true)
       },
+      karma: window.Karma && typeof window.Karma.normalize === 'function'
+        ? window.Karma.normalize(saved.karma)
+        : (saved.karma && typeof saved.karma === 'object' && !Array.isArray(saved.karma) ? saved.karma : def.karma),
       createdAt: saved.createdAt || saved.lastSaveTime || def.createdAt,
       playTimeMs: saved.playTimeMs || 0,
       lifetimeQi: saved.lifetimeQi || 0,
@@ -1151,6 +1165,7 @@
         if (window.Tower && typeof window.Tower.ensure === 'function') window.Tower.ensure(state);
         if (window.HomeFortune && typeof window.HomeFortune.ensure === 'function') window.HomeFortune.ensure(state, Date.now());
         if (window.Codex && typeof window.Codex.ensureState === 'function') window.Codex.ensureState(state);
+      if (window.Karma && typeof window.Karma.ensureState === 'function') window.Karma.ensureState(state);
         return { isNew: true, offlineReport: null };
       }
       let parsed = JSON.parse(raw);
@@ -1340,6 +1355,13 @@
       if (window.IdleEvents && typeof window.IdleEvents.ensureState === 'function') {
         window.IdleEvents.ensureState(fresh);
       }
+    }
+    // 因果回收：账本与未了因果随轮回保留（不能靠轮回刷奖励或抹掉旧账）
+    if (state.karma && typeof state.karma === 'object') {
+      const copied = JSON.parse(JSON.stringify(state.karma));
+      fresh.karma = window.Karma && typeof window.Karma.normalize === 'function'
+        ? window.Karma.normalize(copied)
+        : copied;
     }
     fresh.guide = normalizeGuide(state.guide, state);
     fresh.breakAttempts = normalizeBreakAttempts(state);

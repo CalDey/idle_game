@@ -3733,7 +3733,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=143") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=144") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3741,11 +3741,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=143");
+  background-image: url("../assets/home/scene_xuan.webp?v=144");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=143");
+  background-image: url("../assets/home/scene_xian.webp?v=144");
 }
 
 .home-stage {
@@ -8905,4 +8905,118 @@ button.mijing-bless-card:active {
   #tab-reincarnate .upgrade-desc {
     font-size: 12.5px;
   }
+}
+
+/* === 因果簿与回收事件立绘 === */
+.karma-ledger-entry {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: rgba(18, 12, 8, 0.7);
+  color: var(--accent-gold-bright);
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.karma-ledger-dialog {
+  max-width: 420px;
+  background: #120c08;
+  border: 1px solid rgba(214, 178, 102, 0.55);
+  color: #efe6cf;
+}
+
+.karma-ledger-desc {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.karma-ledger-empty {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.karma-ledger-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.karma-entry {
+  padding: 8px 10px;
+  border-left: 3px solid rgba(214, 178, 102, 0.35);
+  background: rgba(20, 14, 10, 0.6);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.karma-entry.ink-red,
+.karma-entry .ink-red {
+  color: #8a2a2a;
+  border-left-color: #7a1f1f;
+}
+
+.karma-entry.ink-pale,
+.karma-entry .ink-pale {
+  color: #cbbda3;
+}
+
+.karma-entry-result {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.karma-entry.is-smeared .karma-entry-result {
+  letter-spacing: 0.12em;
+  color: #3a342c;
+  text-shadow: 0 0 0 #1a1612;
+  background: linear-gradient(90deg, rgba(20, 16, 12, 0.85), rgba(40, 32, 24, 0.7));
+  padding: 2px 4px;
+}
+
+.idle-event-dialog.has-portrait {
+  display: flex;
+  flex-direction: column;
+}
+
+.idle-event-portrait-wrap {
+  width: 100%;
+  height: 220px;
+  margin: 0 0 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0a0806;
+}
+
+.idle-event-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.idle-event-portrait.is-daoling {
+  object-position: 38% 28%;
+}
+
+.idle-event-portrait.is-caiyao {
+  object-position: 60% 18%;
+}
+
+.evt-karma-toast {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--accent-gold-bright);
 }

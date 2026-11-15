@@ -200,7 +200,10 @@
     // 本命道途（js/path.js，可缺省）：玩家所选道途的全队常驻加成；未选或未参悟时为 null
     const P = root.Path;
     const path = P && typeof P.battleMods === 'function' ? P.battleMods(state) : null;
-    return path ? mergeMods(merged, path) : merged;
+    const withPath = path ? mergeMods(merged, path) : merged;
+    const K = root.Karma;
+    const karma = K && typeof K.battleMods === 'function' ? K.battleMods(state) : null;
+    return karma ? mergeMods(withPath, karma) : withPath;
   }
 
   // 合并两份 mods（如秘境劫运 + 羁绊）：倍率按增量相加，其余数值相加，heroMods 逐角色合并

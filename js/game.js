@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=143',
-    'assets/home/scene_xuan.webp?v=143',
-    'assets/home/scene_xian.webp?v=143'
+    'assets/home/scene_base.webp?v=144',
+    'assets/home/scene_xuan.webp?v=144',
+    'assets/home/scene_xian.webp?v=144'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -378,11 +378,15 @@
       if (window.StageUI) StageUI.render();
       GameState.saveGame();
       // 状态已写入；大境界渡劫成功只补纯视觉演出，不阻塞存档与 UI 刷新。
+      if (result.heartRune && result.heartRune.resultText) {
+        addLog(result.heartRune.resultText, 'gold');
+      }
       if (stage.isMajorTribulation && window.Tribulation && typeof window.Tribulation.play === 'function') {
         const played = window.Tribulation.play({
           realmName: nextStage.fullName,
           realmDesc: nextStage.desc,
-          majorName: nextStage.majorName
+          majorName: nextStage.majorName,
+          extraCaption: result.heartRune && result.heartRune.tribulationLine
         });
         if (!played) triggerRealmFx('success');
       } else {
@@ -391,6 +395,9 @@
       if (window.Titles) Titles.sync(s);
       if (window.TitlesUI) TitlesUI.flushToasts();
     } else {
+      if (result.heartRune && result.heartRune.resultText) {
+        addLog(result.heartRune.resultText, 'info');
+      }
       // 突破失败：按所需灵气比例损失（不超过 reqQi×比例），并增加气运补偿
       addLog(
         uiText('breakthrough', { loss: formatNumber(result.loss) }, `${actionName}受挫，心神震荡，散去 ${formatNumber(result.loss)} 灵气（下次破境成功率 +4%）。`, stage, 'failure'),

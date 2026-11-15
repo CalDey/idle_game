@@ -119,6 +119,18 @@
       // 章首关恰好也是 Boss 关时（目前没有）连播
       out.push({ key: `b${n}:pre`, lines: be.pre, bossId: be.bossId });
     }
+    if (window.Karma && typeof window.Karma.bossPrefightLine === 'function') {
+      const line = window.Karma.bossPrefightLine(window.GameState && window.GameState.state, n);
+      const key = `karma:heifeng${n}`;
+      if (line && !sn[key]) {
+        const pf = (window.KarmaData && window.KarmaData.BOSS_PREFIGHT) || {};
+        out.push({
+          key,
+          lines: [{ speaker: pf.bossName || '黑风寨主', text: line }],
+          bossId: be && be.bossId
+        });
+      }
+    }
     return out.length ? out : null;
   }
 
@@ -310,6 +322,9 @@
           if (st) st.openingSeen = true;
         } else if (p.key) {
           seen[p.key] = true;
+          if (String(p.key).indexOf('karma:heifeng') === 0 && window.Karma && typeof window.Karma.markPrefightShown === 'function') {
+            window.Karma.markPrefightShown(window.GameState && window.GameState.state);
+          }
         }
       }
       resolveLines(p.lines, { bossId: p.bossId, squad, heroName }).forEach((l) => {

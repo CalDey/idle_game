@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app_icon_192.png?v=16" />
   <!-- og:image 不加 ?v=：分享缩略图不纳入 bump-version 全局缓存号，见 tools/bump-version.js。 -->
   <meta property="og:image" content="assets/icons/app_icon_512.webp" />
-  <link rel="stylesheet" href="css/style.css?v=143" />
+  <link rel="stylesheet" href="css/style.css?v=144" />
 </head>
 
 <body>
@@ -147,6 +147,7 @@
           <p class="lock-chain" data-realm-chain></p>
         </div>
         <div id="gear-body" class="gear-body">
+          <button id="btn-karma-ledger-gear" class="karma-ledger-entry" type="button" hidden>因果簿</button>
           <div class="cp-bar">
             <div class="cp-main"><img class="gi cp-icon" src="assets/icons/res_cp@64.webp?v=18" alt=""
                 aria-hidden="true">战力 <strong id="cp-value">0</strong></div>
@@ -320,7 +321,7 @@
 
       <!-- 页签2：功法与洞府升级 -->
       <section id="tab-upgrades" class="tab-pane">
-        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=143"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-home-fortune" class="home-fortune-marker" type="button" hidden aria-label="洞府机缘"><span class="home-fortune-glow" aria-hidden="true"></span><span id="home-fortune-label">机缘</span></button></div></div>
+        <div class="gufeng-card home-card"><div id="home-scene" class="home-scene"><div id="home-stage" class="home-stage"><img id="home-bg" class="home-bg" alt="" src="assets/home/scene_base.webp?v=144"><div id="home-glow" class="home-glow"></div><div id="home-layer"></div><div id="home-reveal" class="home-reveal"></div></div><div id="home-title" class="home-title"></div><button id="btn-home-upgrade" class="home-upgrade-btn" type="button" aria-label="洞府升级"><img class="gi gi-14" src="assets/icons/res_stone@64.webp?v=18" alt="" aria-hidden="true"><span>升级</span><span id="badge-home-upgrade" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-dispatch-open" class="home-dispatch-btn" type="button" aria-label="仙姬派遣" hidden><img class="gi gi-14" src="assets/icons/ui_role@64.webp?v=18" alt="" aria-hidden="true"><span id="dispatch-summary">派遣</span><span id="badge-dispatch" class="home-upgrade-badge" aria-hidden="true"></span></button><button id="btn-home-fortune" class="home-fortune-marker" type="button" hidden aria-label="洞府机缘"><span class="home-fortune-glow" aria-hidden="true"></span><span id="home-fortune-label">机缘</span></button></div></div>
       </section>
 
       <!-- 页签3：轮回转世 -->
@@ -449,6 +450,14 @@
               <div class="setting-sub">境界、地域、势力、纪元、角色与妖魔；击败后可收集并领取薄礼</div>
             </div>
             <button id="btn-open-codex" class="btn btn-primary settings-codex-btn" type="button">打开图鉴<span id="badge-codex" class="icon-btn-badge" aria-hidden="true"></span></button>
+          </div>
+
+          <div class="setting-row" id="karma-ledger-settings-row">
+            <div>
+              <div class="setting-label">因果簿</div>
+              <div class="setting-sub">你做过的事，都有人记着。</div>
+            </div>
+            <button id="btn-open-karma-ledger" class="btn btn-primary" type="button" hidden>翻开</button>
           </div>
 
           <div class="setting-row">
@@ -804,6 +813,18 @@
     </div>
   </div>
 
+  <div id="karma-ledger-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog karma-ledger-dialog" role="dialog" aria-modal="true" aria-labelledby="karma-ledger-title">
+      <h2 id="karma-ledger-title" class="modal-title">因果簿</h2>
+      <p id="karma-ledger-desc" class="karma-ledger-desc">你做过的事，都有人记着。</p>
+      <p id="karma-ledger-empty" class="karma-ledger-empty">册子还是空白的。</p>
+      <ul id="karma-ledger-list" class="karma-ledger-list"></ul>
+      <div class="modal-actions">
+        <button id="btn-karma-ledger-close" class="btn btn-primary" type="button" data-modal-close>合上</button>
+      </div>
+    </div>
+  </div>
+
   <div id="idle-event-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-dialog idle-event-dialog" role="dialog" aria-modal="true" aria-labelledby="idle-event-title">
       <div class="idle-event-kicker">机缘</div>
@@ -949,39 +970,42 @@
     </div>
   </div>
 
-  <script src="js/no-zoom.js?v=143"></script>
-  <script src="js/config.js?v=143"></script>
-  <script src="js/beasts.js?v=143"></script>
-  <script src="js/ui-text.js?v=143"></script>
-  <script src="js/equip.js?v=143"></script>
-  <script src="js/state.js?v=143"></script>
-  <script src="js/titles.js?v=143"></script>
-  <script src="js/grow.js?v=143"></script>
-  <script src="js/battle.js?v=143"></script>
-  <script src="js/bonds.js?v=143"></script>
-  <script src="js/mijing.js?v=143"></script>
-  <script src="js/tower.js?v=143"></script>
-  <script src="js/gear.js?v=143"></script>
-  <script src="js/stage-ui.js?v=143"></script>
-  <script src="js/story-data.js?v=143"></script>
-  <script src="js/story.js?v=143"></script>
-  <script src="js/audio.js?v=143"></script>
-  <script src="js/newbie.js?v=143"></script>
-  <script src="js/tribulation-data.js?v=143"></script>
-  <script src="js/tribulation.js?v=143"></script>
-  <script src="js/game.js?v=143"></script>
-  <script src="js/events-data.js?v=143"></script>
-  <script src="js/idle-events.js?v=143"></script>
-  <script src="js/daily.js?v=143"></script>
-  <script src="js/home-fortune.js?v=143"></script>
-  <script src="js/codex-data.js?v=143"></script>
-  <script src="js/codex.js?v=143"></script>
-  <script src="js/hero-lines-data.js?v=143"></script>
-  <script src="js/hero-voice.js?v=143"></script>
-  <script src="js/skill-text-data.js?v=143"></script>
-  <script src="js/dispatch.js?v=143"></script>
-  <script src="js/path.js?v=143"></script>
-  <script src="js/beasts-ui.js?v=143"></script>
+  <script src="js/no-zoom.js?v=144"></script>
+  <script src="js/config.js?v=144"></script>
+  <script src="js/beasts.js?v=144"></script>
+  <script src="js/ui-text.js?v=144"></script>
+  <script src="js/equip.js?v=144"></script>
+  <script src="js/state.js?v=144"></script>
+  <script src="js/titles.js?v=144"></script>
+  <script src="js/grow.js?v=144"></script>
+  <script src="js/battle.js?v=144"></script>
+  <script src="js/bonds.js?v=144"></script>
+  <script src="js/mijing.js?v=144"></script>
+  <script src="js/tower.js?v=144"></script>
+  <script src="js/gear.js?v=144"></script>
+  <script src="js/stage-ui.js?v=144"></script>
+  <script src="js/story-data.js?v=144"></script>
+  <script src="js/story.js?v=144"></script>
+  <script src="js/audio.js?v=144"></script>
+  <script src="js/newbie.js?v=144"></script>
+  <script src="js/tribulation-data.js?v=144"></script>
+  <script src="js/tribulation.js?v=144"></script>
+  <script src="js/game.js?v=144"></script>
+  <script src="js/events-data.js?v=144"></script>
+  <script src="js/karma-data.js?v=144"></script>
+  <script src="js/karma.js?v=144"></script>
+  <script src="js/idle-events.js?v=144"></script>
+  <script src="js/daily.js?v=144"></script>
+  <script src="js/home-fortune.js?v=144"></script>
+  <script src="js/codex-data.js?v=144"></script>
+  <script src="js/codex.js?v=144"></script>
+  <script src="js/hero-lines-data.js?v=144"></script>
+  <script src="js/hero-voice.js?v=144"></script>
+  <script src="js/skill-text-data.js?v=144"></script>
+  <script src="js/dispatch.js?v=144"></script>
+  <script src="js/path.js?v=144"></script>
+  <script src="js/beasts-ui.js?v=144"></script>
+
 </body>
 
 </html>

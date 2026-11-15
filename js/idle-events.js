@@ -31,7 +31,9 @@
   const RES_NAMES = { qi: '灵气', stone: '灵石', jade: '灵玉', peach: '仙桃', daoguo: '道果' };
 
   function allEvents() {
-    return (window.GameEventsData && Array.isArray(window.GameEventsData.events) && window.GameEventsData.events) || [];
+    const base = (window.GameEventsData && Array.isArray(window.GameEventsData.events) && window.GameEventsData.events) || [];
+    const extra = (window.Karma && typeof window.Karma.idleEvents === 'function') ? window.Karma.idleEvents() : [];
+    return extra.length ? base.concat(extra) : base;
   }
 
   function findEvent(id) {
@@ -142,11 +144,13 @@
     const want = pool || RULES.POOL_IDLE;
     const realm = Number(s.realmIndex) || 0;
     const chapter = chapterProgress(s);
-    return allEvents().filter((e) => (
-      eventPools(e).includes(want)
-      && realm >= (Number(e.minRealmStage) || 0)
-      && chapter >= (Number(e.minChapter) || 0)
-    ));
+    return allEvents().filter((e) => {
+      if (!eventPools(e).includes(want)) return false;
+      if (window.Karma && e && e.karma && typeof window.Karma.isEligible === 'function') {
+        return window.Karma.isEligible(s, e) === true;
+      }
+      return realm >= (Number(e.minRealmStage) || 0) && chapter >= (Number(e.minChapter) || 0);
+    });
   }
 
   function drawEvent(s, pool, rng) {
@@ -155,8 +159,17 @@
     if (!list.length) return null;
     const fresh = list.filter((e) => !ev.recent.includes(e.id));
     const bag = fresh.length ? fresh : list;
-    const r = typeof rng === 'function' ? rng() : Math.random();
-    return bag[Math.min(bag.length - 1, Math.floor(Math.max(0, r) * bag.length))];
+    const forced = bag.find((e) => e && e.karma && window.Karma && typeof window.Karma.shouldPity === 'function' && window.Karma.shouldPity(s, e));
+    if (forced) return forced;
+    const weightOf = (e) => (window.Karma && typeof window.Karma.drawWeight === 'function' ? window.Karma.drawWeight(e) : 1);
+    const weights = bag.map(weightOf);
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = (typeof rng === 'function' ? rng() : Math.random()) * total;
+    for (let i = 0; i < bag.length; i++) {
+      r -= weights[i];
+      if (r < 0) return bag[i];
+    }
+    return bag[bag.length - 1];
   }
 
   // 冷却结束且无待处理事件时生成一个待处理事件。返回新事件或 null。
@@ -185,6 +198,9 @@
 
   // 把文档建议值折算成当前实际数值。env: { qiPerSec, stonePerSec, now }
   function scaleQuote(s, event, option, env) {
+    if (event && event.karmaQuote && window.Karma && typeof window.Karma.scaleQuote === 'function') {
+      return window.Karma.scaleQuote(s, event, option, env);
+    }
     const e = env || {};
     const perSec = { qi: Math.max(0, Number(e.qiPerSec) || 0), stone: Math.max(0, Number(e.stonePerSec) || 0) };
     const cost = {};
@@ -241,6 +257,13 @@
     const event = findEvent(ev.pending.id);
     const option = event && event.options && event.options[optionIndex];
     if (!option) return { ok: false, reason: 'bad_option' };
+    if (event.karma && window.Karma && typeof window.Karma.isEligible === 'function') {
+      const pendingElite = window.Karma.ensureState && window.Karma.ensureState(s).pendingElite;
+      const allowElite = pendingElite && pendingElite.id === event.id;
+      if (!allowElite && window.Karma.isEligible(s, event) !== true) {
+        return { ok: false, reason: 'ineligible' };
+      }
+    }
     const q = scaleQuote(s, event, option, env);
     if (!q.affordable) return { ok: false, reason: 'insufficient', lacking: q.lacking, quote: q };
 
@@ -282,7 +305,13 @@
     if (window.Daily && typeof window.Daily.hook === 'function') {
       window.Daily.hook(s, 'event_choice', 1, Number((env || {}).now) || Date.now());
     }
-    return { ok: true, event, option, cost: q.cost, reward: q.reward, notes: q.notes, equipItem, equipNote, resultText: option.resultText };
+    let resultText = option.resultText;
+    let karmaExtra = null;
+    if (window.Karma && typeof window.Karma.afterSettle === 'function') {
+      karmaExtra = window.Karma.afterSettle(s, event, optionIndex, env);
+      if (karmaExtra && karmaExtra.resultText) resultText = karmaExtra.resultText;
+    }
+    return { ok: true, event, option, cost: q.cost, reward: q.reward, notes: q.notes, equipItem, equipNote, resultText, karma: karmaExtra };
   }
 
   const core = {
@@ -366,6 +395,34 @@
     return Date.now() - loadedAt < core.LOAD_GRACE_MS;
   }
 
+  function renderPortrait(modal, portrait) {
+    if (!modal) return;
+    const dialog = modal.querySelector('.idle-event-dialog') || modal;
+    let art = dialog.querySelector('.idle-event-portrait-wrap');
+    if (!portrait || !portrait.src) {
+      if (art) art.remove();
+      dialog.classList.remove('has-portrait');
+      return;
+    }
+    dialog.classList.add('has-portrait');
+    if (!art) {
+      art = document.createElement('div');
+      art.className = 'idle-event-portrait-wrap';
+      const img = document.createElement('img');
+      img.alt = '';
+      img.className = 'idle-event-portrait';
+      art.appendChild(img);
+      const kicker = dialog.querySelector('.idle-event-kicker');
+      if (kicker && kicker.parentNode === dialog) dialog.insertBefore(art, kicker.nextSibling);
+      else dialog.insertBefore(art, dialog.firstChild);
+    }
+    const img = art.querySelector('img');
+    const v = portrait.v != null ? portrait.v : 1;
+    img.src = `${portrait.src}?v=${v}`;
+    img.className = `idle-event-portrait is-${portrait.id || 'npc'}`;
+    if (portrait.position) img.style.objectPosition = portrait.position;
+  }
+
   function renderBadge() {
     if (!els) return;
     const s = window.GameState.state;
@@ -382,7 +439,9 @@
     const event = findEvent(ev.pending.id);
     if (!event) return;
     els.title.textContent = event.name;
-    els.text.textContent = event.text;
+    const pres = window.Karma && typeof window.Karma.presentation === 'function' ? window.Karma.presentation(s, event) : { text: event.text, portrait: event.portrait };
+    renderPortrait(els.modal, pres && pres.portrait);
+    els.text.textContent = (pres && pres.text) || event.text;
     els.result.hidden = true;
     els.result.innerHTML = '';
     els.options.hidden = false;
@@ -424,12 +483,25 @@
       openModal();
       return;
     }
+    if (res.karma && res.karma.pendingElite && window.Karma && typeof window.Karma.runEliteBattle === 'function') {
+      const fight = window.Karma.runEliteBattle(s, env());
+      if (fight && fight.ok) {
+        res.resultText = fight.resultText;
+        res.reward = Object.assign({}, res.reward || {}, fight.reward || {});
+      }
+    }
     window.GameState.saveGame();
+    if (res.karma && res.karma.first && res.karma.toast) {
+      if (window.Karma && typeof window.Karma.markNoticeShown === 'function') window.Karma.markNoticeShown(s);
+      if (window.GameState && typeof window.GameState.saveGame === 'function') window.GameState.saveGame();
+    }
     const costHtml = resLine(res.cost, '-');
     const rewardHtml = resLine(res.reward, '+');
+    const toastHtml = res.karma && res.karma.toast ? `<p class="evt-karma-toast">${res.karma.toast}</p>` : '';
     els.options.hidden = true;
     els.result.hidden = false;
     els.result.innerHTML = `
+      ${toastHtml}
       <p class="evt-result-text">${res.resultText}</p>
       ${costHtml ? `<div class="evt-option-line evt-cost">付出 ${costHtml}</div>` : ''}
       ${rewardHtml ? `<div class="evt-option-line evt-reward">获得 ${rewardHtml}</div>` : ''}

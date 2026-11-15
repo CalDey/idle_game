@@ -1522,6 +1522,10 @@
           : `第 ${sim.rounds} 回合不敌 ${enemy.name}，闯关受挫`;
       }
       showFailOverlay(enemy, player, Boolean(sim.timeout), st.fails);
+      if (window.Karma && typeof window.Karma.onBattleLoss === 'function') {
+        const back = window.Karma.onBattleLoss(s);
+        if (back > 0 && window.GameState && window.GameState.saveGame) window.GameState.saveGame();
+      }
       if (window.Story && typeof window.Story.afterStageFail === 'function') {
         window.Story.afterStageFail(stageNum);
       }
@@ -1756,6 +1760,9 @@
       s.seq = (s.seq || 0) + 1;
       const seed = ((Date.now() & 0xffffffff) ^ Math.imul(s.seq, 0x9e3779b1)) >>> 0;
       session = window.Battle.createSession(s, enemy, seed, bondModsFor(s));
+      if (!twFloor && window.Karma && typeof window.Karma.consumeBossIntel === 'function') {
+        window.Karma.consumeBossIntel(s, stageNum);
+      }
     }
     if (!session || session.emptySquad || session.playerUnits.length < 1) {
       const logLine = $('battle-log-line');
@@ -2596,6 +2603,9 @@
           : `镇妖塔第 ${floor} 层不敌 ${enemy && enemy.name ? enemy.name : '守军'}`;
       }
       showFailOverlay(enemy, currentPlayer, Boolean(sim && sim.timeout), 0);
+      if (window.Karma && typeof window.Karma.onBattleLoss === 'function') {
+        window.Karma.onBattleLoss(s);
+      }
       log(toast, 'warn');
     }
     window.GameState.saveGame();

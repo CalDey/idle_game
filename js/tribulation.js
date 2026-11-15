@@ -251,6 +251,7 @@
 
       const D = data();
       const captions = D ? D.strikeCaptions(options.majorName) : ['', '', ''];
+      if (options.extraCaption) captions[0] = options.extraCaption;
 
       // 减弱动态：仍展示压暗、一道天雷和金光立绘，只取消闪/震/旋转，避免被看成「只有文字弹窗」。
       if (prefersReducedMotion()) {

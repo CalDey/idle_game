@@ -422,6 +422,14 @@
       if (r.jade) r.jade = Math.min(r.jade, Math.max(1, Math.round(jadeRate(s) * RULES.JADE_CAP_H)));
     }
     if (r.peach) r.peach = Math.min(r.peach, RULES.PEACH_CAP);
+    const bonus = root.Karma && typeof root.Karma.dispatchYieldBonus === 'function'
+      ? root.Karma.dispatchYieldBonus(s, (env && env.now) || Date.now())
+      : 0;
+    if (bonus > 0) {
+      if (r.stone) r.stone = Math.max(1, Math.round(r.stone * (1 + bonus)));
+      if (r.jade) r.jade = Math.max(1, Math.round(r.jade * (1 + bonus)));
+      if (r.peach) r.peach = Math.max(1, Math.min(RULES.PEACH_CAP, Math.round(r.peach * (1 + bonus))));
+    }
     return r;
   }
 
