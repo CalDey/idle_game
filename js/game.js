@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=151',
-    'assets/home/scene_xuan.webp?v=151',
-    'assets/home/scene_xian.webp?v=151'
+    'assets/home/scene_base.webp?v=152',
+    'assets/home/scene_xuan.webp?v=152',
+    'assets/home/scene_xian.webp?v=152'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -1311,7 +1311,7 @@
     els.stoneVal.textContent = formatNumber(s.stones);
     els.stoneRate.textContent = `+${formatNumber(stonePerSec)}/秒`;
     els.daoguoVal.textContent = `${s.daoGuo} (累${s.totalDaoGuo || 0})`;
-    els.daoguoMult.textContent = `灵气×${GameState.getDaoGuoQiMultiplier().toFixed(2)}`;
+    els.daoguoMult.innerHTML = `<span class="res-mult-prefix">灵气</span>×${GameState.getDaoGuoQiMultiplier().toFixed(2)}`;
 
     if (window.TitlesUI) TitlesUI.paintPlate();
     els.tapGainHint.textContent = `点击画面凝神吐纳（每次 +${formatNumber(tapGain)} 灵气）`;
@@ -1416,9 +1416,13 @@
   }
 
   function pacingV2NoticeText(n) {
+    if (window.GameState && typeof window.GameState.formatPacingV2Notice === 'function') {
+      return window.GameState.formatPacingV2Notice(n, window.GameState.state);
+    }
     const qi = formatNumber((n && n.qi) || 0);
-    const stones = formatNumber((n && n.stones) || 0);
-    return `修为规矩已改定。补发 2 小时离线灵气（${qi}），药园造价按差价返还灵石（${stones}）。已得道果数量不变：此前道果仍按旧倍率计算，此后新得道果按新倍率计算。`;
+    const stones = Number(n && n.stones) || 0;
+    const stonePart = stones > 0 ? `，药园造价按差价返还灵石（${formatNumber(stones)}）` : '';
+    return `修为规矩已改定。补发 2 小时离线灵气（${qi}）${stonePart}。已有道果效果不变。`;
   }
 
   function showPacingV2Notice() {

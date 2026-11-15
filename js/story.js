@@ -260,6 +260,8 @@
     e.modal.classList.toggle('is-last-words', l.kind === 'last');
     // 开篇是无名凡人视角：不显示主角立绘与 Boss 剪影
     e.modal.classList.toggle('is-opening', Boolean(l.opening));
+    // 无 Boss 的旁白段（如 1-1 战败）不画右侧兜帽暗影；开篇已用 is-opening 整层藏立绘
+    e.modal.classList.toggle('is-no-boss', !ctxBossId && !l.opening);
     // 说话人名签：有名用名；旁白 / 图鉴显示固定标签；开篇五屏不显示（CSS 隐藏）
     if (e.name) e.name.textContent = speakerLabel(l);
     if (e.text) e.text.textContent = l.text;
@@ -285,7 +287,7 @@
     open = false;
     const e = ensureEls();
     if (e) {
-      e.modal.classList.remove('active', 'is-last-words', 'is-opening');
+      e.modal.classList.remove('active', 'is-last-words', 'is-opening', 'is-no-boss');
       e.modal.setAttribute('aria-hidden', 'true');
     }
     queue = [];
@@ -323,6 +325,7 @@
       return (h && h.name) || id;
     };
     const lines = [];
+    ctxBossId = '';
     parts.forEach((p) => {
       if (!replay) {
         if (p.key === OPENING_KEY) {

@@ -812,7 +812,7 @@
   }
 
   const REC_ORDER = ['break', 'gongfa', 'peach', 'dongfu', 'path'];
-  const REC_NAMES = { break: '突破', gongfa: '修行', peach: '法宝', dongfu: '洞府', path: '道途' };
+  const REC_NAMES = { break: '突破', gongfa: '功法', peach: '法宝', dongfu: '洞府', path: '道途' };
 
   function categoryChain(s, key) {
     if (key === 'break') {
@@ -1706,19 +1706,29 @@
     return s.unlockVisited;
   }
 
-  function pendingUnlock(s) {
+  function pendingUnlocks(s) {
     const seen = ensureUnlockSeen(s);
     ensureUnlockVisited(s);
     const catalog = unlockCatalog();
     const keys = unlockedKeys(s, catalog);
+    const out = [];
     const gear = catalog.find((u) => u.key === 'gear');
-    if (gear && !seen.gear && keys.indexOf('gear') >= 0) return gear;
-    for (let i = 0; i < catalog.length; i += 1) {
-      const u = catalog[i];
-      if (u.key === 'gear') continue;
-      if (!seen[u.key] && keys.indexOf(u.key) >= 0) return u;
-    }
-    return null;
+    if (gear && !seen.gear && keys.indexOf('gear') >= 0) out.push(gear);
+    catalog.forEach((u) => {
+      if (u.key === 'gear') return;
+      if (!seen[u.key] && keys.indexOf(u.key) >= 0) out.push(u);
+    });
+    return out;
+  }
+
+  function pendingUnlock(s) {
+    const list = pendingUnlocks(s);
+    return list.length ? list[0] : null;
+  }
+
+  function unlockDisplayName(u) {
+    if (!u) return '';
+    return String(u.title || '').replace(/已开启$/, '').replace(/已激活$/, '') || u.key;
   }
 
   // 法宝卡未弹过时只出法宝；未通 1-10 时（无论当前页签）不弹其它机缘，通关后再按队列弹出。
@@ -1832,10 +1842,27 @@
       clearTimeout(unlockTimer);
       unlockTimer = 0;
     }
-    currentUnlock = u;
-    markUnlockSeen(s, u.key);
+    // 读档时若同时有多张待弹机缘卡，合并成一张「新开启的功能」，避免连弹
+    const ready = pendingUnlocks(s).filter((item) => !shouldDeferUnlock(s, item));
+    const list = ready.length ? ready : [u];
+    if (list.every((item) => item.key !== u.key)) list.unshift(u);
+    list.forEach((item) => markUnlockSeen(s, item.key));
     if (window.GameState && typeof window.GameState.saveGame === 'function') window.GameState.saveGame();
-    renderUnlockCard(u);
+    if (list.length >= 2) {
+      currentUnlock = {
+        key: 'bundle',
+        title: '新开启的功能',
+        desc: `${list.map(unlockDisplayName).join('、')}已开启。`,
+        go: '去看看',
+        tab: list[0].tab,
+        pane: list[0].pane,
+        glyph: '新',
+        bundle: list
+      };
+    } else {
+      currentUnlock = list[0] || u;
+    }
+    renderUnlockCard(currentUnlock);
     if (els.unlockModal) {
       els.unlockModal.classList.add('active');
       els.unlockModal.setAttribute('aria-hidden', 'false');
@@ -2052,6 +2079,7 @@
     ensureUnlockSeen,
     ensureUnlockVisited,
     pendingUnlock,
+    pendingUnlocks,
     unlockTabDot,
     markUnlockPaneVisited,
     shouldShowGearBeforeStage,

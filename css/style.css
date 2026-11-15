@@ -276,6 +276,17 @@ body {
   color: var(--accent-purple);
 }
 
+/* v152：375/390 窄屏顶栏「道果 灵气×5…」被裁切；藏「灵气」前缀，只留 ×倍率，不影响灵气/灵石格 */
+@media (max-width: 390px) {
+  #res-daoguo-mult .res-mult-prefix {
+    display: none;
+  }
+  #res-daoguo-mult {
+    overflow: visible;
+    text-overflow: unset;
+  }
+}
+
 .main-content {
   position: relative;
   flex: 1 1 auto;
@@ -3821,7 +3832,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=151") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=152") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3829,11 +3840,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=151");
+  background-image: url("../assets/home/scene_xuan.webp?v=152");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=151");
+  background-image: url("../assets/home/scene_xian.webp?v=152");
 }
 
 .home-stage {
@@ -7419,6 +7430,9 @@ button.mijing-bless-card:active {
   margin-bottom: -18px;
   pointer-events: none;
   --story-fade: linear-gradient(180deg, #000 0, #000 78%, transparent 100%);
+  /* 主角立绘四周渐隐：底部原有，v152 补上沿和左右外侧，避免矩形硬边 */
+  --story-hero-fade-y: linear-gradient(180deg, transparent 0%, #000 12%, #000 78%, transparent 100%);
+  --story-hero-fade-x: linear-gradient(90deg, transparent 0%, #000 10%, #000 88%, transparent 100%);
 }
 
 .story-hero,
@@ -7436,8 +7450,14 @@ button.mijing-bless-card:active {
   z-index: 1;
   object-fit: cover;
   object-position: 50% 0%;
-  -webkit-mask-image: var(--story-fade);
-  mask-image: var(--story-fade);
+  -webkit-mask-image: var(--story-hero-fade-y), var(--story-hero-fade-x);
+  mask-image: var(--story-hero-fade-y), var(--story-hero-fade-x);
+  -webkit-mask-size: 100% 100%, 100% 100%;
+  mask-size: 100% 100%, 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 .story-boss {
@@ -7954,6 +7974,11 @@ button.mijing-bless-card:active {
 }
 
 /* 开篇五屏（世界观 batch5）：无名凡人视角，不显示立绘与 Boss 剪影，文字框居中稍大 */
+/* 1-1 战败旁白等无 Boss 段落：不画右侧兜帽烟雾暗影（开篇仍走 is-opening，连立绘和名签一起藏） */
+.story-modal.is-no-boss .story-boss {
+  display: none;
+}
+
 .story-modal.is-opening .story-portraits {
   display: none;
 }

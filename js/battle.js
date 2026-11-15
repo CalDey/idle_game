@@ -1976,6 +1976,8 @@
   const RECOMMENDED_WIN_RATE = 0.9;
   const RECOMMENDED_SIMS = 24;
   const RECOMMENDED_ITERS = 8;
+  // v152：仅第 1-5 关（stageNum === 5）的推荐战力定为 1250（数值策划稍后复核；不改敌人数值）
+  const STAGE_5_RECOMMENDED_CP = 1250;
 
   function scalePlayerForProbe(player, scale) {
     const s = Number(scale);
@@ -2033,7 +2035,13 @@
       if (rateAtScale(mid) >= target) hi = mid;
       else lo = mid;
     }
-    return Math.max(1, Math.round(baseCp * hi));
+    const rec = Math.max(1, Math.round(baseCp * hi));
+    const isSpecial = typeof n === 'object' && n !== null && (n.mijingWave || n.towerFloor);
+    const stageNum = typeof n === 'object' && n !== null
+      ? Math.floor(Number(n.n) || 0)
+      : Math.max(1, Math.floor(n || 1));
+    if (!isSpecial && stageNum === 5) return STAGE_5_RECOMMENDED_CP;
+    return rec;
   }
 
   function failPowerGap(playerCp, recommended) {
@@ -2095,6 +2103,7 @@
     recommendedCp,
     failPowerGap,
     RECOMMENDED_WIN_RATE,
+    STAGE_5_RECOMMENDED_CP,
     firstClearReward
   };
 

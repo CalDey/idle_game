@@ -1122,6 +1122,54 @@
     return Math.max(0, paidOld - paidNew);
   }
 
+  // 节奏 v2 改定前的境界曲线（只用于说明弹窗对照，不参与实际突破）。baseQi 未改，改的是 stepGrowth 与 LATE。
+  const PACING_V2_OLD_STEP_GROWTH = [1.35, 1.36, 1.38, 1.40, 1.41, 1.43, 1.44, 1.46, 1.47, 1.49, 1.50, 1.52, 1.54, 1.55];
+  const PACING_V2_OLD_LATE_QI_MULT = [1, 4, 6, 8, 11, 14, 18, 22, 26, 30, 35, 40, 48, 60];
+  // 数值策划尚未确认 744万→28.5亿 等跳变是否符合预期，本版不展示门槛句；把开关改为 true 即可接上。
+  const SHOW_PACING_V2_THRESHOLD_LINE = false;
+
+  function pacingV2OldReqQi(realmIndex) {
+    const stages = window.GameConfig && window.GameConfig.REALM_STAGES;
+    const majors = window.GameConfig && window.GameConfig.MAJOR_REALMS;
+    if (!stages || !majors) return null;
+    const idx = Math.max(0, Math.min(Math.floor(Number(realmIndex) || 0), stages.length - 1));
+    const stage = stages[idx];
+    if (!stage) return null;
+    const major = majors[stage.majorIndex];
+    if (!major) return null;
+    const step = PACING_V2_OLD_STEP_GROWTH[stage.majorIndex];
+    const late = PACING_V2_OLD_LATE_QI_MULT[stage.majorIndex] == null ? 1 : PACING_V2_OLD_LATE_QI_MULT[stage.majorIndex];
+    const base = Math.round(major.baseQi * Math.pow(step, stage.subIndex));
+    return Math.round(base * late);
+  }
+
+  function pacingV2Threshold(s) {
+    const stages = window.GameConfig && window.GameConfig.REALM_STAGES;
+    if (!stages || !stages.length) return null;
+    const idx = Math.max(0, Math.min(Math.floor(Number(s && s.realmIndex) || 0), stages.length - 1));
+    const stage = stages[idx];
+    if (!stage || stage.isMaxStage) return null;
+    return { nextQi: stage.reqQi, oldQi: pacingV2OldReqQi(idx) };
+  }
+
+  function formatPacingV2Notice(n, s) {
+    const fmt = window.GameConfig && typeof window.GameConfig.formatNumber === 'function'
+      ? window.GameConfig.formatNumber
+      : String;
+    const qi = fmt((n && n.qi) || 0);
+    const stones = Number(n && n.stones) || 0;
+    const stonePart = stones > 0 ? `，药园造价按差价返还灵石（${fmt(stones)}）` : '';
+    let text = `修为规矩已改定。补发 2 小时离线灵气（${qi}）${stonePart}。`;
+    if (SHOW_PACING_V2_THRESHOLD_LINE) {
+      const th = pacingV2Threshold(s);
+      if (th && th.nextQi != null && th.oldQi != null) {
+        text += `突破门槛重算：下一重需 ${fmt(th.nextQi)} 灵气（原 ${fmt(th.oldQi)}），失败损耗降至 14%。`;
+      }
+    }
+    text += '已有道果效果不变。';
+    return text;
+  }
+
   function applyPacingV2Compensation(s) {
     if (!s || s.pacingV2Compensated === true) return null;
     s.pacingV2LegacyTotalDaoGuo = Math.max(0, Number(s.totalDaoGuo) || 0);
@@ -1478,6 +1526,12 @@
     applyPacingV2Compensation,
     peekPacingV2Notice,
     markPacingV2NoticeShown,
+    formatPacingV2Notice,
+    pacingV2Threshold,
+    pacingV2OldReqQi,
+    SHOW_PACING_V2_THRESHOLD_LINE,
+    PACING_V2_OLD_STEP_GROWTH,
+    PACING_V2_OLD_LATE_QI_MULT,
     yaoyuanPriceDiffRefund,
     YAOYUAN_COST_OLD,
     DAOGUO_RATE_QI_OLD,

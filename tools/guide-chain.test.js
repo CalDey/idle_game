@@ -405,7 +405,7 @@ check('目标条与战败页推荐同一项，且同时只有一颗星', () => {
   assert.ok(rec && star);
   const recKeys = rec.key === 'peach' ? ['peach', 'pending'] : [rec.key];
   assert.ok(recKeys.includes(star.key), `推荐 ${rec.key}/${rec.name}，战败 ★ 为 ${star.key}`);
-  assert.ok(['突破', '修行', '法宝', '洞府', '道途'].includes(rec.name), rec.name);
+  assert.ok(['突破', '功法', '法宝', '洞府', '道途'].includes(rec.name), rec.name);
 });
 
 check('P2 化灵中一次补满灵气后即使不足 500ms 也立刻重算出文案', () => {

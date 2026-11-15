@@ -103,6 +103,7 @@
   // codex:       { v, maxRealm }
   // idleEvents:  { v, pending, nextAt, recent, dgDay, count }
   // homeFortune: { v, date, spawned, pending, queued, recent, nextOnlineAt, onlineMs, lastSeen }
+  // karma:       见下文「因果簿」；旧档缺省由 mergeSave + Karma.normalize 补空账本
 }
 ```
 
@@ -180,7 +181,7 @@ flowchart TD
 
 1. **免费角色补发**：若存在显式 `unlockedHeroes`，补发 `qingkui`、`yueshi`、`ziling`、`honglian`、`molan`、`qinglan`、`fenxiao`、`shuangchen`、`youming`（尊重 `lockedHeroes` 与 `hero.locked`）。名单仍硬编码。
 2. **队伍归一化**：`normalizeSavedSquad`，人数夹在 1–6。
-3. **子对象合并**：`gongfa` / `dongfu` / `home.maxTier` / `talents` / `tree` / `equip` / `pity` / `autoDecomp` / `stage` / `titles` / `flags` / `login` / `dayTaps`，以及 `guide`、`breakAttempts`、`unlockSeen`、`storySeen`、`mijing`、`daily`、`grow`、`tower`、`homeFortune`。
+3. **子对象合并**：`gongfa` / `dongfu` / `home.maxTier` / `talents` / `tree` / `equip` / `pity` / `autoDecomp` / `stage` / `titles` / `flags` / `login` / `dayTaps`，以及 `guide`、`breakAttempts`、`unlockSeen`、`storySeen`、`mijing`、`daily`、`grow`、`tower`、`homeFortune`、`karma`（经 `Karma.normalize`，缺字段的旧档得到空账本）。
 4. 旧档若没有 `flags.breakFailTipShown`，则按是否已有失败次数推断。
 
 ---
@@ -210,14 +211,38 @@ flowchart TD
 | 永久保留 | 轮回次数、道果、秘术、灵玉、桃树、保底、自动分解、`seq` | 完整保留（桃树 `gifted` 置 true） |
 | 永久保留 | `heroId`、`squad`、`formation`、`home` 视觉最高阶 | 保留 |
 | 永久保留 | `lifeBestStage`、称号、flags、login、dayTaps、生涯统计、`createdAt` | 保留（「一夜洞天」仍按建档时间计算） |
-| 永久保留 | `codex`（深拷）、`mijing`、`dispatch`、`beasts`、`daily`、`grow`、`tower`、`homeFortune` | 深拷或经对应 `normalize`；避免靠轮回刷新每日次数 |
+| 永久保留 | `codex`（深拷）、`mijing`、`dispatch`、`beasts`、`daily`、`grow`、`tower`、`homeFortune`、`karma` | 深拷或经对应 `normalize`；避免靠轮回刷新每日次数或抹掉因果簿旧账 |
 | 永久保留 | `guide`、`breakAttempts`、`unlockSeen`、`storySeen` | 规范化后带入新世 |
 
 注意：d620701 已修：轮回深拷 idleEvents 并 ensureState；loadGame catch 补了 HomeFortune.ensure
 
 ---
 
-## 6. 现存风险（基于当前代码）
+## 6. 因果簿存档（`state.karma`）
+
+因果回收与因果簿的存档全部落在 `state.karma`，由 [js/karma.js](../../js/karma.js) 的 `normalize` / `ensureState` 维护，**不升** `state.version`。缺字段或旧档没有该键时，`mergeSave` 调用 `Karma.normalize(saved.karma)`，把 `null` / 非对象补成空账本，读档即可打开因果簿（此时无条目）。
+
+字段结构（`Karma.normalize` 的缺省形）：
+
+```javascript
+{
+  v: 1,
+  events: {},          // 原机缘选择：{ [sourceEventId]: { choice, stage, best } }
+  callbacks: {},       // 回收事件进度：{ [callbackId]: { closed, choice, stage, deferredToChapter?, ledgerResult?, ink? } }
+  effects: {},         // 仍生效的回收效果（artifactBuff / gardenBonus / bossIntel / dispatchBonus / heartRune 等）
+  eligibleSince: {},   // 某条回收自第几章起可入池
+  bookUnlocked: false, // 是否已解锁因果簿入口
+  noticeShown: false,  // 是否已提示过解锁
+  pendingElite: null,  // 待结算的精英关因果 { id, option }
+  prefightShown: false
+}
+```
+
+轮回：`performReincarnation` 把整份 `karma` 深拷后经 `Karma.normalize` 带入新世（账本条目、未了回收、效果与解锁状态都保留）。不能靠轮回刷回收奖励或抹掉旧账。
+
+---
+
+## 7. 现存风险（基于当前代码）
 
 1. **明文无签名**：主存档仍是可编辑的 JSON，单机可接受；若将来做排行榜需另行校验。
 2. **依赖客户端时钟**：离线、挂机、派遣、桃树回复都用 `Date.now()`。拨表可刷满额离线；调回未来时间戳会导致回复/挂机停滞。派遣在时钟回拨超过 1 分钟时会重新计时，但离线结算没有对等保护。
