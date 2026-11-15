@@ -492,7 +492,7 @@
       { id: 'xuefu', name: '血蝠夫人', img: 'assets/enemies/boss_xuefu.webp?v=21' },
       { id: 'qinglin', name: '青鳞蛇姬', img: 'assets/enemies/boss_qinglin.webp?v=21' },
       { id: 'kumu', name: '枯木树娘', img: 'placeholder' },
-      { id: 'leiying', name: '雷翼鹰后', img: 'placeholder' },
+      { id: 'leiying', name: '雷翼鹰后', img: 'assets/enemies/boss_leiying.webp?v=153' },
       { id: 'qingming', name: '青冥蛟后', img: 'placeholder' },
       { id: 'baie', name: '白额山君', img: 'placeholder' },
       { id: 'huoya', name: '火鸦女王', img: 'placeholder' },

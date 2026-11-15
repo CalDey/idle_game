@@ -208,8 +208,8 @@ console.log('codex.test.js ok: 52 entries, 30/30 bosses, 18 mobs');
   bosses.forEach((b) => { byId[b.id] = b; });
   assert.strictEqual(Object.keys(byId).length, 30, '每个 Boss 都有唯一 id');
   bosses.forEach((b) => assert.ok(fs.existsSync(path.join(ROOT, `assets/enemies/boss_${b.id}.webp`)), `boss_${b.id}.webp 存在`));
-  // 图片：黑风/血蝠夫人/青鳞蛇姬/熔岩巨傀/赤炎魔君/冰魄蛛后/寒潮巨鲸/玄冰龙女/北溟鲲影/九幽鬼母接入新立绘，其余仍为占位
-  assert.deepStrictEqual(JSON.parse(JSON.stringify(bosses.filter((b) => b.img !== 'placeholder').map((b) => b.id))), ['heifeng', 'xuefu', 'qinglin', 'rongyan', 'chiyan', 'zhuhou', 'hanchao', 'longnv', 'beiming', 'jiuyou']);
+  // 图片：黑风/血蝠夫人/青鳞蛇姬/雷翼鹰后/熔岩巨傀/赤炎魔君/冰魄蛛后/寒潮巨鲸/玄冰龙女/北溟鲲影/九幽鬼母接入新立绘，其余仍为占位；青冥蛟后仍为占位
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(bosses.filter((b) => b.img !== 'placeholder').map((b) => b.id))), ['heifeng', 'xuefu', 'qinglin', 'leiying', 'rongyan', 'chiyan', 'zhuhou', 'hanchao', 'longnv', 'beiming', 'jiuyou']);
   Object.keys(RENAMED).forEach((id) => {
     const [oldName, newName] = RENAMED[id];
     assert.strictEqual(byId[id].name, newName, `${id} 应改名为 ${newName}`);
