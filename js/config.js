@@ -503,7 +503,7 @@
       { id: 'zhuhou', name: '冰魄蛛后', img: 'assets/enemies/boss_zhuhou.webp?v=21' },
       { id: 'hanchao', name: '寒潮巨鲸', img: 'assets/enemies/boss_hanchao.webp?v=119' },
       { id: 'xuefa', name: '雪发剑尸', img: 'placeholder' },
-      { id: 'longnv', name: '玄冰龙女', img: 'assets/enemies/boss_longnv.webp?v=21' },
+      { id: 'longnv', name: '玄冰龙女', img: 'assets/enemies/boss_longnv.webp?v=22' },
       { id: 'beiming', name: '北溟鲲影', img: 'assets/enemies/boss_beiming.webp?v=119' },
       { id: 'jiuyou', name: '九幽鬼母', img: 'assets/enemies/boss_jiuyou.webp?v=19' },
       { id: 'shihun', name: '噬魂女将', img: 'placeholder' },

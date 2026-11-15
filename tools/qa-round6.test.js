@@ -52,7 +52,7 @@ const html = text('index.html');
 const gameSrc = text('js/game.js');
 const audioSrc = text('js/audio.js');
 
-check('G1 四名女性 Boss 分别设置 object-position，不加大全局 scale；蛛后/龙女保持 54% 28%', () => {
+check('G1 四名女性 Boss 分别设置 object-position，不加大全局 scale；蛛后保持 54% 28%，龙女 v2 顶对齐', () => {
   const scaleBlocks = css.match(/\.board-unit\.is-enemy \.unit-avatar-img\s*\{[^}]+\}/g) || [];
   assert.ok(scaleBlocks.length >= 1, '应有敌人头像规则');
   const global = scaleBlocks[0];
@@ -70,7 +70,7 @@ check('G1 四名女性 Boss 分别设置 object-position，不加大全局 scale
   const zhuhou = pos('zhuhou');
   const longnv = pos('longnv');
   assert.strictEqual(zhuhou, '54% 28%', '冰魄蛛后保持原锚点');
-  assert.strictEqual(longnv, '54% 28%', '玄冰龙女保持原锚点');
+  assert.strictEqual(longnv, '47% 0%', '玄冰龙女 v2 重画后顶对齐（另配 scale 1.8）');
   const yOf = (s) => Number(String(s).split(/\s+/)[1].replace('%', ''));
   assert.ok(yOf(xuefu) < 20, `血蝠夫人 object-position Y 应上移以把脸收入框内，实际 ${xuefu}`);
   assert.ok(yOf(qinglin) < 20, `青鳞蛇姬 object-position Y 应上移以把脸收入框内，实际 ${qinglin}`);
