@@ -199,7 +199,7 @@ check('页面接线：脚本顺序、弹窗、设置入口、闯关仙缘行头�
   assert.ok(stage.includes(':${beastKey(state)}`'), '胜率缓存随灵兽变化失效');
   assert.ok(!text('js/game.js').includes('Beasts'), '不改 game.js');
   const css = text('css/style.css');
-  assert.ok(/\.beast-companion \{[^}]*bottom: 164px/.test(css), '灵兽在立绘下部、说明文字附近');
+  assert.ok(/\.beast-companion \{[^}]*left: 8px;[^}]*top: 46px/.test(css), '灵兽在左上称号牌下方（v145 用户要求）');
   assert.ok(css.includes('#tab-cultivate.is-portrait-focus .beast-companion'));
   const ui = text('js/beasts-ui.js');
   assert.ok(ui.includes("btn.addEventListener('pointerdown', (e) => e.stopPropagation())"), '点灵兽不触发打坐');

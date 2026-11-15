@@ -68,8 +68,8 @@ check('--bt-panel-h 只在窄屏媒体查询里被使用，基础样式不读', 
 
 check('桌面基础规则未改：说明 156px、灵兽 164px、描述省略号；道途不再用 9.5em 省略', () => {
   assert.match(rule(base, '.meditation-caption'), /bottom:\s*156px/);
-  assert.match(rule(base, '.beast-companion'), /bottom:\s*164px/);
-  assert.match(rule(base, '.beast-companion'), /width:\s*min\(26%,\s*108px\)/);
+  assert.match(rule(base, '.beast-companion'), /top:\s*46px/, 'v145 灵兽在称号牌下方');
+  assert.match(rule(base, '.beast-companion'), /left:\s*8px/);
   assert.match(rule(base, '.card-subtitle'), /text-overflow:\s*ellipsis/);
   const pe = rule(base, '.path-entry');
   assert.match(pe, /max-width:\s*none/);
@@ -80,11 +80,11 @@ check('桌面基础规则未改：说明 156px、灵兽 164px、描述省略号�
   assert.match(rule(base, '.cultivate-codex-row'), /margin:\s*-2px 0 8px/);
 });
 
-check('窄屏：打坐说明与灵兽按面板高度放到面板之上', () => {
+check('窄屏：打坐说明按面板高度放到面板之上；灵兽在称号下方', () => {
   assert.match(rule(nb, '#tab-cultivate .meditation-caption'), /bottom:\s*calc\(var\(--bt-panel-h,\s*150px\)\s*\+\s*var\(--bt-safe-gap\)\)/);
   const beast = rule(nb, '#tab-cultivate .beast-companion');
-  assert.match(beast, /bottom:\s*calc\(var\(--bt-panel-h,\s*150px\)/);
-  assert.match(beast, /env\(safe-area-inset-right/);
+  assert.match(beast, /top:\s*44px/);
+  assert.match(beast, /env\(safe-area-inset-left/);
 });
 
 check('窄屏：本命道途入口不换行、不省略（v143 改为「道途」+ 状态小字，详见 mobile-r13.test.js）', () => {

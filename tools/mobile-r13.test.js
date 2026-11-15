@@ -76,7 +76,7 @@ check('桌面基础规则不变（图鉴/按钮/关闭/勾选/仙缘/闯关/轮�
   assert.match(rule(base, '.upgrade-desc'), /font-size:\s*11px/);
   assert.match(rule(base, '.path-entry .path-entry-short'), /display:\s*none/, '新增的窄屏标签在桌面隐藏');
   assert.match(rule(base, '.path-entry .home-upgrade-badge'), /top:\s*2px/);
-  assert.match(rule(base, '.beast-companion'), /right:\s*4px/);
+  assert.match(rule(base, '.beast-companion'), /left:\s*8px/);
   assert.ok(!/\.codex-tabs-wrap[^{]*\{[^}]*\}/.test(r13.body), 'r13 不改渐隐层（仍在溢出时由 JS 打开）');
 });
 
@@ -131,10 +131,10 @@ check('A path.js：状态取「 · 」后的部分；完整文字写进 title / 
   assert.match(pathJs, /els\.entry\.setAttribute\('aria-label', text\)/);
 });
 
-check('B/C 灵兽左移 10px 且在说明两行之上；说明左右各留 ≥16px', () => {
+check('B/C 灵兽在称号牌下方（v145）；说明左右各留 ≥16px', () => {
   const beast = rule(home.body, '#tab-cultivate .beast-companion');
-  assert.match(beast, /right:\s*calc\(max\(6px,\s*env\(safe-area-inset-right,\s*0px\)\)\s*\+\s*10px\)/);
-  assert.match(beast, /\+\s*38px\)/);
+  assert.match(beast, /top:\s*44px/);
+  assert.ok(!/bottom:/.test(beast), '不再按底部定位');
   const cap = rule(home.body, '#tab-cultivate .meditation-caption');
   assert.match(cap, /padding-left:\s*max\(16px/);
   assert.match(cap, /padding-right:\s*max\(16px/);
