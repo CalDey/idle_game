@@ -1456,16 +1456,32 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   display: block;
 }
 
+/* v150：.tab-pane.active 是 flex 列 + overflow-y:auto 的滚动容器。
+   旧版 .gear-body 写了 min-height:0 且默认 flex-shrink:1，会被压到视口高度；
+   内部带 overflow:hidden 的仙桃树/升级卡最小高度因此为 0，被继续压扁并裁掉按钮。
+   现在：gear-body 和每张卡都保持自然高度（flex-shrink:0），整页自然滚动。 */
 .gear-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: auto;
 }
 
-/* 底栏在文档流中，只补滚动区内边距，不重复叠加导航高度 */
+#tab-gear > #gear-locked,
+#tab-gear .gear-body > * {
+  flex-shrink: 0;
+}
+
+/* 底栏 .bottom-nav 在 .app-container 的 flex 列里（不是 fixed），滚动区本身就止于底栏上沿，
+   所以底部留白不用再叠导航高度，只补安全区。留白写在 .gear-body（非滚动元素）上：
+   iOS Safari 对 flex 滚动容器自身的 padding-bottom 不一定计入可滚动高度。 */
 #tab-gear {
-  padding-bottom: max(16px, calc(12px + env(safe-area-inset-bottom, 0px)));
+  padding-bottom: 0;
+}
+
+#tab-gear .gear-body {
+  padding-bottom: max(20px, calc(12px + env(safe-area-inset-bottom, 0px)));
 }
 
 .gear-locked-text,
@@ -1478,10 +1494,18 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 
 .cp-bar {
   flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 10px;
   border: 1px solid var(--border-gold);
   border-radius: 10px;
   background: rgba(10, 8, 24, 0.45);
+}
+
+.cp-text {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .cp-main {
@@ -1587,10 +1611,12 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   max-width: 100%;
 }
 
+/* v150：不再 overflow:hidden（会和 flex 收缩一起把摘桃按钮、自动分解行裁掉） */
 .peach-card,
 .tree-card {
   position: relative;
-  overflow: hidden;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
 .gufeng-card.peach-card.q-xian {
@@ -1731,13 +1757,38 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   position: relative;
 }
 
+.tree-up-row {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.tree-up-info {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* v150：升级中是状态条，不是灰掉的空按钮：换到文字下方整行，金字可读，带进度条 */
 #btn-tree-up.is-upgrading {
-  min-width: 108px;
-  max-width: 52%;
-  white-space: normal;
+  flex: 1 1 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 36px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1.25;
-  font-size: 11px;
-  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+#btn-tree-up.is-upgrading:disabled {
+  opacity: 1;
+  cursor: default;
+  color: var(--accent-gold-bright);
+  border-color: rgba(230, 201, 138, 0.45);
+  background: rgba(12, 10, 26, 0.72);
+  box-shadow: none;
 }
 
 .tree-up-bar {
@@ -3770,7 +3821,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=149") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=150") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3778,11 +3829,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=149");
+  background-image: url("../assets/home/scene_xuan.webp?v=150");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=149");
+  background-image: url("../assets/home/scene_xian.webp?v=150");
 }
 
 .home-stage {
@@ -8947,11 +8998,7 @@ button.mijing-bless-card:active {
     padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   }
 
-  /* 法宝：底栏在文档流中，给滚动区底部留白，避免「≤地品」/自动分解贴边 */
-  #tab-gear {
-    padding-bottom: max(16px, calc(12px + env(safe-area-inset-bottom, 0px)));
-  }
-
+  /* 法宝底部留白见基础样式 #tab-gear .gear-body（v150 起写在非滚动元素上） */
   #tab-gear .mini-select,
   #tab-gear .auto-row label {
     min-height: 44px;
@@ -8989,14 +9036,22 @@ button.mijing-bless-card:active {
 }
 
 /* === 因果簿与回收事件立绘 === */
+/* v150：v149 只改了 display，但按钮仍是 .gear-body（flex 列，align-items:stretch）的直接子项，
+   被拉成整行。现在挪进战力条右侧，自身也不拉伸。[hidden] 要显式隐藏，否则 inline-flex 会盖掉它。 */
 .karma-ledger-entry {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex: 0 0 auto;
+  align-self: center;
   width: auto;
-  max-width: 100%;
-  margin: 0 0 8px;
+  max-width: 50%;
+  margin: 0;
   cursor: pointer;
+}
+
+.karma-ledger-entry[hidden] {
+  display: none;
 }
 
 .karma-ledger-dialog {

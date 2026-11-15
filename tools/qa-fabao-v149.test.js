@@ -80,7 +80,8 @@ check('U2 摘桃红点：向内偏移，不被 .peach-card overflow:hidden 裁�
         return m ? m[1] : '';
       })()
     : peach + tree;
-  assert.match(combined, /overflow:\s*hidden/, '卡片仍裁切内容层');
+  // v150：卡片不再 overflow:hidden（会把摘桃按钮裁掉），红点向内偏移仍保留
+  assert.ok(!/overflow:\s*hidden/.test(combined), 'v150 起卡片不再裁切内容');
   const inset = rule(base, '#btn-pick-peach .action-badge');
   assert.ok(inset, '摘桃红点有单独偏移');
   assert.match(inset, /top:\s*2px/);
@@ -107,11 +108,12 @@ check('U3 升级中：按钮文字显示「升级中」+剩余时间，复用现
 });
 
 check('U4 #tab-gear 底部留白含安全区；「≤地品」与自动分解触控区 ≥44px，矮屏也不再压到 36px', () => {
-  const pad = rule(base, '#tab-gear');
-  assert.ok(pad, '#tab-gear 有底部留白');
-  assert.match(pad, /padding-bottom:\s*max\(16px,\s*calc\(12px \+ env\(safe-area-inset-bottom,\s*0px\)\)\)/);
-  assert.ok(r13, 'r13 窄屏块含法宝留白');
-  assert.match(rule(r13.body, '#tab-gear'), /padding-bottom:\s*max\(16px,\s*calc\(12px \+ env\(safe-area-inset-bottom,\s*0px\)\)\)/);
+  // v150：留白挪到非滚动的 .gear-body 上（iOS Safari 对 flex 滚动容器自身 padding-bottom 不可靠），含安全区
+  const pad = rule(base, '#tab-gear .gear-body');
+  assert.ok(pad, '#tab-gear .gear-body 有底部留白');
+  assert.match(pad, /padding-bottom:\s*max\(20px,\s*calc\(12px \+ env\(safe-area-inset-bottom,\s*0px\)\)\)/);
+  assert.ok(r13, 'r13 窄屏块仍在');
+  assert.strictEqual(rule(r13.body, '#tab-gear'), null, '窄屏不再给滚动容器叠一层 padding');
   const mini = rule(base, '.mini-select');
   assert.match(mini, /min-height:\s*44px/);
   const lab = rule(base, '.auto-row label');
@@ -385,7 +387,7 @@ check('U3 运行：升级中按钮文案含「升级中」和剩余时间，结�
   assert.match(label, /^升级中/);
   assert.ok(label.includes('小时') || label.includes('分') || label.includes('秒'), `文案含剩余时间：${label}`);
   const costLabel = W.document.getElementById('tree-cost-label').textContent;
-  assert.match(costLabel, /^升级中/);
+  assert.match(costLabel, /^正在升至 Lv6$/, 'v150：上方写目标等级，剩余时间只在状态条里');
   const btn = W.document.getElementById('btn-tree-up');
   assert.strictEqual(btn.disabled, true);
   assert.ok(btn.classList.contains('is-upgrading'));

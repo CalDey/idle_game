@@ -245,7 +245,8 @@
     if (tree.upEnd && tree.upEnd > Date.now()) {
       const left = Math.ceil((tree.upEnd - Date.now()) / 1000);
       const dur = window.GameConfig.formatDuration(left);
-      $('tree-cost-label').textContent = `升级中 ${dur}`;
+      // v150：剩余时间只放在下方状态条里，这里写升到哪一级，避免同一句话上下重复两遍
+      $('tree-cost-label').textContent = `正在升至 Lv${Math.min(window.GameConfig.TREE_MAX_LEVEL, (tree.lv || 1) + 1)}`;
       setUpLabel(`升级中 ${dur}`);
       upBtn.disabled = true;
       upBtn.classList.add('is-upgrading');
