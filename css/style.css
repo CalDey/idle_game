@@ -3706,7 +3706,7 @@ body:has(.modal-backdrop.active) .tab-pane.active {
   content: "";
   position: absolute;
   inset: -24px;
-  background: url("../assets/home/scene_base.webp?v=140") center / cover no-repeat;
+  background: url("../assets/home/scene_base.webp?v=141") center / cover no-repeat;
   filter: blur(16px) brightness(0.7);
   -webkit-filter: blur(16px) brightness(0.7);
   pointer-events: none;
@@ -3714,11 +3714,11 @@ body:has(.modal-backdrop.active) .tab-pane.active {
 }
 
 .home-scene.bg-tier-xuan::before {
-  background-image: url("../assets/home/scene_xuan.webp?v=140");
+  background-image: url("../assets/home/scene_xuan.webp?v=141");
 }
 
 .home-scene.bg-tier-xian::before {
-  background-image: url("../assets/home/scene_xian.webp?v=140");
+  background-image: url("../assets/home/scene_xian.webp?v=141");
 }
 
 .home-stage {
@@ -8609,4 +8609,126 @@ button.mijing-bless-card:active {
   text-align: center;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* ===== P0 手机首屏（v141）：只作用于窄屏 ≤440px，桌面 480 列宽布局不受影响 =====
+   1) 突破面板压缩：图鉴按钮并入标题行右上角，描述换行不省略，进度与按钮行收紧；
+   2) 打坐说明与灵兽按面板实际高度（game.js 写入 --bt-panel-h）放到面板之上，留安全边距；
+   3) 本命道途按钮文字换行，不再省略成「本命道途 · …」。
+   面板仍是 absolute 叠加层，切换「隐藏境界突破」时立绘舞台尺寸不变。 */
+@media (max-width: 440px) {
+  #tab-cultivate {
+    --bt-safe-gap: 8px;
+  }
+
+  #tab-cultivate>.gufeng-card {
+    padding: 7px 10px 8px;
+  }
+
+  #tab-cultivate>.gufeng-card .card-header {
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    padding-right: 50px;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+  }
+
+  #tab-cultivate>.gufeng-card .card-subtitle {
+    flex: 1 1 0;
+    font-size: 11px;
+    line-height: 1.35;
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  #tab-cultivate>.gufeng-card .cultivate-codex-row {
+    position: absolute;
+    top: 7px;
+    right: 10px;
+    margin: 0;
+    height: 32px;
+  }
+
+  #tab-cultivate>.gufeng-card .codex-entry-btn {
+    min-height: 32px;
+    padding: 4px 8px;
+  }
+
+  #tab-cultivate>.gufeng-card .qi-progress-wrap {
+    margin: 2px 0 4px;
+  }
+
+  #tab-cultivate>.gufeng-card .qi-progress-labels {
+    margin-bottom: 3px;
+    font-size: 12px;
+  }
+
+  #tab-cultivate>.gufeng-card .progress-bar-bg {
+    height: 10px;
+  }
+
+  #tab-cultivate>.gufeng-card .breakthrough-row {
+    margin-top: 6px;
+    gap: 6px;
+  }
+
+  #tab-cultivate>.gufeng-card .breakthrough-info {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  #tab-cultivate>.gufeng-card .breakthrough-row .btn {
+    min-width: 88px;
+    min-height: 38px;
+    padding: 6px 8px;
+  }
+
+  #tab-cultivate>.gufeng-card .path-entry {
+    max-width: 10em;
+    min-height: 38px;
+    height: auto;
+    padding: 3px 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  #tab-cultivate>.gufeng-card .path-entry #path-entry-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  #tab-cultivate .meditation-caption {
+    bottom: calc(var(--bt-panel-h, 150px) + var(--bt-safe-gap));
+  }
+
+  #tab-cultivate .beast-companion {
+    right: max(6px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--bt-panel-h, 150px) + var(--bt-safe-gap) + 8px);
+    width: min(22%, 92px);
+  }
+}
+
+/* 窄且矮（如 375×667、390×844 带工具栏的 Safari）：可见立绘区更小，灵兽再缩一档，说明副行缩字 */
+@media (max-width: 440px) and (max-height: 700px) {
+  #tab-cultivate .beast-companion {
+    width: min(17%, 64px);
+  }
+
+  #tab-cultivate .meditation-subhint {
+    font-size: 10px;
+  }
+
+  #tab-cultivate .meditation-hint {
+    font-size: 12px;
+  }
 }

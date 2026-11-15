@@ -380,7 +380,9 @@ function breakAt(GS, roll) {
   assert.ok(r4.loss <= st.reqQi * st.failureLossRatio);
   assert.strictEqual(GS.state.qi, qiBefore - r4.loss);
   assert.strictEqual(r4.firstFailTip, true, '首次失败弹说明');
-  assert.strictEqual(GS.state.flags.breakFailTipShown, true);
+  // v140-B2：标记改由 game.js 在说明真正弹出时写入
+  assert.strictEqual(GS.state.flags.breakFailTipShown, false);
+  GS.state.flags.breakFailTipShown = true;
   assert.ok(Math.abs(GS.state.pityBonus - 0.04) < 1e-9, '原有气运补偿 +4% 不变');
   const r5 = breakAt(GS, 0.99999);
   assert.strictEqual(r5.success, false);

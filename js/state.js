@@ -181,8 +181,9 @@
     state.qi = Math.max(0, state.qi - loss);
     state.pityBonus = Math.min(0.35, (state.pityBonus || 0) + 0.04);
     state.failBreakthroughs = (state.failBreakthroughs || 0) + 1;
+    // 只返回「还没看过说明」；flags.breakFailTipShown 由 game.js 在说明真正弹出时写入（v140-B2），
+    // 避免说明排队期间刷新导致永远看不到。
     const firstFailTip = !state.flags.breakFailTipShown;
-    state.flags.breakFailTipShown = true;
     return { success: false, guaranteed: false, rate, loss, stage, nextStage: stage, firstFailTip };
   }
 

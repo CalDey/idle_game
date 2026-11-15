@@ -18,9 +18,9 @@
   const GameState = window.GameState;
 
   const HOME_BG_SRC = [
-    'assets/home/scene_base.webp?v=140',
-    'assets/home/scene_xuan.webp?v=140',
-    'assets/home/scene_xian.webp?v=140'
+    'assets/home/scene_base.webp?v=141',
+    'assets/home/scene_xuan.webp?v=141',
+    'assets/home/scene_xian.webp?v=141'
   ];
   const prefetchedHomeBg = Object.create(null);
 
@@ -408,16 +408,90 @@
 
   const BREAK_FAIL_TIP = '突破失败会损失部分灵气；下次成功率+4%，可叠加，最高+35%。';
 
-  // 首次突破失败的一次性说明（state.flags.breakFailTipShown 记录，只弹一次）
+  // 首次突破失败的一次性说明（state.flags.breakFailTipShown 记录，只弹一次）。
+  // v140-B2：「知道了」/ Enter 能关；有旁白或其它弹窗时先排队，等它们都关了再弹；
+  // 真正弹出时才写 breakFailTipShown 并存档。不改成功率、保底与失败损耗。
+  let breakTipPending = false;
+  let breakTipTimer = 0;
+  const BREAK_TIP_POLL_MS = 300;
+
+  function otherModalOpen() {
+    if (window.Story && typeof window.Story.isOpen === 'function' && window.Story.isOpen()) return true;
+    if (window.Newbie && typeof window.Newbie.anyModalOpen === 'function') return window.Newbie.anyModalOpen();
+    return Boolean(document.querySelector('.modal-backdrop.active'));
+  }
+
   function showBreakFailTip() {
     const modal = document.getElementById('break-tip-modal');
     if (!modal) {
       addLog(BREAK_FAIL_TIP, 'info');
+      markBreakFailTipShown();
       return;
     }
+    if (modal.classList.contains('active')) return;
+    if (otherModalOpen()) {
+      breakTipPending = true;
+      if (!breakTipTimer) {
+        breakTipTimer = setInterval(() => {
+          if (!breakTipPending) {
+            clearInterval(breakTipTimer);
+            breakTipTimer = 0;
+            return;
+          }
+          if (otherModalOpen()) return;
+          clearInterval(breakTipTimer);
+          breakTipTimer = 0;
+          showBreakFailTip();
+        }, BREAK_TIP_POLL_MS);
+      }
+      return;
+    }
+    breakTipPending = false;
     const msg = document.getElementById('break-tip-message');
     if (msg) msg.textContent = BREAK_FAIL_TIP;
     modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    markBreakFailTipShown();
+    const btn = document.getElementById('btn-close-break-tip');
+    if (btn && typeof btn.focus === 'function') {
+      try { btn.focus({ preventScroll: true }); } catch (err) { btn.focus(); }
+    }
+  }
+
+  function markBreakFailTipShown() {
+    const s = GameState.state;
+    if (!s || !s.flags || s.flags.breakFailTipShown) return;
+    s.flags.breakFailTipShown = true;
+    GameState.saveGame();
+  }
+
+  function closeBreakFailTip() {
+    const modal = document.getElementById('break-tip-modal');
+    if (!modal) return false;
+    const wasOpen = modal.classList.contains('active');
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    return wasOpen;
+  }
+
+  function isBreakTipTopmost() {
+    const modal = document.getElementById('break-tip-modal');
+    if (!modal || !modal.classList.contains('active')) return false;
+    if (window.Story && typeof window.Story.isOpen === 'function' && window.Story.isOpen()) return false;
+    const list = document.querySelectorAll('.modal-backdrop.active');
+    return list.length > 0 && list[list.length - 1] === modal;
+  }
+
+  function initBreakFailTip() {
+    const btn = document.getElementById('btn-close-break-tip');
+    if (btn) btn.addEventListener('click', closeBreakFailTip);
+    document.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented || e.isComposing) return;
+      if (e.key !== 'Enter' && e.code !== 'NumpadEnter') return;
+      if (!isBreakTipTopmost()) return;
+      e.preventDefault();
+      closeBreakFailTip();
+    });
   }
 
   // 境界门槛「还差X重」，复用设置里「境界体系 · 共42重」的说明。
@@ -1751,12 +1825,35 @@
     requestAnimationFrame(gameLoop);
   }
 
+  // 窄屏（≤440px，见 style.css「P0 手机首屏」）用 --bt-panel-h 把打坐说明与灵兽放到突破面板之上。
+  // 桌面不读这个变量，布局不变；面板隐藏（is-portrait-focus）时高度为 0，不覆盖上一次的值，避免抖动。
+  function initBreakthroughPanelVar() {
+    const tab = els.tabCultivate || document.getElementById('tab-cultivate');
+    const card = tab && tab.querySelector(':scope > .gufeng-card');
+    if (!tab || !card) return;
+    let last = -1;
+    const apply = () => {
+      const h = Math.round(card.offsetHeight);
+      if (h <= 0 || h === last) return;
+      last = h;
+      tab.style.setProperty('--bt-panel-h', `${h}px`);
+    };
+    apply();
+    if (typeof ResizeObserver === 'function') {
+      new ResizeObserver(apply).observe(card);
+    } else {
+      window.addEventListener('resize', apply);
+    }
+  }
+
   function init() {
     cacheElements();
     restorePortraitFocus();
     initTabs();
     initHomeStageResize();
     initHeroStage();
+    initBreakthroughPanelVar();
+    initBreakFailTip();
     initQiMotes();
 
     const { isNew, offlineReport } = GameState.loadGame();
