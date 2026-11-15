@@ -50,17 +50,19 @@ function check(name, fn) {
   console.log(`ok - ${name}`);
 }
 
-check('存在且只有一个窄屏 (max-width: 440px) 块，和一个窄且矮块', () => {
-  assert.strictEqual(narrow.length, 1);
+check('存在窄屏 (max-width: 440px) 首屏块（含 --bt-panel-h），和一个窄且矮块', () => {
+  assert.ok(narrow.length >= 1);
+  assert.strictEqual(narrow.filter((b) => /--bt-panel-h/.test(b.body)).length, 1);
   assert.strictEqual(narrowShort.length, 1);
 });
 
-const nb = narrow[0].body;
+const homeBlock = narrow.find((b) => /--bt-panel-h/.test(b.body));
+const nb = homeBlock.body;
 
 check('--bt-panel-h 只在窄屏媒体查询里被使用，基础样式不读', () => {
   assert.ok(!/var\(--bt-panel-h/.test(base), '基础样式不应使用 --bt-panel-h');
   blocks.forEach((b) => {
-    if (/var\(--bt-panel-h/.test(b.body)) assert.ok(b === narrow[0], `--bt-panel-h 出现在 @media ${b.query}`);
+    if (/var\(--bt-panel-h/.test(b.body)) assert.ok(b === homeBlock, `--bt-panel-h 出现在 @media ${b.query}`);
   });
 });
 
@@ -85,12 +87,10 @@ check('窄屏：打坐说明与灵兽按面板高度放到面板之上', () => {
   assert.match(beast, /env\(safe-area-inset-right/);
 });
 
-check('窄屏：本命道途按钮与文字换行，不用省略号', () => {
+check('窄屏：本命道途入口不换行、不省略（v143 改为「道途」+ 状态小字，详见 mobile-r13.test.js）', () => {
   const btn = rule(nb, '#tab-cultivate>.gufeng-card .path-entry');
-  const txt = rule(nb, '#tab-cultivate>.gufeng-card .path-entry #path-entry-text');
-  assert.match(btn, /white-space:\s*normal/);
-  assert.match(txt, /white-space:\s*normal/);
-  assert.match(txt, /text-overflow:\s*clip/);
+  assert.match(btn, /white-space:\s*nowrap/);
+  assert.match(rule(nb, '#tab-cultivate>.gufeng-card .path-entry #path-entry-text'), /display:\s*none/);
   assert.ok(!/text-overflow:\s*ellipsis/.test(nb), '窄屏块里不应出现 ellipsis');
 });
 
@@ -103,7 +103,7 @@ check('窄屏：境界突破描述换行；图鉴并入标题行；面板仍为�
 });
 
 check('窄屏块写在全局 .path-entry 之后（层叠顺序）', () => {
-  assert.ok(narrow[0].start > css.indexOf('.path-entry {'));
+  assert.ok(homeBlock.start > css.indexOf('.path-entry {'));
 });
 
 check('game.js：ResizeObserver 写 --bt-panel-h，高度 0 时不覆盖', () => {

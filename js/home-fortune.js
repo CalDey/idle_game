@@ -269,8 +269,12 @@
     return { ok: true, event, option, cost: q.cost, reward: q.reward, notes: q.notes, equipItem, equipNote, resultText: option.resultText };
   }
 
+  // v143：页面载入后 20 秒内不刷出、不显示、不打开洞府机缘；内容与奖励不变。
+  const LOAD_GRACE_MS = 20 * 1000;
+
   window.HomeFortune = {
     VERSION,
+    LOAD_GRACE_MS,
     DAILY_CAP,
     SPAWN_MIN_MS,
     SPAWN_MAX_MS,
@@ -344,18 +348,24 @@
     return parts.join('');
   }
 
+  let loadedAt = 0;
+  function inLoadGrace() {
+    return Date.now() - loadedAt < LOAD_GRACE_MS;
+  }
+
   function renderMarker() {
     if (!els || !els.btn) return;
     const GS = window.GameState;
     if (!GS || !GS.state) return;
     const h = ensure(GS.state, Date.now());
-    const has = !!(h.pending && findEvent(h.pending.id));
+    const has = !inLoadGrace() && !!(h.pending && findEvent(h.pending.id));
     els.btn.hidden = !has;
     els.btn.classList.toggle('has-event', has);
     if (els.label) els.label.textContent = '机缘';
   }
 
   function openModal() {
+    if (inLoadGrace()) return;
     const s = window.GameState.state;
     const h = ensure(s, Date.now());
     if (!h.pending) return;
@@ -435,6 +445,10 @@
     if (!lastTick) lastTick = now;
     const dt = Math.max(0, Math.min(2000, now - lastTick));
     lastTick = now;
+    if (inLoadGrace()) {
+      renderMarker();
+      return;
+    }
     if (typeof document === 'undefined' || document.visibilityState !== 'hidden') {
       h.onlineMs = (h.onlineMs || 0) + dt;
       const spawned = maybeSpawnOnline(GS.state, { now, rng: Math.random });
@@ -468,6 +482,7 @@
       if (!b || b.disabled) return;
       choose(Number(b.dataset.idx));
     });
+    loadedAt = Date.now();
     lastTick = Date.now();
     tick();
     setInterval(tick, 1000);

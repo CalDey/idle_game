@@ -303,6 +303,8 @@
     randomCooldown,
     todayKey
   };
+  // v143：页面载入后 20 秒内不刷新、不显示、不打开任何机缘（避免一进游戏就盖住首屏）；事件内容与奖励不变。
+  core.LOAD_GRACE_MS = 20 * 1000;
   window.IdleEvents = core;
 
   // ===================== 界面（仅浏览器） =====================
@@ -359,15 +361,21 @@
     return parts.join('');
   }
 
+  let loadedAt = 0;
+  function inLoadGrace() {
+    return Date.now() - loadedAt < core.LOAD_GRACE_MS;
+  }
+
   function renderBadge() {
     if (!els) return;
     const s = window.GameState.state;
-    const has = !!(s.idleEvents && s.idleEvents.pending);
+    const has = !inLoadGrace() && !!(s.idleEvents && s.idleEvents.pending);
     els.btn.hidden = !has;
     els.btn.classList.toggle('has-event', has);
   }
 
   function openModal() {
+    if (inLoadGrace()) return;
     const s = window.GameState.state;
     const ev = ensureState(s);
     if (!ev.pending) return;
@@ -435,6 +443,10 @@
   function tick() {
     const GS = window.GameState;
     if (!GS || !GS.state) return;
+    if (inLoadGrace()) {
+      renderBadge();
+      return;
+    }
     const spawned = maybeSpawn(GS.state);
     if (spawned) GS.saveGame();
     renderBadge();
@@ -454,6 +466,7 @@
       els = null;
       return;
     }
+    loadedAt = Date.now();
     els.btn.addEventListener('click', openModal);
     els.close.addEventListener('click', closeModal);
     els.modal.addEventListener('click', (e) => {

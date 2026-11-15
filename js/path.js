@@ -310,6 +310,22 @@
 
   function GS() { return root.GameState; }
 
+  // 窄屏入口只显示「道途」，状态放第二行小字；完整文字写进 title / aria-label（v143）
+  function entryStatusOf(text) {
+    const str = String(text || '');
+    const i = str.indexOf(' · ');
+    return i >= 0 ? str.slice(i + 3) : str;
+  }
+
+  function setEntryStatus(text) {
+    if (!els) return;
+    if (els.entryStatus) els.entryStatus.textContent = entryStatusOf(text);
+    if (els.entry && typeof els.entry.setAttribute === 'function') {
+      els.entry.setAttribute('title', text);
+      els.entry.setAttribute('aria-label', text);
+    }
+  }
+
   function renderEntry() {
     if (!els) return;
     const s = GS().state;
@@ -320,6 +336,7 @@
       if (key !== lastEntry) {
         lastEntry = key;
         els.entryText.textContent = t('entryLocked');
+        setEntryStatus(t('entryLocked'));
         els.entry.disabled = true;
         els.entry.setAttribute('aria-disabled', 'true');
         els.entry.classList.add('is-locked');
@@ -339,6 +356,7 @@
     if (key !== lastEntry) {
       lastEntry = key;
       els.entryText.textContent = text;
+      setEntryStatus(text);
       els.entry.classList.toggle('has-action', act);
       if (els.badge) els.badge.classList.toggle('visible', act);
     }
@@ -529,6 +547,7 @@
     els = {
       entry: document.getElementById('btn-path-open'),
       entryText: document.getElementById('path-entry-text'),
+      entryStatus: document.getElementById('path-entry-status'),
       badge: document.getElementById('badge-path'),
       modal: document.getElementById('path-modal'),
       body: document.getElementById('path-modal-body'),
