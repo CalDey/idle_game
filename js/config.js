@@ -662,7 +662,7 @@
       id: 'lingmai',
       name: '地底极品灵脉',
       desc: '拘禁一条地底灵脉入驻洞府，灵石喷涌而出。',
-      baseCost: 600000,
+      baseCost: 250000, // 用户 2026-11-15 拍板改回 250000（至尊后中位约 10.1 天）
       costScale: 1.33,
       baseStonePerSec: 550,
       unlockRealmIndex: 15 // 尊者初

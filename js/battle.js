@@ -61,8 +61,8 @@
 
   function isEliteStage(n) {
     const stageNum = Math.max(1, Math.floor(n || 1));
-    // 每章第 3 关；定稿举例为 13/23/33/…，第 1 章 1-3 不加精英，以免跟前期「首次不敌 1-4~1-6」打架。
-    return stageNum % 10 === 3 && stageNum > 10;
+    // 每章第 3 关，从第 33 关起（用户 2026-11-15 拍板）：13/23 与 EARLY_RAMP 叠加胜率 0~10%，故前三章不设精英。
+    return stageNum % 10 === 3 && stageNum > 30;
   }
 
   function earlyRampMult(B, stageNum, isBoss) {

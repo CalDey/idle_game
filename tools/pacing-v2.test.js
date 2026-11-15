@@ -68,7 +68,7 @@ check('境界曲线：LATE / stepGrowth / 化灵倍率 / 失败比例，reqQi �
   assert.deepStrictEqual(Array.from(req.slice(0, 4)), [50, 68, 91, 718]);
 });
 
-check('洞府 B2：产出/造价/倍率；lingmai=600000、洞天福地=4.6e7；先天祖脉造价保持 1.6e7', () => {
+check('洞府 B2：产出/造价/倍率；lingmai=250000、洞天福地=4.6e7；先天祖脉造价保持 1.6e7', () => {
   const C = runtime().GameConfig;
   const by = (id) => C.DONGFU_LIST.find((d) => d.id === id);
   assert.strictEqual(by('lingquan').baseStonePerSec, 6);
@@ -78,7 +78,7 @@ check('洞府 B2：产出/造价/倍率；lingmai=600000、洞天福地=4.6e7；
   assert.strictEqual(by('yaoyuan').baseCost, 3000);
   assert.strictEqual(by('yaoyuan').costScale, 1.31);
   assert.strictEqual(by('lingmai').baseStonePerSec, 550);
-  assert.strictEqual(by('lingmai').baseCost, 600000);
+  assert.strictEqual(by('lingmai').baseCost, 250000);
   assert.strictEqual(by('lingmai').costScale, 1.33);
   assert.strictEqual(by('dongtian_fudi').baseStonePerSec, 9000);
   assert.strictEqual(by('dongtian_fudi').baseCost, 46000000);
@@ -126,17 +126,18 @@ check('精英关：每章第 3 关，ELITE_MULT=1.35；奖励灵石 30 秒 / 灵
   assert.strictEqual(B.EARLY_RAMP.peakStage, 5);
   assert.strictEqual(B.EARLY_RAMP.endStage, 30);
   assert.strictEqual(B.EARLY_RAMP.bossFactor, 0.25);
-  [13, 23, 33].forEach((n) => {
+  [33, 63, 93].forEach((n) => {
     assert.strictEqual(W.Battle.isEliteStage(n), true, String(n));
     assert.strictEqual(W.Battle.enemyFor(n).isElite, true);
   });
+  [13, 23].forEach((n) => assert.strictEqual(W.Battle.isEliteStage(n), false, `第 ${n} 关不再是精英（从 33 起）`));
   assert.strictEqual(W.Battle.isEliteStage(3), false, '第 1 章第 3 关不加精英');
   assert.strictEqual(W.Battle.isEliteStage(1), false);
   assert.strictEqual(W.Battle.isEliteStage(10), false);
-  const e3 = W.Battle.enemyFor(13);
+  const e3 = W.Battle.enemyFor(33);
   const rampOff = { ...B, EARLY_RAMP: null, ELITE_MULT: 1 };
-  // 第 13 关已出前期缩放；对比同关去掉精英系数
-  const base = W.Battle.earlyRampMult(B, 13, false) * B.BASE_CP * Math.pow(B.GROWTH, 12);
+  // 第 33 关（首个精英）；对比同关去掉精英系数
+  const base = W.Battle.earlyRampMult(B, 33, false) * B.BASE_CP * Math.pow(B.GROWTH, 32);
   assert.ok(Math.abs(e3.cp / (base * 1.35) - 1) < 1e-9);
   const r1 = W.Battle.earlyRampMult(B, 1, false);
   const r5 = W.Battle.earlyRampMult(B, 5, false);
@@ -151,7 +152,7 @@ check('精英关：每章第 3 关，ELITE_MULT=1.35；奖励灵石 30 秒 / 灵
   const qi = W.GameState.getQiPerSec();
   const st = W.GameState.getStonePerSec();
   const normal = W.Battle.firstClearReward(W.GameState.state, 1);
-  const elite = W.Battle.firstClearReward(W.GameState.state, 13);
+  const elite = W.Battle.firstClearReward(W.GameState.state, 33);
   const boss = W.Battle.firstClearReward(W.GameState.state, 10);
   assert.strictEqual(normal.stones, Math.round(st * 10));
   assert.strictEqual(normal.qi, Math.round(qi * 5));
@@ -161,7 +162,7 @@ check('精英关：每章第 3 关，ELITE_MULT=1.35；奖励灵石 30 秒 / 灵
   assert.strictEqual(elite.stones, Math.round(st * 30));
   assert.strictEqual(elite.qi, Math.round(qi * 15));
   assert.strictEqual(elite.peaches, 2);
-  assert.strictEqual(elite.lingyu, (2 + Math.floor(13 / 10)) * 2);
+  assert.strictEqual(elite.lingyu, (2 + Math.floor(33 / 10)) * 2);
   assert.strictEqual(boss.stones, Math.round(st * 60));
   assert.strictEqual(boss.qi, Math.round(qi * 30));
 });
