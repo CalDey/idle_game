@@ -490,7 +490,7 @@
       { id: 'heifeng', name: '黑风寨主', img: 'assets/enemies/boss_heifeng.webp?v=19' },
       { id: 'shikui', name: '尸傀道姑', img: 'assets/enemies/boss_shikui.webp?v=154' },
       { id: 'xuefu', name: '血蝠夫人', img: 'assets/enemies/boss_xuefu.webp?v=21' },
-      { id: 'qinglin', name: '青鳞蛇姬', img: 'assets/enemies/boss_qinglin.webp?v=21' },
+      { id: 'qinglin', name: '青鳞蛇姬', img: 'assets/enemies/boss_qinglin.webp?v=155' },
       { id: 'kumu', name: '枯木树娘', img: 'assets/enemies/boss_kumu.webp?v=154' },
       { id: 'leiying', name: '雷翼鹰后', img: 'assets/enemies/boss_leiying.webp?v=153' },
       { id: 'qingming', name: '青冥蛟后', img: 'assets/enemies/boss_qingming.webp?v=154' },
